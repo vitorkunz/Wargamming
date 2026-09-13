@@ -5,7 +5,8 @@ import { LayerVisibility } from './Sidebar';
 import { supabase } from '@/lib/supabaseClient';
 import { MapLayer } from './LayerManager';
 import { TransformWrapper, TransformComponent, useTransformEffect } from 'react-zoom-pan-pinch';
-
+import { NatoSymbol } from './NatoSymbol';
+import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
 export interface Unit {
   id: string;
   name?: string;
@@ -426,20 +427,17 @@ export default function MapGrid({
                          if (onUnitClick) onUnitClick(unit);
                       }}
                     >
-                      <div className={`w-7 h-7 rounded-full border-2 shadow-lg flex items-center justify-center ${
-                        unit.owner === 'Player A' ? 'bg-red-600 border-white' : 
-                        unit.owner === 'Player B' ? 'bg-yellow-500 border-white' : 'bg-purple-500 border-white'
-                      } ${
+                      <div className={`flex items-center justify-center rounded ${
                         isSelected
-                          ? 'ring-4 ring-cyan-400 ring-offset-1 animate-pulse'
+                          ? 'ring-4 ring-cyan-400 ring-offset-1 animate-pulse bg-cyan-100 bg-opacity-30'
                           : unit.is_visible_to_enemy 
                             ? 'ring-2 ring-red-500 ring-offset-1' 
                             : ''
                       }`}>
-                        <span className="text-[10px] font-bold text-white">{unit.type[0]}</span>
+                        <NatoSymbol sidc={getSidcForUnit(unit)} size={40} />
                       </div>
                       <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-75 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                        {unit.name || unit.type}
+                        {unit.name || getHumanReadableFromSidc(unit.type)}
                       </span>
                     </div>
                   )

@@ -1,7 +1,8 @@
 "use client";
 import React from 'react';
 import { Unit } from './MapGrid';
-
+import { NatoSymbol } from './NatoSymbol';
+import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
 interface ReservesPanelProps {
   units: Unit[];
   isDraggable: (unit: Unit) => boolean;
@@ -31,15 +32,13 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
             draggable={canDrag}
             onDragStart={(e) => handleDragStart(e, unit)}
             onClick={() => onUnitClick && onUnitClick(unit)}
-            className={`w-10 h-10 rounded-full border-2 shadow-md flex items-center justify-center 
-              ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'opacity-50'}
+            className={`w-12 h-12 flex items-center justify-center 
+              ${canDrag ? 'cursor-grab active:cursor-grabbing hover:bg-slate-300 rounded p-1' : 'opacity-50'}
               ${onUnitClick ? 'cursor-pointer' : ''}
-              ${unit.owner === 'Player A' ? 'bg-red-600 border-white' : 
-                unit.owner === 'Player B' ? 'bg-yellow-500 border-white' : 'bg-purple-500 border-white'}
             `}
-            title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health})`}
+            title={`${unit.name ? `${unit.name} (${getHumanReadableFromSidc(unit.type)})` : getHumanReadableFromSidc(unit.type)} (HP: ${unit.health})`}
           >
-            <span className="text-xs font-bold text-white">{unit.type[0]}</span>
+            <NatoSymbol sidc={getSidcForUnit(unit)} size={40} />
           </div>
         );
       })}

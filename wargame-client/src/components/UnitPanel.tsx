@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
-
+import { NatoSymbol } from './NatoSymbol';
+import { getSidcForUnit, getHumanReadableFromSidc, parseSidc } from '@/lib/milsymbol/utils';
+import { AFFILIATIONS, UNIT_TYPES, ECHELONS, AffiliationKey, UnitTypeKey, EchelonKey } from '@/lib/milsymbol/constants';
 interface UnitPanelProps {
   units: Unit[];
   selectedUnit: Unit | null;
@@ -62,17 +64,39 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     }
   };
 
-  const updateType = async (newType: string) => {
+  const updateSidcPart = async (part: 'affiliation' | 'type' | 'echelon', value: string) => {
+    if (!selectedUnit || !isModerator) return;
+    
+    // Parse current SIDC or generate one
+    const currentSidc = getSidcForUnit(selectedUnit);
+    const parsed = parseSidc(currentSidc);
+    
+    let { affiliationKey, typeKey, echelonKey } = parsed;
+    if (part === 'affiliation') affiliationKey = value as AffiliationKey;
+    if (part === 'type') typeKey = value as UnitTypeKey;
+    if (part === 'echelon') echelonKey = value as EchelonKey;
+
+    const newSidc = `S${AFFILIATIONS[affiliationKey]}GP${UNIT_TYPES[typeKey]}-${ECHELONS[echelonKey]}---`;
+
+    const { error } = await supabase
+      .from(targetTable)
+      .update({ type: newSidc })
+      .eq('id', selectedUnit.id);
+
+    if (error) alert("Failed to update unit type: " + error.message);
+  };
+
+  const updateOwner = async (newOwner: string) => {
     if (!selectedUnit || !isModerator) return;
     const { error } = await supabase
       .from(targetTable)
-      .update({ type: newType })
+      .update({ owner: newOwner })
       .eq('id', selectedUnit.id);
 
-    if (error) {
-      alert("Failed to update unit type: " + error.message);
-    }
+    if (error) alert("Failed to update unit owner: " + error.message);
   };
+
+
 
   const toggleVisibility = async () => {
     if (!selectedUnit || !isModerator) return;
@@ -168,47 +192,71 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                 )}
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Type</span>
+              <div className="flex flex-col gap-2 pt-2 border-t border-slate-200 mt-2">
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">NATO Settings & Owner</span>
+                
                 {isModerator ? (
-                  <select
-                    value={selectedUnit.type}
-                    onChange={(e) => updateType(e.target.value)}
-                    className="p-1 text-sm font-bold border border-slate-300 rounded focus:ring-blue-500 outline-none bg-white text-slate-800"
-                  >
-                    <option value="Infantry">Infantry</option>
-                    <option value="Tank">Tank</option>
-                    <option value="Artillery">Artillery</option>
-                    <option value="HQ">HQ</option>
-                    <option value="Recon">Recon</option>
-                    <option value="Air Defense">Air Defense</option>
-                    <option value="Aircraft">Aircraft</option>
-                    <option value="Naval">Naval</option>
-                    <option value="Logistics">Logistics</option>
-                    <option value="Special Forces">Special Forces</option>
-                    <option value="Engineers">Engineers</option>
-                    {![
-                      'Infantry', 'Tank', 'Artillery', 'HQ', 'Recon', 
-                      'Air Defense', 'Aircraft', 'Naval', 'Logistics',
-                      'Special Forces', 'Engineers'
-                    ].includes(selectedUnit.type) && (
-                      <option value={selectedUnit.type}>{selectedUnit.type}</option>
-                    )}
-                  </select>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Type</span>
+                      <select 
+                        value={parseSidc(getSidcForUnit(selectedUnit)).typeKey}
+                        onChange={(e) => updateSidcPart('type', e.target.value)}
+                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[120px]"
+                      >
+                        {Object.keys(UNIT_TYPES).map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Echelon</span>
+                      <select 
+                        value={parseSidc(getSidcForUnit(selectedUnit)).echelonKey}
+                        onChange={(e) => updateSidcPart('echelon', e.target.value)}
+                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[120px]"
+                      >
+                        {Object.keys(ECHELONS).map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Affiliation</span>
+                      <select 
+                        value={parseSidc(getSidcForUnit(selectedUnit)).affiliationKey}
+                        onChange={(e) => updateSidcPart('affiliation', e.target.value)}
+                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[120px]"
+                      >
+                        {Object.keys(AFFILIATIONS).map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Owner</span>
+                      <select 
+                        value={selectedUnit.owner}
+                        onChange={(e) => updateOwner(e.target.value)}
+                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[120px]"
+                      >
+                        <option value="Player A">Player A</option>
+                        <option value="Player B">Player B</option>
+                      </select>
+                    </div>
+                  </>
                 ) : (
-                  <span className="font-bold text-slate-700">{selectedUnit.type}</span>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Type</span>
+                      <span className="font-bold text-slate-700 text-sm">{getHumanReadableFromSidc(selectedUnit.type)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-slate-600">Owner</span>
+                      <span className="font-medium text-slate-600 flex items-center gap-2 text-sm">
+                        <span className={`w-2.5 h-2.5 rounded-full ${
+                          selectedUnit.owner === 'Player A' ? 'bg-red-600' : 
+                          selectedUnit.owner === 'Player B' ? 'bg-yellow-500' : 'bg-purple-500'
+                        }`} />
+                        {selectedUnit.owner}
+                      </span>
+                    </div>
+                  </>
                 )}
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Owner</span>
-                <span className="font-medium text-slate-600 flex items-center gap-2 text-sm">
-                  <span className={`w-2.5 h-2.5 rounded-full ${
-                    selectedUnit.owner === 'Player A' ? 'bg-red-600' : 
-                    selectedUnit.owner === 'Player B' ? 'bg-yellow-500' : 'bg-purple-500'
-                  }`} />
-                  {selectedUnit.owner}
-                </span>
               </div>
 
               <div className="flex justify-between items-center">
@@ -311,16 +359,13 @@ function UnitListItem({ unit, selected, onClick }: { unit: Unit, selected: boole
       }`}
     >
       <div className="flex items-center gap-2.5">
-        <span className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
-          unit.owner === 'Player A' ? 'bg-red-600' : 
-          unit.owner === 'Player B' ? 'bg-yellow-500' : 'bg-purple-500'
-        }`} />
+        <NatoSymbol sidc={getSidcForUnit(unit)} size={28} />
         <div>
           <div className="font-bold text-xs text-slate-700">
-            {unit.name ? unit.name : unit.type}
+            {unit.name ? unit.name : getHumanReadableFromSidc(unit.type)}
           </div>
           <div className="text-[9px] text-slate-500 uppercase font-semibold">
-            {unit.name ? `${unit.type} • ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(Visible)' : ''}
+            {unit.name ? `${getHumanReadableFromSidc(unit.type)} • ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(Visible)' : ''}
           </div>
         </div>
       </div>
