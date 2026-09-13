@@ -4,7 +4,7 @@ import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
 import { NatoSymbol } from './NatoSymbol';
 import { getSidcForUnit, getHumanReadableFromSidc, parseSidc } from '@/lib/milsymbol/utils';
-import { AFFILIATIONS, UNIT_TYPES, ECHELONS, AffiliationKey, UnitTypeKey, EchelonKey } from '@/lib/milsymbol/constants';
+import { AFFILIATIONS, UNIT_TYPES, ECHELONS, UNIT_CATEGORIES, AffiliationKey, UnitTypeKey, EchelonKey } from '@/lib/milsymbol/constants';
 interface UnitPanelProps {
   units: Unit[];
   selectedUnit: Unit | null;
@@ -76,7 +76,8 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     if (part === 'type') typeKey = value as UnitTypeKey;
     if (part === 'echelon') echelonKey = value as EchelonKey;
 
-    const newSidc = `S${AFFILIATIONS[affiliationKey]}GP${UNIT_TYPES[typeKey]}-${ECHELONS[echelonKey]}---`;
+    const typeDef = UNIT_TYPES[typeKey];
+    const newSidc = `S${AFFILIATIONS[affiliationKey]}${typeDef.dimension}P${typeDef.code}-${ECHELONS[echelonKey]}---`;
 
     const { error } = await supabase
       .from(targetTable)
@@ -202,9 +203,17 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                       <select 
                         value={parseSidc(getSidcForUnit(selectedUnit)).typeKey}
                         onChange={(e) => updateSidcPart('type', e.target.value)}
-                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[120px]"
+                        className="p-1 text-xs font-bold border border-slate-300 rounded bg-white max-w-[150px]"
                       >
-                        {Object.keys(UNIT_TYPES).map(k => <option key={k} value={k}>{k}</option>)}
+                        {UNIT_CATEGORIES.map((category) => (
+                          <optgroup key={category} label={category}>
+                            {Object.entries(UNIT_TYPES)
+                              .filter(([, def]) => def.category === category)
+                              .map(([key, def]) => (
+                                <option key={key} value={key}>{def.label}</option>
+                              ))}
+                          </optgroup>
+                        ))}
                       </select>
                     </div>
                     <div className="flex justify-between items-center">
@@ -250,7 +259,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                       <span className="font-medium text-slate-600 flex items-center gap-2 text-sm">
                         <span className={`w-2.5 h-2.5 rounded-full ${
                           selectedUnit.owner === 'Player A' ? 'bg-red-600' : 
-                          selectedUnit.owner === 'Player B' ? 'bg-yellow-500' : 'bg-purple-500'
+                          selectedUnit.owner === 'Player B' ? 'bg-blue-500' : 'bg-purple-500'
                         }`} />
                         {selectedUnit.owner}
                       </span>

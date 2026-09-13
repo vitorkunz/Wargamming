@@ -59,8 +59,8 @@ export default function TeamAssignment() {
                   <span className={`px-2 py-1 rounded text-xs font-bold ${
                     profile.role === 'Moderator' ? 'bg-purple-100 text-purple-700' :
                     profile.role === 'Player A' ? 'bg-red-100 text-red-700' :
-                    profile.role === 'Player B' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-slate-100 text-slate-500'
+                    profile.role === 'Player B' ? 'bg-blue-100 text-blue-700' :
+                    'bg-slate-100 text-slate-700'
                   }`}>
                     {profile.role}
                   </span>

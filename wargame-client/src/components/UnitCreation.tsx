@@ -6,6 +6,7 @@ import {
   AFFILIATIONS, 
   UNIT_TYPES, 
   ECHELONS,
+  UNIT_CATEGORIES,
   AffiliationKey,
   UnitTypeKey,
   EchelonKey
@@ -34,9 +35,9 @@ export default function UnitCreation({
   // If fixedOwner is provided, we might want to lock affiliation, but it's okay for them to just match it.
   
   const affiliationCode = AFFILIATIONS[affiliation];
-  const typeCode = UNIT_TYPES[type];
+  const typeDef = UNIT_TYPES[type];
   const echelonCode = ECHELONS[echelon];
-  const sidc = `S${affiliationCode}GP${typeCode}-${echelonCode}---`;
+  const sidc = `S${affiliationCode}${typeDef.dimension}P${typeDef.code}-${echelonCode}---`;
 
   const handleCreateUnit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,8 +117,14 @@ export default function UnitCreation({
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1">Unit Type</label>
               <select className="border border-slate-300 rounded p-2 text-slate-700 bg-white" value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)}>
-                {Object.keys(UNIT_TYPES).map((key) => (
-                  <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}</option>
+                {UNIT_CATEGORIES.map((category) => (
+                  <optgroup key={category} label={category}>
+                    {Object.entries(UNIT_TYPES)
+                      .filter(([, def]) => def.category === category)
+                      .map(([key, def]) => (
+                        <option key={key} value={key}>{def.label}</option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

@@ -4,8 +4,10 @@ import mapConfig from '../data/mapConfig.json';
 import { LayerVisibility } from './Sidebar';
 import { supabase } from '@/lib/supabaseClient';
 import { MapLayer } from './LayerManager';
-import { TransformWrapper, TransformComponent, useTransformEffect } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, useTransformEffect, useControls } from 'react-zoom-pan-pinch';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 import { NatoSymbol } from './NatoSymbol';
+import { PoiBadge } from './PoiBadge';
 import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
 export interface Unit {
   id: string;
@@ -72,6 +74,82 @@ const ScaleUpdater = () => {
   return null;
 };
 
+function MapControls({ 
+  isFullscreen, 
+  onToggleFullscreen 
+}: { 
+  isFullscreen: boolean; 
+  onToggleFullscreen: () => void;
+}) {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  const [zoomPercent, setZoomPercent] = useState(100);
+
+  useTransformEffect(({ state }) => {
+    setZoomPercent(Math.round(state.scale * 100));
+  });
+
+  return (
+    <div className="absolute top-3 left-3 z-30 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 rounded-lg shadow-2xl text-white select-none pointer-events-auto">
+      <button
+        type="button"
+        onClick={() => zoomOut(0.25)}
+        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+        title="Zoom Out (-)"
+        aria-label="Zoom Out"
+      >
+        <ZoomOut size={16} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => resetTransform()}
+        className="px-2 py-0.5 text-xs font-mono font-bold text-slate-300 hover:text-white hover:bg-slate-700/60 rounded transition-colors cursor-pointer"
+        title="Reset Zoom (100%)"
+      >
+        {zoomPercent}%
+      </button>
+
+      <button
+        type="button"
+        onClick={() => zoomIn(0.25)}
+        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+        title="Zoom In (+)"
+        aria-label="Zoom In"
+      >
+        <ZoomIn size={16} />
+      </button>
+
+      <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
+
+      <button
+        type="button"
+        onClick={() => resetTransform()}
+        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+        title="Center / Reset View"
+        aria-label="Reset View"
+      >
+        <RotateCcw size={15} />
+      </button>
+
+      <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
+
+      <button
+        type="button"
+        onClick={onToggleFullscreen}
+        className={`p-1.5 rounded transition-colors flex items-center justify-center cursor-pointer ${
+          isFullscreen 
+            ? 'bg-blue-600 hover:bg-blue-500 text-white' 
+            : 'hover:bg-slate-700/80 text-slate-200 hover:text-white'
+        }`}
+        title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen"}
+        aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+      >
+        {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+      </button>
+    </div>
+  );
+}
+
 export default function MapGrid({ 
   layers,
   hiddenDynamicLayers = [],
@@ -93,6 +171,44 @@ export default function MapGrid({
   const [hazards, setHazards] = useState<BattleHazard[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (containerRef.current?.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {});
+      }
+      setIsFullscreen(true);
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen]);
   
   const { width, height } = mapConfig.gridSize;
   const boardWidth = width * CELL_SIZE;
@@ -234,7 +350,14 @@ export default function MapGrid({
     .sort((a, b) => a.z_index - b.z_index);
 
   return (
-    <div className="bg-white p-2 shadow-2xl border-4 border-slate-300 rounded-lg shrink-0 mb-12 flex justify-center w-full max-w-5xl">
+    <div 
+      ref={containerRef}
+      className={`relative transition-all duration-300 ${
+        isFullscreen 
+          ? 'fixed inset-0 z-[100] w-screen h-screen bg-slate-900 flex items-center justify-center p-0 m-0 max-w-none border-none rounded-none' 
+          : 'bg-white p-2 shadow-2xl border-4 border-slate-300 rounded-lg shrink-0 mb-12 flex justify-center w-full max-w-5xl z-10 isolate'
+      }`}
+    >
       <TransformWrapper
         initialScale={1}
         minScale={0.1}
@@ -243,7 +366,15 @@ export default function MapGrid({
         panning={{ disabled: isDrawingMode, excluded: ['draggable-unit'] }}
       >
         <ScaleUpdater />
-        <TransformComponent wrapperStyle={{ width: '100%', height: '75vh', borderRadius: '4px' }}>
+        <MapControls isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
+        <TransformComponent 
+          wrapperStyle={{ 
+            width: '100%', 
+            height: isFullscreen ? '100vh' : '75vh', 
+            borderRadius: isFullscreen ? '0px' : '4px',
+            backgroundColor: isFullscreen ? '#0f172a' : undefined
+          }}
+        >
           <div 
             id="map-grid-root"
             className={`relative bg-slate-300 border border-slate-400 ${
@@ -377,16 +508,13 @@ export default function MapGrid({
                     }}
                     title={`${poi.name} (${poi.status})`}
                   >
-                    <div className={`w-8 h-8 rounded border shadow-lg flex items-center justify-center text-xs font-bold
-                      ${poi.owner === 'Player A' ? 'bg-red-900 border-red-400 text-red-200' : 
-                        poi.owner === 'Player B' ? 'bg-yellow-900 border-yellow-400 text-yellow-200' : 
-                        'bg-slate-700 border-slate-400 text-slate-200'}
-                      ${poi.status === 'damaged' ? 'border-dashed border-orange-500 opacity-80' : ''}
-                      ${poi.status === 'destroyed' ? 'line-through opacity-50 bg-black' : ''}
-                      ${poi.status === 'under_construction' ? 'animate-pulse border-dotted' : ''}
-                    `}>
-                      {poi.type[0].toUpperCase()}
-                    </div>
+                    <PoiBadge 
+                      type={poi.type} 
+                      owner={poi.owner} 
+                      status={poi.status} 
+                      size={22} 
+                      className="group-hover:scale-110 transition-transform" 
+                    />
                     <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-70 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
                       {poi.name}
                     </span>

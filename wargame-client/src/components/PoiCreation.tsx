@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { PoiBadge } from './PoiBadge';
 
 export default function PoiCreation() {
   const [name, setName] = useState('');
@@ -37,6 +38,15 @@ export default function PoiCreation() {
     <div className="bg-white p-4 rounded-lg shadow-md border border-slate-200 mb-6 w-full max-w-4xl">
       <h2 className="text-xl font-bold mb-4 text-yellow-600">Construct POI</h2>
       <form onSubmit={handleCreatePoi} className="flex flex-wrap gap-4 items-end">
+        
+        {/* Preview Badge */}
+        <div className="flex flex-col items-center justify-center mr-4">
+          <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Preview</label>
+          <div className="h-10 flex items-center justify-center">
+            <PoiBadge type={type} owner={owner} size={32} />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">Name</label>
           <input type="text" className="border border-slate-300 rounded p-2 text-slate-700 w-40" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Checkpoint" />
@@ -45,6 +55,7 @@ export default function PoiCreation() {
           <label className="block text-sm font-medium text-slate-600 mb-1">Type</label>
           <select className="border border-slate-300 rounded p-2 text-slate-700 w-36" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="military_base">Military Base</option>
+            <option value="headquarters">Headquarters (HQ)</option>
             <option value="factory">Factory</option>
             <option value="bridge">Bridge</option>
             <option value="airfield">Airfield</option>
