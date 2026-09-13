@@ -74,13 +74,50 @@ WITH CHECK ( owner = public.get_user_role() );
 -- ==========================================
 
 DROP POLICY IF EXISTS "Player full access to own Planning_Units" ON public."Planning_Units";
-CREATE POLICY "Player full access to own Planning_Units" 
+DROP POLICY IF EXISTS "Moderator read access on Planning_Units" ON public."Planning_Units";
+DROP POLICY IF EXISTS "Authenticated users full access on Planning_Units" ON public."Planning_Units";
+
+-- Allow players and moderators full access to plan, edit, move, and remove friendly and enemy planning units
+CREATE POLICY "Authenticated users full access on Planning_Units" 
 ON public."Planning_Units" 
 FOR ALL 
-USING ( owner = public.get_user_role() );
+TO authenticated
+USING ( true )
+WITH CHECK ( true );
 
-DROP POLICY IF EXISTS "Moderator read access on Planning_Units" ON public."Planning_Units";
-CREATE POLICY "Moderator read access on Planning_Units" 
-ON public."Planning_Units" 
-FOR SELECT 
+-- ==========================================
+-- MAP_POIS POLICIES
+-- ==========================================
+
+DROP POLICY IF EXISTS "Moderator full access on Map_POIs" ON public."Map_POIs";
+CREATE POLICY "Moderator full access on Map_POIs" 
+ON public."Map_POIs" 
+FOR ALL 
 USING ( public.get_user_role() = 'Moderator' );
+
+DROP POLICY IF EXISTS "Player read access on Map_POIs" ON public."Map_POIs";
+CREATE POLICY "Player read access on Map_POIs" 
+ON public."Map_POIs" 
+FOR SELECT 
+USING ( 
+    owner = public.get_user_role() 
+    OR is_visible_to_enemy = TRUE 
+);
+
+-- ==========================================
+-- BATTLE_HAZARDS POLICIES
+-- ==========================================
+
+DROP POLICY IF EXISTS "Moderator full access on Battle_Hazards" ON public."Battle_Hazards";
+CREATE POLICY "Moderator full access on Battle_Hazards" 
+ON public."Battle_Hazards" 
+FOR ALL 
+USING ( public.get_user_role() = 'Moderator' );
+
+DROP POLICY IF EXISTS "Player read access on Battle_Hazards" ON public."Battle_Hazards";
+CREATE POLICY "Player read access on Battle_Hazards" 
+ON public."Battle_Hazards" 
+FOR SELECT 
+USING ( 
+    public.get_user_role() = ANY (visible_to_teams)
+);

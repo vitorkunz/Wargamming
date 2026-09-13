@@ -10,31 +10,67 @@ interface UnitPanelProps {
   onSelectUnit: (unitId: string | null) => void;
   isModerator: boolean;
   role?: string;
+  activeTab?: 'planning' | 'battle';
 }
 
-export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, isModerator, role }: UnitPanelProps) {
+export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, isModerator, role, activeTab = 'battle' }: UnitPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [healthInput, setHealthInput] = React.useState(selectedUnit?.health.toString() || '');
+  const [nameInput, setNameInput] = React.useState(selectedUnit?.name || '');
+
+  const isPlanningMode = activeTab === 'planning';
+  const canEditOrDelete = isModerator || isPlanningMode;
+  const targetTable = isPlanningMode ? 'Planning_Units' : 'Battle_Units';
+  const canRename = isModerator || (Boolean(role) && selectedUnit?.owner === role);
 
   React.useEffect(() => {
     if (selectedUnit) {
       setHealthInput(selectedUnit.health.toString());
+      setNameInput(selectedUnit.name || '');
     }
-  }, [selectedUnit?.health, selectedUnit?.id]);
+  }, [selectedUnit?.health, selectedUnit?.name, selectedUnit?.id]);
+
+  const updateName = async () => {
+    if (!selectedUnit || !canRename) return;
+    const trimmed = nameInput.trim();
+    if (trimmed === (selectedUnit.name || '')) return;
+
+    const { error } = await supabase
+      .from(targetTable)
+      .update({ name: trimmed || null })
+      .eq('id', selectedUnit.id);
+
+    if (error) {
+      alert("Failed to update unit name: " + error.message);
+      setNameInput(selectedUnit.name || '');
+    }
+  };
 
   const updateHealth = async () => {
-    if (!selectedUnit || !isModerator) return;
+    if (!selectedUnit || !canEditOrDelete) return;
     const newHealth = parseInt(healthInput);
     if (isNaN(newHealth) || newHealth === selectedUnit.health) return;
     
     const { error } = await supabase
-      .from('Battle_Units')
+      .from(targetTable)
       .update({ health: newHealth })
       .eq('id', selectedUnit.id);
 
     if (error) {
-      alert("Failed to update health.");
+      alert("Failed to update health: " + error.message);
       setHealthInput(selectedUnit.health.toString());
+    }
+  };
+
+  const updateType = async (newType: string) => {
+    if (!selectedUnit || !isModerator) return;
+    const { error } = await supabase
+      .from(targetTable)
+      .update({ type: newType })
+      .eq('id', selectedUnit.id);
+
+    if (error) {
+      alert("Failed to update unit type: " + error.message);
     }
   };
 
@@ -45,22 +81,22 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
       .update({ is_visible_to_enemy: !selectedUnit.is_visible_to_enemy })
       .eq('id', selectedUnit.id);
 
-    if (error) alert("Failed to update visibility.");
+    if (error) alert("Failed to update visibility: " + error.message);
   };
 
   const deleteUnit = async () => {
-    if (!selectedUnit || !isModerator) return;
+    if (!selectedUnit || !canEditOrDelete) return;
     
-    const confirmDelete = window.confirm(`Are you sure you want to permanently destroy this ${selectedUnit.type}?`);
+    const confirmDelete = window.confirm(`Are you sure you want to delete this ${selectedUnit.type}?`);
     if (!confirmDelete) return;
 
     const { error } = await supabase
-      .from('Battle_Units')
+      .from(targetTable)
       .delete()
       .eq('id', selectedUnit.id);
 
     if (error) {
-      alert("Failed to delete unit.");
+      alert("Failed to delete unit: " + error.message);
     } else {
       onSelectUnit(null); 
     }
@@ -113,9 +149,55 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
             </div>
             
             <div className="space-y-3">
+              <div>
+                <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">
+                  Unit Name / Callsign {canRename && <span className="text-[10px] text-blue-500 font-normal lowercase">(press enter or click away to save)</span>}
+                </label>
+                {canRename ? (
+                  <input
+                    type="text"
+                    value={nameInput}
+                    placeholder="e.g. 1st Regiment, Strike Battalion..."
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onBlur={updateName}
+                    onKeyDown={(e) => e.key === 'Enter' && updateName()}
+                    className="w-full p-1.5 text-sm font-bold border border-slate-300 rounded focus:ring-blue-500 outline-none bg-white text-slate-800"
+                  />
+                ) : (
+                  <p className="font-bold text-slate-700 text-sm">{selectedUnit.name || '(Unnamed Unit)'}</p>
+                )}
+              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Type</span>
-                <span className="font-bold text-slate-700">{selectedUnit.type}</span>
+                {isModerator ? (
+                  <select
+                    value={selectedUnit.type}
+                    onChange={(e) => updateType(e.target.value)}
+                    className="p-1 text-sm font-bold border border-slate-300 rounded focus:ring-blue-500 outline-none bg-white text-slate-800"
+                  >
+                    <option value="Infantry">Infantry</option>
+                    <option value="Tank">Tank</option>
+                    <option value="Artillery">Artillery</option>
+                    <option value="HQ">HQ</option>
+                    <option value="Recon">Recon</option>
+                    <option value="Air Defense">Air Defense</option>
+                    <option value="Aircraft">Aircraft</option>
+                    <option value="Naval">Naval</option>
+                    <option value="Logistics">Logistics</option>
+                    <option value="Special Forces">Special Forces</option>
+                    <option value="Engineers">Engineers</option>
+                    {![
+                      'Infantry', 'Tank', 'Artillery', 'HQ', 'Recon', 
+                      'Air Defense', 'Aircraft', 'Naval', 'Logistics',
+                      'Special Forces', 'Engineers'
+                    ].includes(selectedUnit.type) && (
+                      <option value={selectedUnit.type}>{selectedUnit.type}</option>
+                    )}
+                  </select>
+                ) : (
+                  <span className="font-bold text-slate-700">{selectedUnit.type}</span>
+                )}
               </div>
               
               <div className="flex justify-between items-center">
@@ -131,7 +213,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
 
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Health</span>
-                {isModerator ? (
+                {canEditOrDelete ? (
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
@@ -139,7 +221,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                       onChange={(e) => setHealthInput(e.target.value)}
                       onBlur={updateHealth}
                       onKeyDown={(e) => e.key === 'Enter' && updateHealth()}
-                      className="w-16 p-1 text-sm font-medium border border-slate-300 rounded focus:ring-blue-500 outline-none text-right"
+                      className="w-16 p-1 text-sm font-medium border border-slate-300 rounded focus:ring-blue-500 outline-none text-right bg-white text-slate-800"
                       min={0}
                       max={100}
                     />
@@ -151,24 +233,28 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                 )}
               </div>
 
-              {isModerator && (
+              {(isModerator || canEditOrDelete) && (
                 <div className="pt-3 border-t border-slate-200 space-y-3">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedUnit.is_visible_to_enemy || false} 
-                      onChange={toggleVisibility}
-                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    <span className="font-medium text-sm text-slate-700">Visible to Enemy</span>
-                  </label>
+                  {isModerator && (
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUnit.is_visible_to_enemy || false} 
+                        onChange={toggleVisibility}
+                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="font-medium text-sm text-slate-700">Visible to Enemy</span>
+                    </label>
+                  )}
                   
-                  <button
-                    onClick={deleteUnit}
-                    className="w-full py-1.5 px-3 bg-red-50 text-red-600 text-sm font-semibold rounded border border-red-200 hover:bg-red-100 transition-colors"
-                  >
-                    Destroy Unit
-                  </button>
+                  {canEditOrDelete && (
+                    <button
+                      onClick={deleteUnit}
+                      className="w-full py-1.5 px-3 bg-red-50 text-red-600 text-sm font-semibold rounded border border-red-200 hover:bg-red-100 transition-colors"
+                    >
+                      Delete Unit
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -230,8 +316,12 @@ function UnitListItem({ unit, selected, onClick }: { unit: Unit, selected: boole
           unit.owner === 'Player B' ? 'bg-yellow-500' : 'bg-purple-500'
         }`} />
         <div>
-          <div className="font-bold text-xs text-slate-700">{unit.type}</div>
-          <div className="text-[9px] text-slate-500 uppercase font-semibold">{unit.owner} {unit.is_visible_to_enemy ? '(Visible)' : ''}</div>
+          <div className="font-bold text-xs text-slate-700">
+            {unit.name ? unit.name : unit.type}
+          </div>
+          <div className="text-[9px] text-slate-500 uppercase font-semibold">
+            {unit.name ? `${unit.type} • ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(Visible)' : ''}
+          </div>
         </div>
       </div>
       <div className={`font-mono text-xs font-bold ${unit.health > 50 ? 'text-green-600' : unit.health > 20 ? 'text-yellow-600' : 'text-red-600'}`}>

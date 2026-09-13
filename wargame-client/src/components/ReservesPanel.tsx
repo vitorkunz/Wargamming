@@ -37,7 +37,7 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
               ${unit.owner === 'Player A' ? 'bg-red-600 border-white' : 
                 unit.owner === 'Player B' ? 'bg-yellow-500 border-white' : 'bg-purple-500 border-white'}
             `}
-            title={`${unit.type} (HP: ${unit.health})`}
+            title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health})`}
           >
             <span className="text-xs font-bold text-white">{unit.type[0]}</span>
           </div>

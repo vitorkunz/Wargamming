@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
+import UnitCreation from './UnitCreation';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
 
@@ -14,7 +15,9 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'planning' | 'battle'>('planning');
   const [layers, setLayers] = useState<LayerVisibility>({
-    units: true
+    units: true,
+    pois: true,
+    hazards: true
   });
 
   const [planningUnits, setPlanningUnits] = useState<Unit[]>([]);
@@ -27,7 +30,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
 
   useEffect(() => {
     const fetchPlanning = async () => {
-      const { data } = await supabase.from('Planning_Units').select('*').eq('owner', role);
+      const { data } = await supabase.from('Planning_Units').select('*');
       if (data) setPlanningUnits(data as Unit[]);
     };
     
@@ -40,7 +43,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
     fetchBattle();
 
     const planChannel = supabase.channel('player-planning')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units', filter: `owner=eq.${role}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units' }, (payload) => {
         if (payload.eventType === 'INSERT') setPlanningUnits(p => [...p, payload.new as Unit]);
         if (payload.eventType === 'UPDATE') setPlanningUnits(p => p.map(u => u.id === payload.new.id ? payload.new as Unit : u));
         if (payload.eventType === 'DELETE') {
@@ -91,10 +94,9 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
       const { error } = await supabase
         .from('Planning_Units')
         .update({ x_coord: x, y_coord: y, in_reserve: false })
-        .eq('id', unitId)
-        .eq('owner', role);
+        .eq('id', unitId);
 
-      if (error) alert("Failed to move planning unit.");
+      if (error) alert("Failed to move planning unit: " + error.message);
     } else {
       setBattleUnits(prev => prev.map(u => u.id === unitId ? { ...u, x_coord: x, y_coord: y, in_reserve: false } : u));
       const { error } = await supabase
@@ -108,12 +110,13 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   };
 
   const checkIsDraggable = (unit: Unit) => {
-    return unit.owner === role; // Can drag own units on either map
+    if (activeTab === 'planning') return true; // Can drag own and enemy units in planning
+    return unit.owner === role; // Can only drag own units in battle
   };
 
   const currentUnits = activeTab === 'planning' ? planningUnits : battleUnits;
   const activeUnits = currentUnits.filter(u => !u.in_reserve);
-  const reserveUnits = currentUnits.filter(u => u.in_reserve && u.owner === role); // Only own reserves
+  const reserveUnits = currentUnits.filter(u => u.in_reserve && (activeTab === 'planning' || u.owner === role));
   const selectedUnit = currentUnits.find(u => u.id === selectedUnitId) || null;
 
   return (
@@ -145,10 +148,17 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           <h1 className="text-3xl font-bold text-slate-700">{role} - {activeTab === 'planning' ? 'Planning Phase' : 'Active Battle'}</h1>
           <p className="text-slate-500">
             {activeTab === 'planning' 
-              ? 'Click to deploy Infantry. Drag and drop to reposition your units.' 
+              ? 'Spawn new units to reserve or click on the map to deploy Infantry. Drag and drop to reposition your units.' 
               : 'Viewing live battle data (your units and revealed enemy units).'}
           </p>
         </div>
+
+        {activeTab === 'planning' && (
+          <UnitCreation 
+            table="Planning_Units" 
+            title="Plan New Unit"
+          />
+        )}
 
         <ReservesPanel 
           units={reserveUnits} 
@@ -160,6 +170,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           layers={layers}
           hiddenDynamicLayers={hiddenDynamicLayers} 
           units={activeUnits} 
+          selectedUnitId={selectedUnitId}
           onGridClick={activeTab === 'planning' ? handleGridClick : undefined}
           isDraggable={checkIsDraggable}
           onUnitDrop={handleUnitDrop}
@@ -174,6 +185,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
         onSelectUnit={setSelectedUnitId}
         onClose={() => {}} 
         role={role}
+        activeTab={activeTab}
       />
     </div>
   );

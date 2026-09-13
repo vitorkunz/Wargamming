@@ -5,17 +5,52 @@ import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import TeamAssignment from './TeamAssignment';
 import UnitCreation from './UnitCreation';
+import HazardCreation from './HazardCreation';
+import PoiCreation from './PoiCreation';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
+import PoiPanel from './PoiPanel';
+import HazardPanel from './HazardPanel';
+import { MapPOI, BattleHazard } from './MapGrid';
 
 export default function ModeratorDashboard() {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
   const [layers, setLayers] = useState<LayerVisibility>({
-    units: true
+    units: true,
+    pois: true,
+    hazards: true
   });
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
+  const [selectedHazard, setSelectedHazard] = useState<BattleHazard | null>(null);
+  
+  const [isDrawingHazard, setIsDrawingHazard] = useState(false);
+  const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
+
+  const handleDrawComplete = (points: {x:number, y:number}[]) => {
+    setPendingHazardPoints(points);
+    setIsDrawingHazard(false);
+  };
+
+  const handlePOIClick = (poi: MapPOI) => {
+    setSelectedPoi(poi);
+    setSelectedUnitId(null);
+    setSelectedHazard(null);
+  };
+
+  const handleHazardClick = (hazard: BattleHazard) => {
+    setSelectedHazard(hazard);
+    setSelectedPoi(null);
+    setSelectedUnitId(null);
+  };
+
+  const handleUnitClick = (unit: Unit) => {
+    setSelectedUnitId(unit.id);
+    setSelectedPoi(null);
+    setSelectedHazard(null);
+  };
 
   const toggleLayer = (layer: keyof LayerVisibility) => {
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -45,10 +80,7 @@ export default function ModeratorDashboard() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Click -> Select Unit
-  const handleUnitClick = (unit: Unit) => {
-    setSelectedUnitId(unit.id);
-  };
+  // Removed duplicate handleUnitClick
 
   // Drag Drop -> Move any unit on the Battle Map (and take it out of reserve)
   const handleUnitDrop = async (unitId: string, x: number, y: number) => {
@@ -66,6 +98,20 @@ export default function ModeratorDashboard() {
     }
   };
 
+  const handlePoiDrop = async (poiId: string, x: number, y: number) => {
+    // We don't have pois in ModeratorDashboard state (MapGrid fetches them)
+    // but the db update will trigger the realtime subscription to re-render in MapGrid.
+    const { error } = await supabase
+      .from('Map_POIs')
+      .update({ x_coord: x, y_coord: y })
+      .eq('id', poiId);
+
+    if (error) {
+      console.error("Failed to move POI:", error);
+      alert("Failed to move POI: " + error.message);
+    }
+  };
+
   const activeUnits = units.filter(u => !u.in_reserve);
   const reserveUnits = units.filter(u => u.in_reserve);
   const selectedUnit = units.find(u => u.id === selectedUnitId) || null;
@@ -78,6 +124,8 @@ export default function ModeratorDashboard() {
         hiddenDynamicLayers={hiddenDynamicLayers}
         setHiddenDynamicLayers={setHiddenDynamicLayers}
         isModerator={true}
+        onEditPoi={handlePOIClick}
+        onEditHazard={handleHazardClick}
       />
       <main className="flex-1 p-8 overflow-auto flex flex-col items-center">
         <div className="mb-6 text-center">
@@ -87,6 +135,13 @@ export default function ModeratorDashboard() {
         
         <TeamAssignment />
         <UnitCreation />
+        <HazardCreation 
+          isDrawingHazard={isDrawingHazard}
+          setIsDrawingHazard={setIsDrawingHazard}
+          pendingHazardPoints={pendingHazardPoints}
+          setPendingHazardPoints={setPendingHazardPoints}
+        />
+        <PoiCreation />
         
         <ReservesPanel 
           units={reserveUnits} 
@@ -98,19 +153,43 @@ export default function ModeratorDashboard() {
           layers={layers}  
           hiddenDynamicLayers={hiddenDynamicLayers}
           units={activeUnits} 
+          selectedUnitId={selectedUnitId}
           onUnitClick={handleUnitClick} 
-          isDraggable={() => true} // Mod can drag anything
+          onPOIClick={handlePOIClick}
+          onHazardClick={handleHazardClick}
+          isDraggable={() => true} // Mod can drag any unit
           onUnitDrop={handleUnitDrop}
+          isPoiDraggable={() => true} // Mod can drag any POI
+          onPoiDrop={handlePoiDrop}
+          isDrawingMode={isDrawingHazard}
+          onDrawComplete={handleDrawComplete}
         />
       </main>
       
-      <UnitPanel 
-        units={units}
-        selectedUnit={selectedUnit} 
-        isModerator={true} 
-        onSelectUnit={setSelectedUnitId}
-        onClose={() => {}} 
-      />
+      {selectedHazard ? (
+        <HazardPanel 
+          selectedHazard={selectedHazard}
+          onClose={() => setSelectedHazard(null)}
+          onSelectHazard={setSelectedHazard}
+          isModerator={true}
+        />
+      ) : selectedPoi ? (
+        <PoiPanel 
+          pois={[]} 
+          selectedPoi={selectedPoi} 
+          onClose={() => setSelectedPoi(null)} 
+          onSelectPoi={() => setSelectedPoi(null)} 
+          isModerator={true} 
+        />
+      ) : (
+        <UnitPanel 
+          units={units}
+          selectedUnit={selectedUnit} 
+          isModerator={true} 
+          onSelectUnit={setSelectedUnitId}
+          onClose={() => {}} 
+        />
+      )}
     </div>
   );
 }

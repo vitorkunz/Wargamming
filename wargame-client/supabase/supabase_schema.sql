@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public."Game_State" (
 -- Create Battle_Units table
 CREATE TABLE IF NOT EXISTS public."Battle_Units" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT,
     type TEXT NOT NULL,
     owner TEXT NOT NULL,
     x_coord INTEGER NOT NULL,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public."Battle_Units" (
 -- Create Planning_Units table
 CREATE TABLE IF NOT EXISTS public."Planning_Units" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT,
     type TEXT NOT NULL,
     owner TEXT NOT NULL,
     x_coord INTEGER NOT NULL,
@@ -73,3 +75,33 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Create Map_POIs table
+CREATE TABLE IF NOT EXISTS public."Map_POIs" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    x_coord INTEGER NOT NULL,
+    y_coord INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'operational',
+    notes TEXT,
+    is_visible_to_enemy BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create Battle_Hazards table
+CREATE TABLE IF NOT EXISTS public."Battle_Hazards" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hazard_type TEXT NOT NULL,
+    label TEXT,
+    created_by TEXT NOT NULL,
+    coordinates JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    visible_to_teams TEXT[] NOT NULL DEFAULT ARRAY['Moderator'],
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public."Map_POIs" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."Battle_Hazards" ENABLE ROW LEVEL SECURITY;

@@ -4,10 +4,11 @@ import mapConfig from '../data/mapConfig.json';
 import { LayerVisibility } from './Sidebar';
 import { supabase } from '@/lib/supabaseClient';
 import { MapLayer } from './LayerManager';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, useTransformEffect } from 'react-zoom-pan-pinch';
 
 export interface Unit {
   id: string;
+  name?: string;
   type: string;
   owner: string;
   x_coord: number;
@@ -17,28 +18,80 @@ export interface Unit {
   in_reserve?: boolean;
 }
 
+export interface MapPOI {
+  id: string;
+  name: string;
+  type: string;
+  owner: string;
+  x_coord: number;
+  y_coord: number;
+  status: string;
+  is_visible_to_enemy: boolean;
+  notes?: string;
+}
+
+export interface BattleHazard {
+  id: string;
+  hazard_type: string;
+  label?: string;
+  created_by: string;
+  coordinates: any;
+  status: string;
+  visible_to_teams: string[];
+  notes?: string;
+}
+
 interface MapGridProps {
   layers: LayerVisibility;
   hiddenDynamicLayers?: string[];
   units: Unit[];
+  selectedUnitId?: string | null;
   onGridClick?: (x: number, y: number) => void;
   onUnitClick?: (unit: Unit) => void;
+  onPOIClick?: (poi: MapPOI) => void;
+  onHazardClick?: (hazard: BattleHazard) => void;
   isDraggable?: (unit: Unit) => boolean;
   onUnitDrop?: (unitId: string, x: number, y: number) => void;
+  isPoiDraggable?: (poi: MapPOI) => boolean;
+  onPoiDrop?: (poiId: string, x: number, y: number) => void;
+  isDrawingMode?: boolean;
+  onDrawComplete?: (points: {x: number, y: number}[]) => void;
 }
 
 const CELL_SIZE = 40;
 
+const ScaleUpdater = () => {
+  useTransformEffect(({ state }) => {
+    const root = document.getElementById('map-grid-root');
+    if (root) {
+      const scale = state.scale > 1 ? 1 / state.scale : 1;
+      root.style.setProperty('--unit-inverse-scale', scale.toString());
+    }
+  });
+  return null;
+};
+
 export default function MapGrid({ 
   layers,
   hiddenDynamicLayers = [],
-  units, 
+  units,
+  selectedUnitId,
   onGridClick, 
   onUnitClick,
+  onPOIClick,
+  onHazardClick,
   isDraggable,
-  onUnitDrop
+  onUnitDrop,
+  isPoiDraggable,
+  onPoiDrop,
+  isDrawingMode,
+  onDrawComplete
 }: MapGridProps) {
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
+  const [pois, setPois] = useState<MapPOI[]>([]);
+  const [hazards, setHazards] = useState<BattleHazard[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
   
   const { width, height } = mapConfig.gridSize;
   const boardWidth = width * CELL_SIZE;
@@ -49,22 +102,55 @@ export default function MapGrid({
       const { data } = await supabase.from('Map_Layers').select('*');
       if (data) setDynamicLayers(data as MapLayer[]);
     };
+    const fetchPOIs = async () => {
+      const { data } = await supabase.from('Map_POIs').select('*');
+      if (data) setPois(data as MapPOI[]);
+    };
+    const fetchHazards = async () => {
+      const { data } = await supabase.from('Battle_Hazards').select('*');
+      if (data) setHazards(data as BattleHazard[]);
+    };
 
     fetchLayers();
+    fetchPOIs();
+    fetchHazards();
 
-    const channel = supabase.channel('mapgrid-layers')
+    const layerChannel = supabase.channel('mapgrid-layers')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Map_Layers' }, () => {
         fetchLayers();
-      })
-      .subscribe();
+      }).subscribe();
+      
+    const poiChannel = supabase.channel('mapgrid-pois')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Map_POIs' }, () => {
+        fetchPOIs();
+      }).subscribe();
+
+    const hazardChannel = supabase.channel('mapgrid-hazards')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Battle_Hazards' }, () => {
+        fetchHazards();
+      }).subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(layerChannel);
+      supabase.removeChannel(poiChannel);
+      supabase.removeChannel(hazardChannel);
     };
   }, []);
 
+  useEffect(() => {
+    if (!isDrawingMode) {
+      setCurrentPath([]);
+      setIsCapturing(false);
+    }
+  }, [isDrawingMode]);
+
   const handleDragStart = (e: React.DragEvent, unit: Unit) => {
-    e.dataTransfer.setData('text/plain', unit.id);
+    e.dataTransfer.setData('text/plain', `unit:${unit.id}`);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handlePoiDragStart = (e: React.DragEvent, poi: MapPOI) => {
+    e.dataTransfer.setData('text/plain', `poi:${poi.id}`);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -77,9 +163,8 @@ export default function MapGrid({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const unitId = e.dataTransfer.getData('text/plain');
-    
-    if (!unitId || !onUnitDrop) return;
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = boardWidth / rect.width;
@@ -89,12 +174,18 @@ export default function MapGrid({
     const yPixel = Math.round((e.clientY - rect.top) * scaleY - (CELL_SIZE / 2));
 
     if (xPixel >= -CELL_SIZE && xPixel <= boardWidth && yPixel >= -CELL_SIZE && yPixel <= boardHeight) {
-      onUnitDrop(unitId, xPixel, yPixel);
+      if (data.startsWith('poi:')) {
+        const poiId = data.replace('poi:', '');
+        if (onPoiDrop) onPoiDrop(poiId, xPixel, yPixel);
+      } else {
+        const unitId = data.startsWith('unit:') ? data.replace('unit:', '') : data;
+        if (onUnitDrop) onUnitDrop(unitId, xPixel, yPixel);
+      }
     }
   };
 
   const handleGridClick = (e: React.MouseEvent) => {
-    if (!onGridClick) return;
+    if (!onGridClick || isDrawingMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = boardWidth / rect.width;
     const scaleY = boardHeight / rect.height;
@@ -104,6 +195,36 @@ export default function MapGrid({
     
     if (xPixel >= -CELL_SIZE && xPixel <= boardWidth && yPixel >= -CELL_SIZE && yPixel <= boardHeight) {
       onGridClick(xPixel, yPixel);
+    }
+  };
+
+  const getEventCoordinates = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scaleX = boardWidth / rect.width;
+    const scaleY = boardHeight / rect.height;
+    return {
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top) * scaleY)
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isDrawingMode) return;
+    setIsCapturing(true);
+    setCurrentPath([getEventCoordinates(e)]);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDrawingMode || !isCapturing) return;
+    const coords = getEventCoordinates(e);
+    setCurrentPath(prev => [...prev, coords]);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isDrawingMode || !isCapturing) return;
+    setIsCapturing(false);
+    if (onDrawComplete && currentPath.length > 2) {
+      onDrawComplete(currentPath);
     }
   };
 
@@ -118,15 +239,23 @@ export default function MapGrid({
         minScale={0.1}
         maxScale={3}
         centerOnInit={true}
-        panning={{ excluded: ['draggable-unit'] }}
+        panning={{ disabled: isDrawingMode, excluded: ['draggable-unit'] }}
       >
+        <ScaleUpdater />
         <TransformComponent wrapperStyle={{ width: '100%', height: '75vh', borderRadius: '4px' }}>
           <div 
-            className={`relative bg-slate-300 border border-slate-400 ${onGridClick ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
+            id="map-grid-root"
+            className={`relative bg-slate-300 border border-slate-400 ${
+              isDrawingMode ? 'cursor-crosshair' : onGridClick ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
+            }`}
             style={{ width: boardWidth, height: boardHeight }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onClick={handleGridClick}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
           >
             
             {/* Dynamic Map Layers */}
@@ -151,11 +280,127 @@ export default function MapGrid({
               }}
             />
 
+            {/* Hazards SVG Canvas */}
+            {layers.hazards && (
+              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9001, width: boardWidth, height: boardHeight }}>
+                <defs>
+                  <pattern id="pattern-minefield" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 0,10 L 10,0 M -1,1 L 1,-1 M 9,11 L 11,9" stroke="#ef4444" strokeWidth="2" opacity="0.6"/>
+                  </pattern>
+                  <pattern id="pattern-blockade" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <path d="M 0,0 L 0,12" stroke="#a855f7" strokeWidth="4" opacity="0.5"/>
+                  </pattern>
+                </defs>
+
+                {hazards.map(hazard => {
+                  const points = Array.isArray(hazard.coordinates) ? hazard.coordinates : [];
+                  if (points.length < 3) return null;
+                  
+                  // Handle legacy grid coords vs new pixel coords.
+                  const isLegacy = points.every(p => p.x <= mapConfig.gridSize.width && p.y <= mapConfig.gridSize.height);
+                  const scaledPoints = points.map(p => isLegacy ? { x: p.x * CELL_SIZE, y: p.y * CELL_SIZE } : p);
+                  
+                  const pointsString = scaledPoints.map(p => `${p.x},${p.y}`).join(' ');
+                  
+                  let fill = "rgba(0,0,0,0.2)";
+                  let stroke = "rgba(0,0,0,0.5)";
+                  
+                  if (hazard.hazard_type === 'minefield') {
+                    fill = "url(#pattern-minefield)";
+                    stroke = "#ef4444";
+                  } else if (hazard.hazard_type === 'flooded_zone') {
+                    fill = "rgba(59, 130, 246, 0.4)";
+                    stroke = "#3b82f6";
+                  } else if (hazard.hazard_type === 'naval_blockade') {
+                    fill = "url(#pattern-blockade)";
+                    stroke = "#a855f7";
+                  }
+
+                  return (
+                    <polygon 
+                      key={hazard.id}
+                      points={pointsString}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth="3"
+                      strokeLinejoin="round"
+                      className="pointer-events-auto cursor-pointer transition-opacity hover:opacity-80"
+                      onClick={(e) => {
+                        if (isDrawingMode) return;
+                        e.stopPropagation();
+                        if (onHazardClick) onHazardClick(hazard);
+                      }}
+                    >
+                      <title>{`${hazard.label || hazard.hazard_type} (${hazard.status}) - Click to inspect/edit`}</title>
+                    </polygon>
+                  );
+                })}
+              </svg>
+            )}
+
+            {/* Live Drawing Path (Always visible when drawing) */}
+            {isDrawingMode && currentPath.length > 0 && (
+              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9005, width: boardWidth, height: boardHeight }}>
+                <polyline 
+                  points={currentPath.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill="rgba(234, 88, 12, 0.3)"
+                  stroke="#ea580c"
+                  strokeWidth="3"
+                  strokeDasharray="5,5"
+                />
+              </svg>
+            )}
+
+            {/* POIs */}
+            {layers.pois && (
+              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9002 }}>
+                {pois.map(poi => {
+                  const canDrag = isPoiDraggable ? isPoiDraggable(poi) : false;
+                  return (
+                  <div
+                    key={poi.id}
+                    draggable={canDrag}
+                    onDragStart={(e) => handlePoiDragStart(e, poi)}
+                    onDragEnd={handleDragEnd}
+                    className={`absolute flex flex-col items-center justify-center pointer-events-auto group ${canDrag ? 'cursor-grab active:cursor-grabbing draggable-unit' : 'cursor-pointer'}`}
+                    style={{
+                      left: poi.x_coord,
+                      top: poi.y_coord,
+                      width: CELL_SIZE,
+                      height: CELL_SIZE,
+                      transform: 'scale(var(--unit-inverse-scale, 1))'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onPOIClick) onPOIClick(poi);
+                    }}
+                    title={`${poi.name} (${poi.status})`}
+                  >
+                    <div className={`w-8 h-8 rounded border shadow-lg flex items-center justify-center text-xs font-bold
+                      ${poi.owner === 'Player A' ? 'bg-red-900 border-red-400 text-red-200' : 
+                        poi.owner === 'Player B' ? 'bg-yellow-900 border-yellow-400 text-yellow-200' : 
+                        'bg-slate-700 border-slate-400 text-slate-200'}
+                      ${poi.status === 'damaged' ? 'border-dashed border-orange-500 opacity-80' : ''}
+                      ${poi.status === 'destroyed' ? 'line-through opacity-50 bg-black' : ''}
+                      ${poi.status === 'under_construction' ? 'animate-pulse border-dotted' : ''}
+                    `}>
+                      {poi.type[0].toUpperCase()}
+                    </div>
+                    <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-70 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                      {poi.name}
+                    </span>
+                  </div>
+                  )
+                })}
+              </div>
+            )}
+
             {/* Units */}
             {layers.units && (
               <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9003 }}>
                 {units.map((unit) => {
                   const canDrag = isDraggable ? isDraggable(unit) : false;
+                  const isSelected = selectedUnitId === unit.id;
                   
                   return (
                     <div 
@@ -163,16 +408,18 @@ export default function MapGrid({
                       draggable={canDrag}
                       onDragStart={(e) => handleDragStart(e, unit)}
                       onDragEnd={handleDragEnd}
-                      className={`draggable-unit absolute flex items-center justify-center pointer-events-auto opacity-100
+                      className={`draggable-unit absolute flex flex-col items-center justify-center pointer-events-auto opacity-100 group
                         ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}
                       `}
                       style={{ 
                         left: unit.x_coord, 
                         top: unit.y_coord, 
                         width: CELL_SIZE, 
-                        height: CELL_SIZE
+                        height: CELL_SIZE,
+                        transform: 'scale(var(--unit-inverse-scale, 1))',
+                        zIndex: isSelected ? 9999 : undefined
                       }}
-                      title={`${unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy ? '- Visible to Enemy' : ''}`}
+                      title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy ? '- Visible to Enemy' : ''}`}
                       onClick={(e) => {
                          // Prevent triggering grid click when clicking a unit
                          e.stopPropagation();
@@ -182,9 +429,18 @@ export default function MapGrid({
                       <div className={`w-7 h-7 rounded-full border-2 shadow-lg flex items-center justify-center ${
                         unit.owner === 'Player A' ? 'bg-red-600 border-white' : 
                         unit.owner === 'Player B' ? 'bg-yellow-500 border-white' : 'bg-purple-500 border-white'
-                      } ${unit.is_visible_to_enemy ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}>
+                      } ${
+                        isSelected
+                          ? 'ring-4 ring-cyan-400 ring-offset-1 animate-pulse'
+                          : unit.is_visible_to_enemy 
+                            ? 'ring-2 ring-red-500 ring-offset-1' 
+                            : ''
+                      }`}>
                         <span className="text-[10px] font-bold text-white">{unit.type[0]}</span>
                       </div>
+                      <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-75 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                        {unit.name || unit.type}
+                      </span>
                     </div>
                   )
                 })}
