@@ -30,12 +30,80 @@ export default function ModeratorDashboard() {
   const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
   const [selectedHazard, setSelectedHazard] = useState<BattleHazard | null>(null);
   
-  const [isDrawingHazard, setIsDrawingHazard] = useState(false);
-  const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
+  const [clipboard, setClipboard] = useState<{ type: 'unit' | 'poi' | 'hazard', data: any } | null>(null);
 
   const unitsTable = activeView === 'draft' ? 'Moderator_Units' : 'Battle_Units';
   const poisTable = activeView === 'draft' ? 'Moderator_POIs' : 'Map_POIs';
   const hazardsTable = activeView === 'draft' ? 'Moderator_Hazards' : 'Battle_Hazards';
+
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (activeView !== 'draft') return;
+      
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedUnitId) {
+          if (confirm('Delete unit?')) {
+            await supabase.from(unitsTable).delete().eq('id', selectedUnitId);
+            setSelectedUnitId(null);
+          }
+        } else if (selectedPoi) {
+          if (confirm('Delete POI?')) {
+            await supabase.from(poisTable).delete().eq('id', selectedPoi.id);
+            setSelectedPoi(null);
+          }
+        } else if (selectedHazard) {
+          if (confirm('Delete Hazard?')) {
+            await supabase.from(hazardsTable).delete().eq('id', selectedHazard.id);
+            setSelectedHazard(null);
+          }
+        }
+      }
+
+      if (e.ctrlKey && e.key === 'c') {
+        if (selectedUnitId) {
+          const unit = units.find(u => u.id === selectedUnitId);
+          if (unit) setClipboard({ type: 'unit', data: unit });
+        } else if (selectedPoi) {
+          setClipboard({ type: 'poi', data: selectedPoi });
+        } else if (selectedHazard) {
+          setClipboard({ type: 'hazard', data: selectedHazard });
+        }
+      }
+
+      if (e.ctrlKey && e.key === 'v' && clipboard) {
+        if (clipboard.type === 'unit') {
+          const u = clipboard.data as Unit;
+          await supabase.from(unitsTable).insert({
+            ...u, id: undefined, created_at: undefined,
+            x_coord: u.x_coord + 10, y_coord: u.y_coord + 10
+          });
+        } else if (clipboard.type === 'poi') {
+          const p = clipboard.data as MapPOI;
+          await supabase.from(poisTable).insert({
+            ...p, id: undefined, created_at: undefined,
+            x_coord: p.x_coord + 10, y_coord: p.y_coord + 10
+          });
+        } else if (clipboard.type === 'hazard') {
+          const h = clipboard.data as BattleHazard;
+          // Offset polygon coordinates
+          const offsetCoords = (h.coordinates as any[]).map(c => ({ x: c.x + 10, y: c.y + 10 }));
+          await supabase.from(hazardsTable).insert({
+            ...h, id: undefined, created_at: undefined,
+            coordinates: offsetCoords
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeView, selectedUnitId, selectedPoi, selectedHazard, clipboard, units, unitsTable, poisTable, hazardsTable]);
+
+  const [isDrawingHazard, setIsDrawingHazard] = useState(false);
+  const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
 
   const handleDrawComplete = (points: {x:number, y:number}[]) => {
     setPendingHazardPoints(points);
