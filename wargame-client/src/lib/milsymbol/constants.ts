@@ -24,8 +24,9 @@ export interface UnitTypeDefinition {
 export const UNIT_TYPES = {
   // Ground Combat
   infantry: { code: 'UCI---', dimension: 'G', category: 'Ground Combat', label: 'Infantry' },
-  mechanized: { code: 'UCM---', dimension: 'G', category: 'Ground Combat', label: 'Mechanized Infantry' },
+  mechanized: { code: 'UCIZ--', dimension: 'G', category: 'Ground Combat', label: 'Mechanized Infantry' },
   armor: { code: 'UCA---', dimension: 'G', category: 'Ground Combat', label: 'Armor / Tank' },
+  antiTank: { code: 'UCAA--', dimension: 'G', category: 'Ground Combat', label: 'Anti-Tank / Anti-Armor' },
   recon: { code: 'UCR---', dimension: 'G', category: 'Ground Combat', label: 'Reconnaissance' },
   artillery: { code: 'UCF---', dimension: 'G', category: 'Ground Combat', label: 'Field Artillery' },
   antiAir: { code: 'UCD---', dimension: 'G', category: 'Ground Combat', label: 'Air Defense' },
@@ -37,13 +38,13 @@ export const UNIT_TYPES = {
   maintenance: { code: 'USX---', dimension: 'G', category: 'Combat Support', label: 'Maintenance' },
   transportation: { code: 'UST---', dimension: 'G', category: 'Combat Support', label: 'Transportation' },
   signal: { code: 'UUS---', dimension: 'G', category: 'Combat Support', label: 'Signal / Communications' },
-  militaryPolice: { code: 'UUP---', dimension: 'G', category: 'Combat Support', label: 'Military Police (MP)' },
+  militaryPolice: { code: 'UUL---', dimension: 'G', category: 'Combat Support', label: 'Military Police (MP)' },
 
   // Special & Irregular
   specialForces: { code: 'UCS---', dimension: 'G', category: 'Special & Irregular', label: 'Special Forces' },
   intel: { code: 'UUM---', dimension: 'G', category: 'Special & Irregular', label: 'Military Intelligence' },
   electronicWarfare: { code: 'UUE---', dimension: 'G', category: 'Special & Irregular', label: 'Electronic Warfare' },
-  militia: { code: 'UCIZ--', dimension: 'G', category: 'Special & Irregular', label: 'Militia / Irregular' },
+  militia: { code: 'UC----', dimension: 'G', category: 'Special & Irregular', label: 'Militia / Irregular' },
 
   // Air Units
   fighter: { code: 'MF----', dimension: 'A', category: 'Air Units', label: 'Fighter / Fixed-Wing' },

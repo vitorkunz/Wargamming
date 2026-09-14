@@ -67,7 +67,9 @@ export function getSidcForUnit(unit: { type: string, owner?: string }): string {
     selectedDef = UNIT_TYPES.medical;
   }
   // Ground Combat
-  else if (lowerType.includes('tank') || lowerType.includes('armor')) {
+  else if (lowerType.includes('anti-tank') || lowerType.includes('anti tank') || lowerType.includes('anti-armor') || lowerType.includes('anti armor') || lowerType.includes('atgm')) {
+    selectedDef = UNIT_TYPES.antiTank;
+  } else if (lowerType.includes('tank') || lowerType.includes('armor')) {
     selectedDef = UNIT_TYPES.armor;
   } else if (lowerType.includes('mech')) {
     selectedDef = UNIT_TYPES.mechanized;
