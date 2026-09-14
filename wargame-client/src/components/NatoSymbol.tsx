@@ -11,7 +11,16 @@ export function NatoSymbol({ sidc, size = 64, className = '' }: NatoSymbolProps)
   // Memoize the generated symbol so we don't recalculate on every single render
   const symbolUrl = useMemo(() => {
     try {
-      const symbol = new ms.Symbol(sidc, { size });
+      // Air (A), Sea Surface (S), and Subsurface (U) frame shapes 
+      // are visually much larger than ground frames in milsymbol. 
+      // We scale them down to match visual weight.
+      const dim = sidc.length >= 3 ? sidc[2].toUpperCase() : '';
+      let finalSize = size;
+      if (dim === 'A' || dim === 'S' || dim === 'U') {
+        finalSize = Math.round(size * 0.7);
+      }
+
+      const symbol = new ms.Symbol(sidc, { size: finalSize });
       return symbol.toDataURL();
     } catch (e) {
       console.error("Failed to generate NATO symbol for SIDC:", sidc, e);
@@ -27,8 +36,6 @@ export function NatoSymbol({ sidc, size = 64, className = '' }: NatoSymbolProps)
     <img 
       src={symbolUrl} 
       alt={`NATO Symbol: ${sidc}`} 
-      width={size} 
-      height={size}
       className={className} 
     />
   );

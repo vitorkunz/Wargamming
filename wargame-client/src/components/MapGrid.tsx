@@ -566,7 +566,7 @@ export default function MapGrid({
                             ? 'ring-2 ring-red-500 ring-offset-1' 
                             : ''
                       }`}>
-                        <NatoSymbol sidc={getSidcForUnit(unit)} size={40} />
+                        <NatoSymbol sidc={getSidcForUnit(unit)} size={32} />
                       </div>
                       <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-75 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
                         {unit.name || getHumanReadableFromSidc(unit.type)}
