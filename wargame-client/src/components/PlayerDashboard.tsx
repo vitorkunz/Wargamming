@@ -134,6 +134,8 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
         toggleLayer={toggleLayer}
         hiddenDynamicLayers={hiddenDynamicLayers}
         setHiddenDynamicLayers={setHiddenDynamicLayers}
+        role={role}
+        onEditPoi={handlePoiClick}
       />
       <main className="flex-1 p-8 overflow-auto flex flex-col items-center">
         
