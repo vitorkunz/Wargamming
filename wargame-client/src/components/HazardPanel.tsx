@@ -79,6 +79,8 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
     { value: 'chemical_zone', label: 'Chemical / Gas Zone' },
     { value: 'artillery_barrage', label: 'Artillery Barrage Zone' },
     { value: 'smoke_screen', label: 'Smoke Screen' },
+    { value: 'dmz', label: 'DMZ' },
+    { value: 'trenches', label: 'Trenches' },
   ];
 
   return (

@@ -85,11 +85,13 @@ export default function HazardCreation({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Hazard Type</label>
-            <select className="border border-slate-300 rounded p-2 text-slate-700 w-40" value={hazardType} onChange={(e) => setHazardType(e.target.value)}>
-              <option value="minefield">Minefield</option>
-              <option value="flooded_zone">Flooded Zone</option>
-              <option value="naval_blockade">Naval Blockade</option>
-            </select>
+              <select className="border border-slate-300 rounded p-2 text-slate-700 w-40" value={hazardType} onChange={(e) => setHazardType(e.target.value)}>
+                <option value="minefield">Minefield</option>
+                <option value="flooded_zone">Flooded Zone</option>
+                <option value="naval_blockade">Naval Blockade</option>
+                <option value="dmz">DMZ</option>
+                <option value="trenches">Trenches</option>
+              </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Label</label>

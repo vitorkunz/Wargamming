@@ -11,9 +11,10 @@ interface PoiPanelProps {
   onSelectPoi: (poiId: string | null) => void;
   isModerator: boolean;
   targetTable?: string;
+  role?: string;
 }
 
-export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isModerator, targetTable = 'Map_POIs' }: PoiPanelProps) {
+export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isModerator, targetTable = 'Map_POIs', role }: PoiPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [currentPoi, setCurrentPoi] = useState<MapPOI | null>(selectedPoi);
 
@@ -37,8 +38,17 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
     );
   }
 
+  const canEdit = isModerator || (role && currentPoi && currentPoi.owner === role);
+
   const handleUpdate = async (field: keyof MapPOI, value: any) => {
-    if (!currentPoi || !isModerator) return;
+    // If it's visible_to_enemy toggle, we allow it if canEdit is true
+    if (!currentPoi || !canEdit) return;
+    
+    // For other fields, maybe we still restrict to moderator?
+    // User requested "players and moderator should be able to hide and unhide specific POIs"
+    // Let's allow players to edit their own POIs completely, or at least the visibility.
+    if (!isModerator && field !== 'is_visible_to_enemy') return;
+
     setCurrentPoi(prev => prev ? { ...prev, [field]: value } : null);
     const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentPoi.id);
     if (error) {

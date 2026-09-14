@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import MapGrid, { Unit } from './MapGrid';
+import MapGrid, { Unit, MapPOI } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import UnitCreation from './UnitCreation';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
+import PoiPanel from './PoiPanel';
 
 interface PlayerDashboardProps {
   role: 'Player A' | 'Player B';
@@ -23,6 +24,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   const [planningUnits, setPlanningUnits] = useState<Unit[]>([]);
   const [battleUnits, setBattleUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
 
   const toggleLayer = (layer: keyof LayerVisibility) => {
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -68,6 +70,12 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
 
   const handleUnitClick = (unit: Unit) => {
     setSelectedUnitId(unit.id);
+    setSelectedPoi(null);
+  };
+
+  const handlePoiClick = (poi: MapPOI) => {
+    setSelectedPoi(poi);
+    setSelectedUnitId(null);
   };
 
   const handleGridClick = async (x: number, y: number) => {
@@ -175,18 +183,31 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           isDraggable={checkIsDraggable}
           onUnitDrop={handleUnitDrop}
           onUnitClick={handleUnitClick}
+          onPOIClick={handlePoiClick}
         />
       </main>
       
-      <UnitPanel 
-        units={currentUnits}
-        selectedUnit={selectedUnit} 
-        isModerator={false} 
-        onSelectUnit={setSelectedUnitId}
-        onClose={() => {}} 
-        role={role}
-        activeTab={activeTab}
-      />
+      {selectedPoi ? (
+        <PoiPanel 
+          pois={[]} 
+          selectedPoi={selectedPoi} 
+          onClose={() => setSelectedPoi(null)} 
+          onSelectPoi={setSelectedPoi}
+          isModerator={false} 
+          targetTable="Map_POIs"
+          role={role}
+        />
+      ) : (
+        <UnitPanel 
+          units={currentUnits}
+          selectedUnit={selectedUnit} 
+          isModerator={false} 
+          onSelectUnit={setSelectedUnitId}
+          onClose={() => {}} 
+          role={role}
+          activeTab={activeTab}
+        />
+      )}
     </div>
   );
 }
