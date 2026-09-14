@@ -47,6 +47,8 @@ export interface BattleHazard {
 interface MapGridProps {
   layers: LayerVisibility;
   hiddenDynamicLayers?: string[];
+  hiddenPois?: string[];
+  hiddenHazards?: string[];
   units: Unit[];
   selectedUnitId?: string | null;
   poisTable?: string;
@@ -155,6 +157,8 @@ function MapControls({
 export default function MapGrid({ 
   layers,
   hiddenDynamicLayers = [],
+  hiddenPois = [],
+  hiddenHazards = [],
   units,
   selectedUnitId,
   poisTable = 'Map_POIs',
@@ -428,7 +432,7 @@ export default function MapGrid({
                   </pattern>
                 </defs>
 
-                {hazards.map(hazard => {
+                {hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
                   const points = Array.isArray(hazard.coordinates) ? hazard.coordinates : [];
                   if (points.length < 3) return null;
                   
@@ -487,11 +491,11 @@ export default function MapGrid({
               </svg>
             )}
 
-            {/* POIs */}
-            {layers.pois && (
-              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9002 }}>
-                {pois.map(poi => {
-                  const canDrag = isPoiDraggable ? isPoiDraggable(poi) : false;
+              {/* POIs */}
+              {layers.pois && (
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9002 }}>
+                  {pois.filter(poi => !hiddenPois.includes(poi.id)).map(poi => {
+                    const canDrag = isPoiDraggable ? isPoiDraggable(poi) : false;
                   return (
                   <div
                     key={poi.id}

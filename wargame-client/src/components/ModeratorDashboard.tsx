@@ -15,6 +15,8 @@ import { MapPOI, BattleHazard } from './MapGrid';
 
 export default function ModeratorDashboard() {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
+  const [hiddenPois, setHiddenPois] = useState<string[]>([]);
+  const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
   const [layers, setLayers] = useState<LayerVisibility>({
     units: true,
     pois: true,
@@ -147,6 +149,10 @@ export default function ModeratorDashboard() {
         toggleLayer={toggleLayer} 
         hiddenDynamicLayers={hiddenDynamicLayers}
         setHiddenDynamicLayers={setHiddenDynamicLayers}
+        hiddenPois={hiddenPois}
+        setHiddenPois={setHiddenPois}
+        hiddenHazards={hiddenHazards}
+        setHiddenHazards={setHiddenHazards}
         isModerator={true}
         onEditPoi={handlePOIClick}
         onEditHazard={handleHazardClick}
@@ -211,6 +217,8 @@ export default function ModeratorDashboard() {
         <MapGrid 
           layers={layers}  
           hiddenDynamicLayers={hiddenDynamicLayers}
+          hiddenPois={hiddenPois}
+          hiddenHazards={hiddenHazards}
           units={activeUnits} 
           selectedUnitId={selectedUnitId}
           poisTable={poisTable}

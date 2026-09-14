@@ -14,6 +14,8 @@ interface PlayerDashboardProps {
 
 export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
+  const [hiddenPois, setHiddenPois] = useState<string[]>([]);
+  const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'planning' | 'battle'>('planning');
   const [layers, setLayers] = useState<LayerVisibility>({
     units: true,
@@ -134,6 +136,10 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
         toggleLayer={toggleLayer}
         hiddenDynamicLayers={hiddenDynamicLayers}
         setHiddenDynamicLayers={setHiddenDynamicLayers}
+        hiddenPois={hiddenPois}
+        setHiddenPois={setHiddenPois}
+        hiddenHazards={hiddenHazards}
+        setHiddenHazards={setHiddenHazards}
         role={role}
         onEditPoi={handlePoiClick}
       />
@@ -179,6 +185,8 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
         <MapGrid 
           layers={layers}
           hiddenDynamicLayers={hiddenDynamicLayers} 
+          hiddenPois={hiddenPois}
+          hiddenHazards={hiddenHazards}
           units={activeUnits} 
           selectedUnitId={selectedUnitId}
           onGridClick={activeTab === 'planning' ? handleGridClick : undefined}

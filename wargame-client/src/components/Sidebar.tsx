@@ -17,13 +17,23 @@ interface SidebarProps {
   toggleLayer: (layer: keyof LayerVisibility) => void;
   hiddenDynamicLayers: string[];
   setHiddenDynamicLayers: (ids: string[]) => void;
+  hiddenPois: string[];
+  setHiddenPois: (ids: string[]) => void;
+  hiddenHazards: string[];
+  setHiddenHazards: (ids: string[]) => void;
   isModerator?: boolean;
   onEditPoi?: (poi: MapPOI) => void;
   onEditHazard?: (hazard: BattleHazard) => void;
   role?: string;
 }
 
-export default function Sidebar({ layers, toggleLayer, hiddenDynamicLayers, setHiddenDynamicLayers, isModerator, onEditPoi, onEditHazard, role }: SidebarProps) {
+export default function Sidebar({ 
+  layers, toggleLayer, 
+  hiddenDynamicLayers, setHiddenDynamicLayers, 
+  hiddenPois, setHiddenPois,
+  hiddenHazards, setHiddenHazards,
+  isModerator, onEditPoi, onEditHazard, role 
+}: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
 
@@ -80,6 +90,22 @@ export default function Sidebar({ layers, toggleLayer, hiddenDynamicLayers, setH
       setHiddenDynamicLayers(hiddenDynamicLayers.filter(l => l !== id));
     } else {
       setHiddenDynamicLayers([...hiddenDynamicLayers, id]);
+    }
+  };
+
+  const toggleLocalPoi = (id: string) => {
+    if (hiddenPois.includes(id)) {
+      setHiddenPois(hiddenPois.filter(p => p !== id));
+    } else {
+      setHiddenPois([...hiddenPois, id]);
+    }
+  };
+
+  const toggleLocalHazard = (id: string) => {
+    if (hiddenHazards.includes(id)) {
+      setHiddenHazards(hiddenHazards.filter(h => h !== id));
+    } else {
+      setHiddenHazards([...hiddenHazards, id]);
     }
   };
 
@@ -149,38 +175,6 @@ export default function Sidebar({ layers, toggleLayer, hiddenDynamicLayers, setH
                 toggleLocalDynamic={toggleDynamic}
              />
 
-             {/* Moderator Hazards List */}
-             <div>
-               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Manage Hazards</h3>
-               {hazards.length === 0 && <p className="text-xs text-slate-500">No hazards active.</p>}
-               <ul className="space-y-2">
-                 {hazards.map(hazard => (
-                   <li key={hazard.id} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
-                     <div className="flex flex-col truncate flex-1">
-                       <span className="font-medium">{hazard.label || hazard.hazard_type}</span>
-                       <span className="text-[10px] text-slate-400">Vis: {hazard.visible_to_teams.join(', ')}</span>
-                     </div>
-                     <div className="flex gap-2 ml-2 items-center">
-                       {onEditHazard && (
-                         <button onClick={() => onEditHazard(hazard)} className="text-orange-400 hover:text-orange-300" title="Edit Hazard">
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                           </svg>
-                         </button>
-                       )}
-                       <button onClick={async () => {
-                         if (confirm('Delete Hazard?')) await supabase.from('Battle_Hazards').delete().eq('id', hazard.id);
-                       }} className="text-red-400 hover:text-red-300" title="Delete Hazard">
-                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                         </svg>
-                       </button>
-                     </div>
-                   </li>
-                 ))}
-               </ul>
-             </div>
-
           </div>
         ) : (
           dynamicLayers.length > 0 && (
@@ -213,16 +207,12 @@ export default function Sidebar({ layers, toggleLayer, hiddenDynamicLayers, setH
                   <li key={poi.id} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
                     <span className="truncate flex-1 font-medium">{poi.name}</span>
                     <div className="flex gap-2 ml-2 items-center">
-                      <label className="flex items-center space-x-1 cursor-pointer mr-1" title="Visible to Enemy">
+                      <label className="flex items-center space-x-1 cursor-pointer mr-1" title="Show Local">
                         <input 
                           type="checkbox" 
-                          checked={poi.is_visible_to_enemy} 
-                          disabled={!canEdit}
-                          onChange={async () => {
-                            if (!canEdit) return;
-                            await supabase.from('Map_POIs').update({ is_visible_to_enemy: !poi.is_visible_to_enemy }).eq('id', poi.id);
-                          }}
-                          className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-red-500 focus:ring-red-500 disabled:opacity-50"
+                          checked={!hiddenPois.includes(poi.id)} 
+                          onChange={() => toggleLocalPoi(poi.id)}
+                          className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-blue-500"
                         />
                       </label>
                       
@@ -238,6 +228,51 @@ export default function Sidebar({ layers, toggleLayer, hiddenDynamicLayers, setH
                         <button onClick={async () => {
                           if (confirm('Delete POI?')) await supabase.from('Map_POIs').delete().eq('id', poi.id);
                         }} className="text-red-400 hover:text-red-300" title="Delete POI">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          
+          {/* Hazards List (Visible to all, actions restricted) */}
+          <div className="pt-4 border-t border-slate-600">
+            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Manage Hazards</h3>
+            {hazards.length === 0 && <p className="text-xs text-slate-500">No hazards active.</p>}
+            <ul className="space-y-2">
+              {hazards.map(hazard => {
+                const canEdit = isModerator || (role && hazard.visible_to_teams.includes(role));
+                return (
+                  <li key={hazard.id} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
+                    <div className="flex flex-col truncate flex-1">
+                      <span className="font-medium">{hazard.label || hazard.hazard_type}</span>
+                      <span className="text-[10px] text-slate-400">Vis: {hazard.visible_to_teams.join(', ')}</span>
+                    </div>
+                    <div className="flex gap-2 ml-2 items-center">
+                      <label className="flex items-center space-x-1 cursor-pointer mr-1" title="Show Local">
+                        <input 
+                          type="checkbox" 
+                          checked={!hiddenHazards.includes(hazard.id)} 
+                          onChange={() => toggleLocalHazard(hazard.id)}
+                          className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-orange-500 focus:ring-orange-500"
+                        />
+                      </label>
+                      {canEdit && onEditHazard && (
+                        <button onClick={() => onEditHazard(hazard)} className="text-orange-400 hover:text-orange-300" title="Edit Hazard">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button onClick={async () => {
+                          if (confirm('Delete Hazard?')) await supabase.from('Battle_Hazards').delete().eq('id', hazard.id);
+                        }} className="text-red-400 hover:text-red-300" title="Delete Hazard">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
