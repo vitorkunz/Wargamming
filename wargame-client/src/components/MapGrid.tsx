@@ -49,6 +49,8 @@ interface MapGridProps {
   hiddenDynamicLayers?: string[];
   units: Unit[];
   selectedUnitId?: string | null;
+  poisTable?: string;
+  hazardsTable?: string;
   onGridClick?: (x: number, y: number) => void;
   onUnitClick?: (unit: Unit) => void;
   onPOIClick?: (poi: MapPOI) => void;
@@ -155,6 +157,8 @@ export default function MapGrid({
   hiddenDynamicLayers = [],
   units,
   selectedUnitId,
+  poisTable = 'Map_POIs',
+  hazardsTable = 'Battle_Hazards',
   onGridClick, 
   onUnitClick,
   onPOIClick,
@@ -220,11 +224,11 @@ export default function MapGrid({
       if (data) setDynamicLayers(data as MapLayer[]);
     };
     const fetchPOIs = async () => {
-      const { data } = await supabase.from('Map_POIs').select('*');
+      const { data } = await supabase.from(poisTable).select('*');
       if (data) setPois(data as MapPOI[]);
     };
     const fetchHazards = async () => {
-      const { data } = await supabase.from('Battle_Hazards').select('*');
+      const { data } = await supabase.from(hazardsTable).select('*');
       if (data) setHazards(data as BattleHazard[]);
     };
 
@@ -237,13 +241,13 @@ export default function MapGrid({
         fetchLayers();
       }).subscribe();
       
-    const poiChannel = supabase.channel('mapgrid-pois')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Map_POIs' }, () => {
+    const poiChannel = supabase.channel(`mapgrid-pois-${poisTable}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: poisTable }, () => {
         fetchPOIs();
       }).subscribe();
 
-    const hazardChannel = supabase.channel('mapgrid-hazards')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Battle_Hazards' }, () => {
+    const hazardChannel = supabase.channel(`mapgrid-hazards-${hazardsTable}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: hazardsTable }, () => {
         fetchHazards();
       }).subscribe();
 
@@ -252,7 +256,7 @@ export default function MapGrid({
       supabase.removeChannel(poiChannel);
       supabase.removeChannel(hazardChannel);
     };
-  }, []);
+  }, [poisTable, hazardsTable]);
 
   useEffect(() => {
     if (!isDrawingMode) {

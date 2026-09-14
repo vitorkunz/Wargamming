@@ -8,9 +8,10 @@ interface HazardPanelProps {
   onClose: () => void;
   onSelectHazard: (hazard: BattleHazard | null) => void;
   isModerator: boolean;
+  targetTable?: string;
 }
 
-export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, isModerator }: HazardPanelProps) {
+export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, isModerator, targetTable = 'Battle_Hazards' }: HazardPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [currentHazard, setCurrentHazard] = useState<BattleHazard | null>(selectedHazard);
 
@@ -37,7 +38,7 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
   const handleUpdate = async (field: keyof BattleHazard, value: any) => {
     if (!currentHazard || !isModerator) return;
     setCurrentHazard(prev => prev ? { ...prev, [field]: value } : null);
-    const { error } = await supabase.from('Battle_Hazards').update({ [field]: value }).eq('id', currentHazard.id);
+    const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentHazard.id);
     if (error) {
       alert("Failed to update hazard: " + error.message);
     }
@@ -62,7 +63,7 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
   const handleDelete = async () => {
     if (!currentHazard || !isModerator) return;
     if (window.confirm("Delete this Hazard?")) {
-      const { error } = await supabase.from('Battle_Hazards').delete().eq('id', currentHazard.id);
+      const { error } = await supabase.from(targetTable).delete().eq('id', currentHazard.id);
       if (!error) {
         onSelectHazard(null);
       } else {

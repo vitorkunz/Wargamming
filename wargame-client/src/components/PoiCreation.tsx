@@ -3,7 +3,11 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { PoiBadge } from './PoiBadge';
 
-export default function PoiCreation() {
+interface PoiCreationProps {
+  table?: string;
+}
+
+export default function PoiCreation({ table = 'Map_POIs' }: PoiCreationProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState('military_base');
   const [owner, setOwner] = useState('Neutral');
@@ -17,7 +21,7 @@ export default function PoiCreation() {
       return;
     }
     
-    const { error } = await supabase.from('Map_POIs').insert({
+    const { error } = await supabase.from(table).insert({
       name,
       type,
       owner,

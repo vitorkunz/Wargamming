@@ -10,9 +10,10 @@ interface PoiPanelProps {
   onClose: () => void;
   onSelectPoi: (poiId: string | null) => void;
   isModerator: boolean;
+  targetTable?: string;
 }
 
-export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isModerator }: PoiPanelProps) {
+export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isModerator, targetTable = 'Map_POIs' }: PoiPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [currentPoi, setCurrentPoi] = useState<MapPOI | null>(selectedPoi);
 
@@ -39,7 +40,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
   const handleUpdate = async (field: keyof MapPOI, value: any) => {
     if (!currentPoi || !isModerator) return;
     setCurrentPoi(prev => prev ? { ...prev, [field]: value } : null);
-    const { error } = await supabase.from('Map_POIs').update({ [field]: value }).eq('id', currentPoi.id);
+    const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentPoi.id);
     if (error) {
       alert("Failed to update POI: " + error.message);
     }
@@ -48,7 +49,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
   const handleDelete = async () => {
     if (!currentPoi || !isModerator) return;
     if (window.confirm("Delete this POI?")) {
-      const { error } = await supabase.from('Map_POIs').delete().eq('id', currentPoi.id);
+      const { error } = await supabase.from(targetTable).delete().eq('id', currentPoi.id);
       if (!error) onSelectPoi(null);
     }
   };

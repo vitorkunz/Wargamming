@@ -21,6 +21,8 @@ export default function ModeratorDashboard() {
     hazards: true
   });
 
+  const [activeView, setActiveView] = useState<'draft' | 'published'>('draft');
+
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
@@ -28,6 +30,10 @@ export default function ModeratorDashboard() {
   
   const [isDrawingHazard, setIsDrawingHazard] = useState(false);
   const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
+
+  const unitsTable = activeView === 'draft' ? 'Moderator_Units' : 'Battle_Units';
+  const poisTable = activeView === 'draft' ? 'Moderator_POIs' : 'Map_POIs';
+  const hazardsTable = activeView === 'draft' ? 'Moderator_Hazards' : 'Battle_Hazards';
 
   const handleDrawComplete = (points: {x:number, y:number}[]) => {
     setPendingHazardPoints(points);
@@ -58,14 +64,14 @@ export default function ModeratorDashboard() {
 
   useEffect(() => {
     const fetchUnits = async () => {
-      const { data, error } = await supabase.from('Battle_Units').select('*');
+      const { data, error } = await supabase.from(unitsTable).select('*');
       if (!error && data) setUnits(data as Unit[]);
     };
     fetchUnits();
 
     const channel = supabase
-      .channel('mod-battle-units')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Battle_Units' }, (payload) => {
+      .channel(`mod-units-${unitsTable}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: unitsTable }, (payload) => {
         if (payload.eventType === 'INSERT') {
           setUnits((prev) => [...prev, payload.new as Unit]);
         } else if (payload.eventType === 'UPDATE') {
@@ -78,17 +84,18 @@ export default function ModeratorDashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [unitsTable]);
 
   // Removed duplicate handleUnitClick
 
-  // Drag Drop -> Move any unit on the Battle Map (and take it out of reserve)
+  // Drag Drop -> Move any unit on the map (and take it out of reserve)
   const handleUnitDrop = async (unitId: string, x: number, y: number) => {
+    if (activeView === 'published') return; // Read-only
     // Optimistically update UI
     setUnits(prev => prev.map(u => u.id === unitId ? { ...u, x_coord: x, y_coord: y, in_reserve: false } : u));
 
     const { error } = await supabase
-      .from('Battle_Units')
+      .from(unitsTable)
       .update({ x_coord: x, y_coord: y, in_reserve: false })
       .eq('id', unitId);
 
@@ -99,16 +106,33 @@ export default function ModeratorDashboard() {
   };
 
   const handlePoiDrop = async (poiId: string, x: number, y: number) => {
+    if (activeView === 'published') return; // Read-only
     // We don't have pois in ModeratorDashboard state (MapGrid fetches them)
     // but the db update will trigger the realtime subscription to re-render in MapGrid.
     const { error } = await supabase
-      .from('Map_POIs')
+      .from(poisTable)
       .update({ x_coord: x, y_coord: y })
       .eq('id', poiId);
 
     if (error) {
       console.error("Failed to move POI:", error);
       alert("Failed to move POI: " + error.message);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (window.confirm("Publish Draft Map to Live? This will overwrite the current live battle map players see.")) {
+      const { error } = await supabase.rpc('publish_draft_to_live');
+      if (error) alert("Failed to publish map: " + error.message);
+      else alert("Map published successfully!");
+    }
+  };
+
+  const handleSyncFromLive = async () => {
+    if (window.confirm("Overwrite your current draft with the Live Map? Any unsaved draft work will be lost.")) {
+      const { error } = await supabase.rpc('sync_draft_from_live');
+      if (error) alert("Failed to sync map: " + error.message);
+      else alert("Draft map synced from live successfully!");
     }
   };
 
@@ -132,20 +156,55 @@ export default function ModeratorDashboard() {
           <h1 className="text-3xl font-bold text-purple-700">Moderator Dashboard</h1>
           <p className="text-slate-500">Assign players, manage units, and control the fog of war.</p>
         </div>
-        
-        <TeamAssignment />
-        <UnitCreation />
-        <HazardCreation 
-          isDrawingHazard={isDrawingHazard}
-          setIsDrawingHazard={setIsDrawingHazard}
-          pendingHazardPoints={pendingHazardPoints}
-          setPendingHazardPoints={setPendingHazardPoints}
-        />
-        <PoiCreation />
+
+        <div className="mb-6 flex flex-col items-center gap-4">
+          <div className="flex space-x-4 bg-white p-1 rounded-full shadow-md">
+            <button 
+              className={`px-6 py-2 rounded-full font-bold transition-colors ${activeView === 'draft' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+              onClick={() => setActiveView('draft')}
+            >
+              Draft Map
+            </button>
+            <button 
+              className={`px-6 py-2 rounded-full font-bold transition-colors ${activeView === 'published' ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+              onClick={() => setActiveView('published')}
+            >
+              Published Map
+            </button>
+          </div>
+          
+          <div className="flex space-x-4">
+            {activeView === 'draft' && (
+              <button onClick={handlePublish} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow-md flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Publish Draft to Live
+              </button>
+            )}
+            <button onClick={handleSyncFromLive} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded shadow-md flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Sync Draft from Live
+            </button>
+          </div>
+        </div>
+
+        {activeView === 'draft' && (
+          <>
+            <TeamAssignment />
+            <UnitCreation table={unitsTable} />
+            <HazardCreation 
+              isDrawingHazard={isDrawingHazard}
+              setIsDrawingHazard={setIsDrawingHazard}
+              pendingHazardPoints={pendingHazardPoints}
+              setPendingHazardPoints={setPendingHazardPoints}
+              table={hazardsTable}
+            />
+            <PoiCreation table={poisTable} />
+          </>
+        )}
         
         <ReservesPanel 
           units={reserveUnits} 
-          isDraggable={() => true} 
+          isDraggable={() => activeView === 'draft'} 
           onUnitClick={handleUnitClick}
         />
 
@@ -154,14 +213,16 @@ export default function ModeratorDashboard() {
           hiddenDynamicLayers={hiddenDynamicLayers}
           units={activeUnits} 
           selectedUnitId={selectedUnitId}
+          poisTable={poisTable}
+          hazardsTable={hazardsTable}
           onUnitClick={handleUnitClick} 
           onPOIClick={handlePOIClick}
           onHazardClick={handleHazardClick}
-          isDraggable={() => true} // Mod can drag any unit
+          isDraggable={() => activeView === 'draft'} // Only drag in draft
           onUnitDrop={handleUnitDrop}
-          isPoiDraggable={() => true} // Mod can drag any POI
+          isPoiDraggable={() => activeView === 'draft'} // Only drag in draft
           onPoiDrop={handlePoiDrop}
-          isDrawingMode={isDrawingHazard}
+          isDrawingMode={isDrawingHazard && activeView === 'draft'}
           onDrawComplete={handleDrawComplete}
         />
       </main>
@@ -171,7 +232,8 @@ export default function ModeratorDashboard() {
           selectedHazard={selectedHazard}
           onClose={() => setSelectedHazard(null)}
           onSelectHazard={setSelectedHazard}
-          isModerator={true}
+          isModerator={activeView === 'draft'}
+          targetTable={hazardsTable}
         />
       ) : selectedPoi ? (
         <PoiPanel 
@@ -179,15 +241,17 @@ export default function ModeratorDashboard() {
           selectedPoi={selectedPoi} 
           onClose={() => setSelectedPoi(null)} 
           onSelectPoi={() => setSelectedPoi(null)} 
-          isModerator={true} 
+          isModerator={activeView === 'draft'} 
+          targetTable={poisTable}
         />
       ) : (
         <UnitPanel 
           units={units}
           selectedUnit={selectedUnit} 
-          isModerator={true} 
+          isModerator={activeView === 'draft'} 
           onSelectUnit={setSelectedUnitId}
           onClose={() => {}} 
+          targetTable={unitsTable}
         />
       )}
     </div>

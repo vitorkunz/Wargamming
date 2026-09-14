@@ -13,16 +13,17 @@ interface UnitPanelProps {
   isModerator: boolean;
   role?: string;
   activeTab?: 'planning' | 'battle';
+  targetTable?: string;
 }
 
-export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, isModerator, role, activeTab = 'battle' }: UnitPanelProps) {
+export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, isModerator, role, activeTab = 'battle', targetTable }: UnitPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [healthInput, setHealthInput] = React.useState(selectedUnit?.health.toString() || '');
   const [nameInput, setNameInput] = React.useState(selectedUnit?.name || '');
 
   const isPlanningMode = activeTab === 'planning';
   const canEditOrDelete = isModerator || isPlanningMode;
-  const targetTable = isPlanningMode ? 'Planning_Units' : 'Battle_Units';
+  const tableToUpdate = targetTable || (isPlanningMode ? 'Planning_Units' : 'Battle_Units');
   const canRename = isModerator || (Boolean(role) && selectedUnit?.owner === role);
 
   React.useEffect(() => {
@@ -38,7 +39,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     if (trimmed === (selectedUnit.name || '')) return;
 
     const { error } = await supabase
-      .from(targetTable)
+      .from(tableToUpdate)
       .update({ name: trimmed || null })
       .eq('id', selectedUnit.id);
 
@@ -54,7 +55,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     if (isNaN(newHealth) || newHealth === selectedUnit.health) return;
     
     const { error } = await supabase
-      .from(targetTable)
+      .from(tableToUpdate)
       .update({ health: newHealth })
       .eq('id', selectedUnit.id);
 
@@ -80,7 +81,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     const newSidc = `S${AFFILIATIONS[affiliationKey]}${typeDef.dimension}P${typeDef.code}-${ECHELONS[echelonKey]}---`;
 
     const { error } = await supabase
-      .from(targetTable)
+      .from(tableToUpdate)
       .update({ type: newSidc })
       .eq('id', selectedUnit.id);
 
@@ -90,7 +91,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
   const updateOwner = async (newOwner: string) => {
     if (!selectedUnit || !isModerator) return;
     const { error } = await supabase
-      .from(targetTable)
+      .from(tableToUpdate)
       .update({ owner: newOwner })
       .eq('id', selectedUnit.id);
 
@@ -102,7 +103,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
   const toggleVisibility = async () => {
     if (!selectedUnit || !isModerator) return;
     const { error } = await supabase
-      .from('Battle_Units')
+      .from(tableToUpdate)
       .update({ is_visible_to_enemy: !selectedUnit.is_visible_to_enemy })
       .eq('id', selectedUnit.id);
 
@@ -116,7 +117,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
     if (!confirmDelete) return;
 
     const { error } = await supabase
-      .from(targetTable)
+      .from(tableToUpdate)
       .delete()
       .eq('id', selectedUnit.id);
 

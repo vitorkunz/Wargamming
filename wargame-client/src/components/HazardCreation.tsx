@@ -7,13 +7,15 @@ interface HazardCreationProps {
   setIsDrawingHazard: (isDrawing: boolean) => void;
   pendingHazardPoints: {x:number, y:number}[] | null;
   setPendingHazardPoints: (points: {x:number, y:number}[] | null) => void;
+  table?: string;
 }
 
 export default function HazardCreation({
   isDrawingHazard,
   setIsDrawingHazard,
   pendingHazardPoints,
-  setPendingHazardPoints
+  setPendingHazardPoints,
+  table = 'Battle_Hazards'
 }: HazardCreationProps) {
   const [hazardType, setHazardType] = useState('minefield');
   const [label, setLabel] = useState('Minefield Alpha');
@@ -28,7 +30,7 @@ export default function HazardCreation({
     if (visibleToPlayerA) visible_to_teams.push('Player A');
     if (visibleToPlayerB) visible_to_teams.push('Player B');
 
-    const { error } = await supabase.from('Battle_Hazards').insert({
+    const { error } = await supabase.from(table).insert({
       hazard_type: hazardType,
       label,
       created_by: 'Moderator',

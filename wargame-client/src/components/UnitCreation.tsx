@@ -13,7 +13,7 @@ import {
 } from '@/lib/milsymbol/constants';
 
 interface UnitCreationProps {
-  table?: 'Battle_Units' | 'Planning_Units';
+  table?: string;
   fixedOwner?: 'Player A' | 'Player B';
   title?: string;
 }
