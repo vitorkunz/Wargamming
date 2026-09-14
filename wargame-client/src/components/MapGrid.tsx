@@ -18,6 +18,7 @@ export interface Unit {
   y_coord: number;
   health: number;
   is_visible_to_enemy?: boolean;
+  is_health_visible_to_enemy?: boolean;
   in_reserve?: boolean;
 }
 

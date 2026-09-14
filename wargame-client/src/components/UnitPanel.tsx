@@ -18,8 +18,11 @@ interface UnitPanelProps {
 
 export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, isModerator, role, activeTab = 'battle', targetTable }: UnitPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [healthInput, setHealthInput] = React.useState(selectedUnit?.health.toString() || '');
+  const [healthInput, setHealthInput] = React.useState(selectedUnit?.health?.toString() || '');
   const [nameInput, setNameInput] = React.useState(selectedUnit?.name || '');
+  
+  const [sortBy, setSortBy] = useState<'name' | 'health' | 'type'>('name');
+  const [groupBy, setGroupBy] = useState<'status' | 'owner' | 'type' | 'none'>('status');
 
   const isPlanningMode = activeTab === 'planning';
   const canEditOrDelete = isModerator || isPlanningMode;
@@ -108,6 +111,16 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
       .eq('id', selectedUnit.id);
 
     if (error) alert("Failed to update visibility: " + error.message);
+  };
+
+  const toggleHealthVisibility = async () => {
+    if (!selectedUnit || !isModerator) return;
+    const { error } = await supabase
+      .from(tableToUpdate)
+      .update({ is_health_visible_to_enemy: !selectedUnit.is_health_visible_to_enemy })
+      .eq('id', selectedUnit.id);
+
+    if (error) alert("Failed to update health visibility: " + error.message);
   };
 
   const deleteUnit = async () => {
@@ -285,8 +298,8 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                     />
                   </div>
                 ) : (
-                  <span className={`font-medium text-sm ${selectedUnit.health > 50 ? 'text-green-600' : selectedUnit.health > 20 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {selectedUnit.health} / 100
+                  <span className={`font-medium text-sm ${(isModerator || selectedUnit.owner === role || selectedUnit.is_health_visible_to_enemy !== false) ? (selectedUnit.health > 50 ? 'text-green-600' : selectedUnit.health > 20 ? 'text-yellow-600' : 'text-red-600') : 'text-slate-500'}`}>
+                    {(isModerator || selectedUnit.owner === role || selectedUnit.is_health_visible_to_enemy !== false) ? `${selectedUnit.health} / 100` : '?'}
                   </span>
                 )}
               </div>
@@ -294,15 +307,26 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
               {(isModerator || canEditOrDelete) && (
                 <div className="pt-3 border-t border-slate-200 space-y-3">
                   {isModerator && (
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedUnit.is_visible_to_enemy || false} 
-                        onChange={toggleVisibility}
-                        className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-                      />
-                      <span className="font-medium text-sm text-slate-700">Visible to Enemy</span>
-                    </label>
+                    <>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedUnit.is_visible_to_enemy || false} 
+                          onChange={toggleVisibility}
+                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                        />
+                        <span className="font-medium text-sm text-slate-700">Visible to Enemy</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedUnit.is_health_visible_to_enemy !== false} 
+                          onChange={toggleHealthVisibility}
+                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                        />
+                        <span className="font-medium text-sm text-slate-700">Health Visible to Enemy</span>
+                      </label>
+                    </>
                   )}
                   
                   {canEditOrDelete && (
@@ -324,34 +348,89 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
         )}
 
         {/* BOTTOM SECTION: Unit Roster */}
-        <div className="flex-1 overflow-auto p-4 space-y-6 bg-white">
+        <div className="flex-1 overflow-auto p-4 bg-white flex flex-col">
            
-           {/* Active Units */}
-           <div>
-             <h3 className="text-xs font-bold text-slate-400 uppercase mb-2 flex justify-between tracking-wider">
-               <span>On Map</span>
-               <span className="bg-slate-100 text-slate-500 px-1.5 rounded text-[10px] py-0.5">{activeUnits.length}</span>
-             </h3>
-             <div className="space-y-1.5">
-               {activeUnits.map(u => (
-                 <UnitListItem key={u.id} unit={u} selected={u.id === selectedUnit?.id} onClick={() => onSelectUnit(u.id)} />
-               ))}
-               {activeUnits.length === 0 && <p className="text-xs text-slate-400 italic">No units deployed.</p>}
+           <div className="flex gap-2 mb-4 shrink-0">
+             <div className="flex-1">
+               <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1 tracking-wider">Group By</label>
+               <select 
+                 value={groupBy} 
+                 onChange={(e) => setGroupBy(e.target.value as any)}
+                 className="w-full text-xs p-1.5 border border-slate-300 rounded bg-slate-50 text-slate-700 outline-none focus:border-blue-500"
+               >
+                 <option value="status">Status (Map/Reserve)</option>
+                 <option value="owner">Team</option>
+                 <option value="type">Unit Type</option>
+                 <option value="none">None</option>
+               </select>
+             </div>
+             <div className="flex-1">
+               <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1 tracking-wider">Sort By</label>
+               <select 
+                 value={sortBy} 
+                 onChange={(e) => setSortBy(e.target.value as any)}
+                 className="w-full text-xs p-1.5 border border-slate-300 rounded bg-slate-50 text-slate-700 outline-none focus:border-blue-500"
+               >
+                 <option value="name">Name</option>
+                 <option value="health">Health</option>
+                 <option value="type">Unit Type</option>
+               </select>
              </div>
            </div>
 
-           {/* Reserve Units */}
-           <div>
-             <h3 className="text-xs font-bold text-slate-400 uppercase mb-2 flex justify-between tracking-wider mt-4">
-               <span>Reserves</span>
-               <span className="bg-slate-100 text-slate-500 px-1.5 rounded text-[10px] py-0.5">{reserveUnits.length}</span>
-             </h3>
-             <div className="space-y-1.5">
-               {reserveUnits.map(u => (
-                 <UnitListItem key={u.id} unit={u} selected={u.id === selectedUnit?.id} onClick={() => onSelectUnit(u.id)} />
-               ))}
-               {reserveUnits.length === 0 && <p className="text-xs text-slate-400 italic">No units in reserve.</p>}
-             </div>
+           <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+             {(() => {
+                const sortUnits = (list: Unit[]) => {
+                  return [...list].sort((a, b) => {
+                    if (sortBy === 'name') return (a.name || getHumanReadableFromSidc(a.type)).localeCompare(b.name || getHumanReadableFromSidc(b.type));
+                    if (sortBy === 'health') return b.health - a.health;
+                    if (sortBy === 'type') return getHumanReadableFromSidc(a.type).localeCompare(getHumanReadableFromSidc(b.type));
+                    return 0;
+                  });
+                };
+
+                const renderUnitGroup = (title: string, list: Unit[]) => {
+                  if (list.length === 0) return null;
+                  const sorted = sortUnits(list);
+                  return (
+                    <div key={title} className="mb-4">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-2 flex justify-between tracking-wider">
+                        <span>{title}</span>
+                        <span className="bg-slate-100 text-slate-500 px-1.5 rounded text-[10px] py-0.5">{sorted.length}</span>
+                      </h3>
+                      <div className="space-y-1.5">
+                        {sorted.map(u => (
+                          <UnitListItem 
+                            key={u.id} 
+                            unit={u} 
+                            selected={u.id === selectedUnit?.id} 
+                            onClick={() => onSelectUnit(u.id)} 
+                            canSeeHealth={isModerator || u.owner === role || u.is_health_visible_to_enemy !== false}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                };
+
+                if (groupBy === 'status') {
+                  return (
+                    <>
+                      {renderUnitGroup('On Map', units.filter(u => !u.in_reserve))}
+                      {renderUnitGroup('Reserves', units.filter(u => u.in_reserve))}
+                    </>
+                  );
+                } else if (groupBy === 'owner') {
+                  const owners = Array.from(new Set(units.map(u => u.owner)));
+                  return owners.map(owner => renderUnitGroup(owner, units.filter(u => u.owner === owner)));
+                } else if (groupBy === 'type') {
+                  const types = Array.from(new Set(units.map(u => getHumanReadableFromSidc(u.type))));
+                  return types.map(t => renderUnitGroup(t, units.filter(u => getHumanReadableFromSidc(u.type) === t)));
+                } else {
+                  return renderUnitGroup('All Units', units);
+                }
+             })()}
+             {units.length === 0 && <p className="text-xs text-slate-400 italic mt-4 text-center">No units found.</p>}
            </div>
 
         </div>
@@ -360,7 +439,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
   );
 }
 
-function UnitListItem({ unit, selected, onClick }: { unit: Unit, selected: boolean, onClick: () => void }) {
+function UnitListItem({ unit, selected, onClick, canSeeHealth }: { unit: Unit, selected: boolean, onClick: () => void, canSeeHealth: boolean }) {
   return (
     <div 
       onClick={onClick}
@@ -379,8 +458,8 @@ function UnitListItem({ unit, selected, onClick }: { unit: Unit, selected: boole
           </div>
         </div>
       </div>
-      <div className={`font-mono text-xs font-bold ${unit.health > 50 ? 'text-green-600' : unit.health > 20 ? 'text-yellow-600' : 'text-red-600'}`}>
-        {unit.health}
+      <div className={`font-mono text-xs font-bold ${canSeeHealth ? (unit.health > 50 ? 'text-green-600' : unit.health > 20 ? 'text-yellow-600' : 'text-red-600') : 'text-slate-400 text-sm'}`}>
+        {canSeeHealth ? unit.health : '?'}
       </div>
     </div>
   )
