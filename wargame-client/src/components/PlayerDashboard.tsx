@@ -111,11 +111,10 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
     }
 
     if (liveUnits && liveUnits.length > 0) {
-      const unitsToInsert = liveUnits.map(u => ({
-        ...u,
-        id: undefined, // Let Supabase generate a new ID for the planning copy
-        created_at: undefined
-      }));
+      const unitsToInsert = liveUnits.map(u => {
+        const { id, created_at, is_visible_to_enemy, is_health_visible_to_enemy, ...rest } = u;
+        return rest;
+      });
       const { error: insertError } = await supabase.from('Planning_Units').insert(unitsToInsert);
       if (insertError) {
         alert("Failed to sync units: " + insertError.message);
@@ -192,7 +191,6 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
       x_coord: x,
       y_coord: y,
       health: 100,
-      is_visible_to_enemy: false,
       in_reserve: false
     });
 
