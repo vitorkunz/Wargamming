@@ -192,7 +192,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           pois={[]} 
           selectedPoi={selectedPoi} 
           onClose={() => setSelectedPoi(null)} 
-          onSelectPoi={setSelectedPoi}
+          onSelectPoi={() => setSelectedPoi(null)}
           isModerator={false} 
           targetTable="Map_POIs"
           role={role}
