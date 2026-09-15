@@ -118,6 +118,10 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
       const { error: insertError } = await supabase.from('Planning_Units').insert(unitsToInsert);
       if (insertError) {
         alert("Failed to sync units: " + insertError.message);
+      } else {
+        // Manually refetch to ensure UI updates immediately (especially useful for bulk inserts)
+        const { data } = await supabase.from('Planning_Units').select('*');
+        if (data) setPlanningUnits(data as Unit[]);
       }
     }
   };
@@ -128,7 +132,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
 
   useEffect(() => {
     const fetchPlanning = async () => {
-      const { data } = await supabase.from('Planning_Units').select('*');
+      const { data } = await supabase.from('Planning_Units').select('*').eq('owner', role);
       if (data) setPlanningUnits(data as Unit[]);
     };
     
@@ -141,7 +145,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
     fetchBattle();
 
     const planChannel = supabase.channel('player-planning')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units', filter: `owner=eq.${role}` }, (payload) => {
         if (payload.eventType === 'INSERT') setPlanningUnits(p => [...p, payload.new as Unit]);
         if (payload.eventType === 'UPDATE') setPlanningUnits(p => p.map(u => u.id === payload.new.id ? payload.new as Unit : u));
         if (payload.eventType === 'DELETE') {
@@ -288,6 +292,7 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           <UnitCreation 
             table="Planning_Units" 
             title="Plan New Unit"
+            fixedOwner={role as 'Player A' | 'Player B'}
           />
         )}
 
