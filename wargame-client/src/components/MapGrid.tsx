@@ -361,10 +361,10 @@ export default function MapGrid({
   return (
     <div 
       ref={containerRef}
-      className={`relative transition-all duration-300 ${
+      className={`relative transition-all duration-300 w-full h-full ${
         isFullscreen 
-          ? 'fixed inset-0 z-[100] w-screen h-screen bg-slate-900 flex items-center justify-center p-0 m-0 max-w-none border-none rounded-none' 
-          : 'bg-white p-2 shadow-2xl border-4 border-slate-300 rounded-lg shrink-0 mb-12 flex justify-center w-full max-w-5xl z-10 isolate'
+          ? 'fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center' 
+          : 'bg-surface-canvas-void flex items-center justify-center overflow-hidden isolate'
       }`}
     >
       <TransformWrapper
@@ -379,14 +379,13 @@ export default function MapGrid({
         <TransformComponent 
           wrapperStyle={{ 
             width: '100%', 
-            height: isFullscreen ? '100vh' : '75vh', 
-            borderRadius: isFullscreen ? '0px' : '4px',
+            height: '100%', 
             backgroundColor: isFullscreen ? '#0f172a' : undefined
           }}
         >
           <div 
             id="map-grid-root"
-            className={`relative bg-slate-300 border border-slate-400 ${
+            className={`relative bg-surface-canvas-void border-2 border-primary ${
               isDrawingMode ? 'cursor-crosshair' : onGridClick ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
             }`}
             style={{ width: boardWidth, height: boardHeight }}
@@ -414,8 +413,8 @@ export default function MapGrid({
               style={{ 
                 zIndex: 9000,
                 backgroundImage: `
-                  linear-gradient(to right, rgba(51, 65, 85, 0.3) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(51, 65, 85, 0.3) 1px, transparent 1px)
+                  linear-gradient(to right, rgba(247, 244, 235, 0.05) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(247, 244, 235, 0.05) 1px, transparent 1px)
                 `,
                 backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`
               }}

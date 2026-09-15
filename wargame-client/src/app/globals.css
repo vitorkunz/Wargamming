@@ -1,17 +1,150 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-montserrat: var(--font-montserrat);
+  --font-karla: var(--font-karla);
+
+  --color-inverse-surface: #313030;
+  --color-inverse-primary: #95d2c5;
+  --color-error: #ba1a1a;
+  --color-on-tertiary-fixed-variant: #5c4300;
+  --color-on-tertiary-fixed: #261a00;
+  --color-faction-hostile: #4e1a3d;
+  --color-on-secondary-fixed-variant: #005049;
+  --color-hazard-water: #3b82f6;
+  --color-faction-unknown: #414575;
+  --color-on-primary: #ffffff;
+  --color-tertiary: #3a2900;
+  --color-outline-variant: #bfc9c5;
+  --color-surface: #fcf9f8;
+  --color-surface-container-highest: #e5e2e1;
+  --color-surface-tint: #2b685d;
+  --color-secondary-fixed: #a4f1e5;
+  --color-surface-container-high: #eae7e7;
+  --color-border-parchment: #e3dfd1;
+  --color-background: #fcf9f8;
+  --color-on-secondary-fixed: #00201d;
+  --color-on-surface-variant: #3f4946;
+  --color-surface-parchment-dim: #ede9dd;
+  --color-primary-container: #004b41;
+  --color-border-strong: #c9c3ae;
+  --color-primary: #00322b;
+  --color-tertiary-fixed: #ffdfa0;
+  --color-status-degraded: #e07a2f;
+  --color-on-error-container: #93000a;
+  --color-surface-container-low: #f6f3f2;
+  --color-secondary-container: #a1eee3;
+  --color-surface-canvas-void: #1f2420;
+  --color-surface-container: #f0eded;
+  --color-surface-dim: #dcd9d9;
+  --color-error-container: #ffdad6;
+  --color-on-tertiary-container: #dba61f;
+  --color-on-surface: #1c1b1b;
+  --color-on-error: #ffffff;
+  --color-secondary-fixed-dim: #88d4c9;
+  --color-inverse-on-surface: #f3f0ef;
+  --color-hazard-minefield: #ef4444;
+  --color-surface-parchment: #f7f4eb;
+  --color-text-on-dark: #f7f4eb;
+  --color-selection-pulse: #22d3ee;
+  --color-hazard-blockade: #a855f7;
+  --color-surface-card: #ffffff;
+  --color-faction-neutral: #26265b;
+  --color-outline: #707976;
+  --color-chrome-hover: #2d7d74;
+  --color-tertiary-container: #563e00;
+  --color-chrome-command: #004b41;
+  --color-on-primary-fixed-variant: #095046;
+  --color-on-background: #1c1b1b;
+  --color-secondary: #116a61;
+  --color-primary-fixed-dim: #95d2c5;
+  --color-on-tertiary: #ffffff;
+  --color-status-alert: #f26a4b;
+  --color-status-critical: #c03a6b;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-container: #196e66;
+  --color-tertiary-fixed-dim: #f6be39;
+  --color-on-primary-container: #7dbaad;
+  --color-primary-fixed: #b0efe1;
+  --color-on-secondary: #ffffff;
+  --color-surface-variant: #e5e2e1;
+  --color-faction-friendly: #2d7d74;
+  --color-on-primary-fixed: #00201b;
+  --color-status-objective: #d4a017;
+  
+  --spacing-margin: 1.5rem;
+  --spacing-space-lg: 1rem;
+  --spacing-gutter: 1rem;
+  --spacing-space-3xl: 2.5rem;
+  --spacing-space-xl: 1.5rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-margin-desktop: 2rem;
+  --spacing-space-2xl: 2rem;
+  --spacing-margin-mobile: 0.75rem;
+  --spacing-space-md: 0.75rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-gutter-sm: 0.5rem;
+  --spacing-gutter-lg: 1.5rem;
+
+  /* Fonts - adding them directly as vars for Tailwind to pick up */
+  --font-display-lg: var(--font-montserrat);
+  --font-body-ui: var(--font-karla);
+  --font-body-ui-bold: var(--font-karla);
+  --font-display-lg-mobile: var(--font-montserrat);
+  --font-tag-overline: var(--font-montserrat);
+  --font-body-base: var(--font-karla);
+  --font-headline-lg: var(--font-montserrat);
+  --font-headline-sm: var(--font-montserrat);
+  --font-headline-md: var(--font-montserrat);
+  --font-label-md: var(--font-montserrat);
+  --font-label-sm: var(--font-karla);
+  
+  /* Retaining some old colors so we don't break everything instantly */
+  --color-brand-green: #004b41;
+  --color-canvas-bg: #1f2420;
+  --color-parchment: #f7f4eb;
+  --color-team-a: #2d7d74;
+  --color-team-b: #4e1a3d;
+  --color-unconfirmed: #414575;
+  --color-neutral-asset: #26265b;
+  --color-gold-poi: #d4a017;
+  --color-alert-1: #c03a6b;
+  --color-alert-2: #f26a4b;
+  --color-degraded: #e07a2f;
+}
+
+@layer base {
+  html, body { margin: 0; padding: 0; }
+  body { overscroll-behavior: none; }
+  main > :first-child { margin-top: 0 !important; }
+  main > :last-child { margin-bottom: 0 !important; }
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+::-webkit-scrollbar-thumb { background: rgba(0, 75, 65, 0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 75, 65, 0.45); }
+
+@layer utilities {
+  .font-display-lg { font-size: 40px; line-height: 44px; letter-spacing: -0.01em; font-weight: 700; font-family: var(--font-montserrat); }
+  .font-body-ui { font-size: 14px; line-height: 22px; letter-spacing: 0em; font-weight: 400; font-family: var(--font-karla); }
+  .font-body-ui-bold { font-size: 14px; line-height: 22px; letter-spacing: 0em; font-weight: 700; font-family: var(--font-karla); }
+  .font-display-lg-mobile { font-size: 30px; line-height: 36px; letter-spacing: -0.01em; font-weight: 700; font-family: var(--font-montserrat); }
+  .font-tag-overline { font-size: 11px; line-height: 12px; letter-spacing: 0.08em; font-weight: 700; font-family: var(--font-montserrat); }
+  .font-body-base { font-size: 16px; line-height: 26px; letter-spacing: 0em; font-weight: 400; font-family: var(--font-karla); }
+  .font-headline-lg { font-size: 30px; line-height: 36px; letter-spacing: 0em; font-weight: 700; font-family: var(--font-montserrat); }
+  .font-headline-sm { font-size: 18px; line-height: 26px; letter-spacing: 0em; font-weight: 600; font-family: var(--font-montserrat); }
+  .font-headline-md { font-size: 24px; line-height: 32px; letter-spacing: 0em; font-weight: 600; font-family: var(--font-montserrat); }
+  .font-label-md { font-size: 14px; line-height: 16px; letter-spacing: 0.02em; font-weight: 600; font-family: var(--font-montserrat); }
+  .font-label-sm { font-size: 12px; line-height: 18px; letter-spacing: 0.01em; font-weight: 400; font-family: var(--font-karla); }
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fcf9f8;
+  --foreground: #1c1b1b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }

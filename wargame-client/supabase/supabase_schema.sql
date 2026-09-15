@@ -103,5 +103,16 @@ CREATE TABLE IF NOT EXISTS public."Battle_Hazards" (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Create Map_Layers table
+CREATE TABLE IF NOT EXISTS public."Map_Layers" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    z_index INTEGER NOT NULL DEFAULT 0,
+    is_global_visible BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 ALTER TABLE public."Map_POIs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Battle_Hazards" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."Map_Layers" ENABLE ROW LEVEL SECURITY;

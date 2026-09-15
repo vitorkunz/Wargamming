@@ -40,34 +40,34 @@ export default function TeamAssignment() {
   if (loading) return <div>Loading players...</div>;
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md border border-slate-200 mb-6 w-full max-w-4xl">
-      <h2 className="text-xl font-bold mb-4 text-slate-700">Team Assignment</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
-          <thead className="bg-slate-100 border-b">
+    <div className="bg-surface-card p-4 rounded-xl shadow-sm border border-border-parchment mb-6 w-full max-w-4xl">
+      <h2 className="text-xl font-bold mb-4 text-on-surface font-headline-sm">Team Assignment</h2>
+      <div className="overflow-x-auto rounded-lg border border-border-parchment">
+        <table className="min-w-full bg-surface-container">
+          <thead className="bg-surface-container-high border-b border-border-parchment/60">
             <tr>
-              <th className="text-left py-2 px-4 text-slate-600 font-semibold">User Email</th>
-              <th className="text-left py-2 px-4 text-slate-600 font-semibold">Current Role</th>
-              <th className="text-left py-2 px-4 text-slate-600 font-semibold">Assign Role</th>
+              <th className="text-left py-3 px-4 text-on-surface-variant font-bold font-tag-overline uppercase tracking-wider text-[11px]">User Email</th>
+              <th className="text-left py-3 px-4 text-on-surface-variant font-bold font-tag-overline uppercase tracking-wider text-[11px]">Current Role</th>
+              <th className="text-left py-3 px-4 text-on-surface-variant font-bold font-tag-overline uppercase tracking-wider text-[11px]">Assign Role</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border-parchment/60">
             {profiles.map((profile) => (
-              <tr key={profile.id} className="border-b hover:bg-slate-50">
-                <td className="py-2 px-4 text-slate-800">{profile.email || 'Anonymous'}</td>
-                <td className="py-2 px-4">
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    profile.role === 'Moderator' ? 'bg-purple-100 text-purple-700' :
-                    profile.role === 'Player A' ? 'bg-red-100 text-red-700' :
-                    profile.role === 'Player B' ? 'bg-blue-100 text-blue-700' :
-                    'bg-slate-100 text-slate-700'
+              <tr key={profile.id} className="hover:bg-surface-container-high/50 transition-colors">
+                <td className="py-3 px-4 text-on-surface font-label-md">{profile.email || 'Anonymous'}</td>
+                <td className="py-3 px-4">
+                  <span className={`px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider border ${
+                    profile.role === 'Moderator' ? 'bg-primary/20 text-primary border-primary/30' :
+                    profile.role === 'Player A' ? 'bg-faction-hostile/20 text-faction-hostile border-faction-hostile/30' :
+                    profile.role === 'Player B' ? 'bg-faction-friendly/20 text-faction-friendly border-faction-friendly/30' :
+                    'bg-surface-dim text-on-surface-variant border-outline-variant/30'
                   }`}>
                     {profile.role}
                   </span>
                 </td>
-                <td className="py-2 px-4">
+                <td className="py-3 px-4">
                   <select 
-                    className="border border-slate-300 rounded p-1 text-sm bg-white text-slate-700"
+                    className="border border-border-parchment rounded-lg p-1.5 text-sm bg-surface-card text-on-surface outline-none font-semibold shadow-inner"
                     value={profile.role}
                     onChange={(e) => updateRole(profile.id, e.target.value)}
                   >

@@ -109,128 +109,133 @@ export default function Sidebar({
     }
   };
 
-  if (!isOpen) {
-    return (
-      <aside className="w-12 bg-slate-800 text-white flex flex-col items-center py-4 shadow-xl transition-all duration-300 z-50 shrink-0 h-full">
-        <button 
-          onClick={() => setIsOpen(true)}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-          title="Open Control Panel"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-          </svg>
-        </button>
-      </aside>
-    );
-  }
-
   return (
-    <aside className="w-80 bg-slate-800 text-white p-5 flex flex-col shadow-xl relative transition-all duration-300 z-50 shrink-0 h-full overflow-hidden">
-      <button 
-        onClick={() => setIsOpen(false)}
-        className="absolute top-5 right-4 p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-        title="Hide Control Panel"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-        </svg>
-      </button>
-
-      <h2 className="text-xl font-bold mb-6 border-b border-slate-600 pb-2 pr-8 shrink-0">Control Panel</h2>
+    <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isOpen ? 'w-12 min-w-12' : 'w-[300px] min-w-[300px]'}`}>
       
-      <div className="overflow-y-auto flex-1 pr-2 space-y-6">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Map Features</h3>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input type="checkbox" checked={layers.pois} onChange={() => toggleLayer('pois')} className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-yellow-500 focus:ring-yellow-500" />
-              <span className="font-medium">Points of Interest</span>
-            </label>
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input type="checkbox" checked={layers.hazards} onChange={() => toggleLayer('hazards')} className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-orange-500 focus:ring-orange-500" />
-              <span className="font-medium">Hazards (Mines, Floods)</span>
-            </label>
+      {/* Header */}
+      <div className="bg-primary-container p-3 flex items-center justify-between shadow-sm relative z-10 border-b border-white/10 shrink-0">
+        {isOpen && (
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-text-on-dark text-[20px]">layers</span>
+            <h2 className="font-headline-sm text-text-on-dark uppercase tracking-wider font-bold">Cartografia</h2>
+          </div>
+        )}
+        <button 
+          className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors mx-auto" 
+          onClick={() => setIsOpen(!isOpen)} 
+          title="Recolher / Expandir"
+        >
+          <span className="material-symbols-outlined text-[18px]">{isOpen ? 'keyboard_double_arrow_left' : 'keyboard_double_arrow_right'}</span>
+        </button>
+      </div>
+
+      <div className={`flex-1 overflow-y-auto p-4 space-y-5 text-on-surface custom-scrollbar relative z-0 ${!isOpen ? 'hidden' : 'block'}`}>
+        
+        {/* Seção: Elementos Táticos */}
+        <div className="space-y-2.5">
+          <h3 className="font-headline-sm text-primary uppercase font-bold tracking-wider border-b border-border-parchment pb-1 flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">category</span>
+            Elementos Táticos
+          </h3>
+          
+          <div className="space-y-1.5 mt-2">
+            <SidebarToggle 
+              checked={layers.units}
+              onChange={() => toggleLayer('units')}
+              label="Unidades (ORBAT)"
+              icon="military_tech"
+              iconColor="text-secondary-fixed"
+            />
+            <SidebarToggle 
+              checked={layers.hazards}
+              onChange={() => toggleLayer('hazards')}
+              label="Zonas de Perigo"
+              icon="warning"
+              iconColor="text-faction-hostile"
+            />
+            <SidebarToggle 
+              checked={layers.pois}
+              onChange={() => toggleLayer('pois')}
+              label="Pontos Estratégicos"
+              icon="location_on"
+              iconColor="text-on-surface-variant"
+            />
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Core View</h3>
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={layers.units} 
-              onChange={() => toggleLayer('units')}
-              className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-red-500 focus:ring-red-500"
-            />
-            <span className="font-medium">Show Units</span>
-          </label>
-        </div>
-
+        {/* Dynamic Map Layers */}
         {isModerator ? (
-          <div className="space-y-6 border-t border-slate-600 pt-4">
-             <LayerManager 
+          <div className="space-y-2.5 mt-5">
+            <h3 className="font-headline-sm text-primary uppercase font-bold tracking-wider border-b border-border-parchment pb-1 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">map</span>
+              Map Layers
+            </h3>
+            <div className="mt-2">
+              <LayerManager 
                 layers={dynamicLayers} 
                 hiddenDynamicLayers={hiddenDynamicLayers}
                 toggleLocalDynamic={toggleDynamic}
-             />
-
+              />
+            </div>
           </div>
         ) : (
           dynamicLayers.length > 0 && (
-            <div className="space-y-3 border-t border-slate-600 pt-4">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Map Layers</h3>
-              {dynamicLayers.map(layer => (
-                <label key={layer.id} className="flex items-center space-x-3 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={!hiddenDynamicLayers.includes(layer.id) && layer.is_global_visible} 
+            <div className="space-y-2.5 mt-5">
+              <h3 className="font-headline-sm text-primary uppercase font-bold tracking-wider border-b border-border-parchment pb-1 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">map</span>
+                Map Layers
+              </h3>
+              <div className="space-y-1.5 mt-2">
+                {dynamicLayers.map(layer => (
+                  <SidebarToggle 
+                    key={layer.id}
+                    checked={!hiddenDynamicLayers.includes(layer.id) && layer.is_global_visible}
                     onChange={() => toggleDynamic(layer.id)}
-                    className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500"
+                    label={layer.name}
+                    icon="layers"
+                    iconColor="text-primary"
                   />
-                  <span className="font-medium text-sm text-slate-300">{layer.name}</span>
-                </label>
-              ))}
+                ))}
+              </div>
             </div>
           )
         )}
 
-        <div className="space-y-6 border-t border-slate-600 pt-4 mt-4">
+        <div className="space-y-5 pt-4">
           {/* POIs List (Visible to all, actions restricted) */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Manage POIs</h3>
-            {pois.length === 0 && <p className="text-xs text-slate-500">No POIs active.</p>}
+            <h3 className="font-headline-sm text-primary uppercase font-bold tracking-wider border-b border-border-parchment pb-1 flex items-center gap-1.5 mb-2">
+              <span className="material-symbols-outlined text-[16px]">location_on</span>
+              Manage POIs
+            </h3>
+            {pois.length === 0 && <p className="text-xs text-on-surface-variant italic">No POIs active.</p>}
             <ul className="space-y-2">
               {pois.map(poi => {
                 const canEdit = isModerator || (role && poi.owner === role);
                 return (
-                  <li key={poi.id} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
-                    <span className="truncate flex-1 font-medium">{poi.name}</span>
-                    <div className="flex gap-2 ml-2 items-center">
+                  <li key={poi.id} className="flex justify-between items-center bg-surface-card border border-border-parchment p-2 rounded-lg text-sm shadow-sm">
+                    <span className="truncate flex-1 font-bold text-on-surface">{poi.name}</span>
+                    <div className="flex gap-1.5 ml-2 items-center">
                       <label className="flex items-center space-x-1 cursor-pointer mr-1" title="Show Local">
                         <input 
                           type="checkbox" 
                           checked={!hiddenPois.includes(poi.id)} 
                           onChange={() => toggleLocalPoi(poi.id)}
-                          className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-blue-500"
+                          className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-secondary-fixed focus:ring-secondary-fixed"
                         />
                       </label>
                       
                       {canEdit && onEditPoi && (
-                        <button onClick={() => onEditPoi(poi)} className="text-blue-400 hover:text-blue-300" title="Edit POI">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
+                        <button onClick={() => onEditPoi(poi)} className="text-primary hover:text-primary-fixed-dim" title="Edit POI">
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
                         </button>
                       )}
                       
                       {canEdit && (
                         <button onClick={async () => {
                           if (confirm('Delete POI?')) await supabase.from('Map_POIs').delete().eq('id', poi.id);
-                        }} className="text-red-400 hover:text-red-300" title="Delete POI">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                        }} className="text-status-alert hover:text-red-700" title="Delete POI">
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
                       )}
                     </div>
@@ -240,42 +245,41 @@ export default function Sidebar({
             </ul>
           </div>
           
-          {/* Hazards List (Visible to all, actions restricted) */}
-          <div className="pt-4 border-t border-slate-600">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Manage Hazards</h3>
-            {hazards.length === 0 && <p className="text-xs text-slate-500">No hazards active.</p>}
+          {/* Hazards List */}
+          <div>
+            <h3 className="font-headline-sm text-primary uppercase font-bold tracking-wider border-b border-border-parchment pb-1 flex items-center gap-1.5 mb-2">
+              <span className="material-symbols-outlined text-[16px]">warning</span>
+              Manage Hazards
+            </h3>
+            {hazards.length === 0 && <p className="text-xs text-on-surface-variant italic">No hazards active.</p>}
             <ul className="space-y-2">
               {hazards.map(hazard => {
                 const canEdit = isModerator || (role && hazard.visible_to_teams.includes(role));
                 return (
-                  <li key={hazard.id} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
+                  <li key={hazard.id} className="flex justify-between items-center bg-surface-card border border-border-parchment p-2 rounded-lg text-sm shadow-sm">
                     <div className="flex flex-col truncate flex-1">
-                      <span className="font-medium">{hazard.label || hazard.hazard_type}</span>
-                      <span className="text-[10px] text-slate-400">Vis: {hazard.visible_to_teams.join(', ')}</span>
+                      <span className="font-bold text-on-surface">{hazard.label || hazard.hazard_type}</span>
+                      <span className="text-[10px] text-on-surface-variant font-bold uppercase mt-0.5">Vis: {hazard.visible_to_teams.join(', ')}</span>
                     </div>
-                    <div className="flex gap-2 ml-2 items-center">
+                    <div className="flex gap-1.5 ml-2 items-center">
                       <label className="flex items-center space-x-1 cursor-pointer mr-1" title="Show Local">
                         <input 
                           type="checkbox" 
                           checked={!hiddenHazards.includes(hazard.id)} 
                           onChange={() => toggleLocalHazard(hazard.id)}
-                          className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-orange-500 focus:ring-orange-500"
+                          className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-faction-hostile focus:ring-faction-hostile"
                         />
                       </label>
                       {canEdit && onEditHazard && (
-                        <button onClick={() => onEditHazard(hazard)} className="text-orange-400 hover:text-orange-300" title="Edit Hazard">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
+                        <button onClick={() => onEditHazard(hazard)} className="text-primary hover:text-primary-fixed-dim" title="Edit Hazard">
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
                         </button>
                       )}
                       {canEdit && (
                         <button onClick={async () => {
                           if (confirm('Delete Hazard?')) await supabase.from('Battle_Hazards').delete().eq('id', hazard.id);
-                        }} className="text-red-400 hover:text-red-300" title="Delete Hazard">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                        }} className="text-status-alert hover:text-red-700" title="Delete Hazard">
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
                       )}
                     </div>
@@ -287,5 +291,20 @@ export default function Sidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+function SidebarToggle({ checked, onChange, label, icon, iconColor }: { checked: boolean, onChange: () => void, label: string, icon: string, iconColor: string }) {
+  return (
+    <label className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors border group ${checked ? 'hover:bg-surface-parchment-dim border-transparent hover:border-border-parchment' : 'bg-surface-container border-border-parchment opacity-60'}`}>
+      <div className="flex items-center gap-2.5">
+        <span className={`material-symbols-outlined ${iconColor} text-[18px] group-hover:scale-110 transition-transform`}>{icon}</span>
+        <span className={`font-label-md text-[13px] font-bold ${checked ? 'text-on-surface' : 'text-on-surface-variant'}`}>{label}</span>
+      </div>
+      <div className={`relative inline-block w-8 rounded-full h-4 transition-colors border ${checked ? 'bg-primary border-transparent' : 'bg-surface-dim border-outline-variant'}`}>
+        <input type="checkbox" className="opacity-0 w-0 h-0" checked={checked} onChange={onChange} />
+        <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${checked ? 'right-0.5 bg-white' : 'left-0.5 bg-on-surface-variant'}`}></span>
+      </div>
+    </label>
   );
 }

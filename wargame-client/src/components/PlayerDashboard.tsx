@@ -8,12 +8,15 @@ import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
 import PoiPanel from './PoiPanel';
 import HazardPanel from './HazardPanel';
+import TopBar from './ui/TopBar';
 
 interface PlayerDashboardProps {
+  userEmail: string;
   role: string;
+  onSignOut: () => void;
 }
 
-export default function PlayerDashboard({ role }: PlayerDashboardProps) {
+export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDashboardProps) {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
   const [hiddenPois, setHiddenPois] = useState<string[]>([]);
   const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
@@ -55,45 +58,11 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
           }
         }
       }
-
-      if (e.ctrlKey && e.key === 'c') {
-        if (selectedUnitId) {
-          const unit = planningUnits.find(u => u.id === selectedUnitId);
-          if (unit) setClipboard({ type: 'unit', data: unit });
-        } else if (selectedPoi) {
-          setClipboard({ type: 'poi', data: selectedPoi });
-        } else if (selectedHazard) {
-          setClipboard({ type: 'hazard', data: selectedHazard });
-        }
-      }
-
-      if (e.ctrlKey && e.key === 'v' && clipboard) {
-        if (clipboard.type === 'unit') {
-          const u = clipboard.data as Unit;
-          await supabase.from('Planning_Units').insert({
-            ...u, id: undefined, created_at: undefined,
-            x_coord: u.x_coord + 10, y_coord: u.y_coord + 10
-          });
-        } else if (clipboard.type === 'poi') {
-          const p = clipboard.data as MapPOI;
-          await supabase.from('Map_POIs').insert({
-            ...p, id: undefined, created_at: undefined,
-            x_coord: p.x_coord + 10, y_coord: p.y_coord + 10
-          });
-        } else if (clipboard.type === 'hazard') {
-          const h = clipboard.data as BattleHazard;
-          const offsetCoords = (h.coordinates as any[]).map(c => ({ x: c.x + 10, y: c.y + 10 }));
-          await supabase.from('Battle_Hazards').insert({
-            ...h, id: undefined, created_at: undefined,
-            coordinates: offsetCoords
-          });
-        }
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, selectedUnitId, selectedPoi, selectedHazard, clipboard, planningUnits]);
+  }, [activeTab, selectedUnitId, selectedPoi, selectedHazard, planningUnits]);
 
   const handleSyncDraft = async () => {
     if (!confirm("Are you sure you want to sync your planning map from the live battle map? This will overwrite your current planned units!")) return;
@@ -119,7 +88,6 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
       if (insertError) {
         alert("Failed to sync units: " + insertError.message);
       } else {
-        // Manually refetch to ensure UI updates immediately (especially useful for bulk inserts)
         const { data } = await supabase.from('Planning_Units').select('*');
         if (data) setPlanningUnits(data as Unit[]);
       }
@@ -225,8 +193,8 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   };
 
   const checkIsDraggable = (unit: Unit) => {
-    if (activeTab === 'planning') return true; // Can drag own and enemy units in planning
-    return unit.owner === role; // Can only drag own units in battle
+    if (activeTab === 'planning') return true;
+    return unit.owner === role;
   };
 
   const currentUnits = activeTab === 'planning' ? planningUnits : battleUnits;
@@ -235,118 +203,130 @@ export default function PlayerDashboard({ role }: PlayerDashboardProps) {
   const selectedUnit = currentUnits.find(u => u.id === selectedUnitId) || null;
 
   return (
-    <div className="flex h-full w-full bg-slate-100 text-slate-800 relative overflow-hidden">
-      <Sidebar 
-        layers={layers} 
-        toggleLayer={toggleLayer}
-        hiddenDynamicLayers={hiddenDynamicLayers}
-        setHiddenDynamicLayers={setHiddenDynamicLayers}
-        hiddenPois={hiddenPois}
-        setHiddenPois={setHiddenPois}
-        hiddenHazards={hiddenHazards}
-        setHiddenHazards={setHiddenHazards}
-        role={role}
-        onEditPoi={handlePoiClick}
-        onEditHazard={handleHazardClick}
-      />
-      <main className="flex-1 p-8 overflow-auto flex flex-col items-center">
-        
-        <div className="mb-6 flex space-x-4">
+    <div className="bg-surface-canvas-void font-body-base text-on-surface min-h-screen flex flex-col overflow-hidden">
+      <TopBar userEmail={userEmail} role={role} onSignOut={onSignOut}>
+        <nav className="bg-primary/90 px-space-xs py-space-xs rounded-lg flex items-center gap-space-xs shadow-inner border border-primary-fixed-dim/20">
           <button 
-            className={`px-6 py-2 rounded-full font-bold shadow-md transition-colors ${activeTab === 'planning' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeTab === 'planning' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveTab('planning')}
           >
             Planning Map
           </button>
           <button 
-            className={`px-6 py-2 rounded-full font-bold shadow-md transition-colors ${activeTab === 'battle' ? 'bg-red-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeTab === 'battle' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveTab('battle')}
           >
             Battle Map
           </button>
-        </div>
+        </nav>
+      </TopBar>
 
-        <div className="w-full flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-700">{role} - {activeTab === 'planning' ? 'Planning Phase' : 'Active Battle'}</h1>
-            <p className="text-slate-500">
-              {activeTab === 'planning' 
-                ? 'Spawn new units to reserve or click on the map to deploy Infantry. Drag and drop to reposition your units.' 
-                : 'Viewing live battle data (your units and revealed enemy units).'}
-            </p>
-          </div>
-          {activeTab === 'planning' && (
-            <button 
-              onClick={handleSyncDraft}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>Sync Draft from Live</span>
-            </button>
-          )}
-        </div>
-
-        {activeTab === 'planning' && (
-          <UnitCreation 
-            table="Planning_Units" 
-            title="Plan New Unit"
-            fixedOwner={role as 'Player A' | 'Player B'}
+      <main className="relative pt-16 w-full h-screen bg-surface-canvas-void flex flex-col">
+        <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
+          {/* Left Panel */}
+          <Sidebar 
+            layers={layers} 
+            toggleLayer={toggleLayer}
+            hiddenDynamicLayers={hiddenDynamicLayers}
+            setHiddenDynamicLayers={setHiddenDynamicLayers}
+            hiddenPois={hiddenPois}
+            setHiddenPois={setHiddenPois}
+            hiddenHazards={hiddenHazards}
+            setHiddenHazards={setHiddenHazards}
+            role={role}
+            onEditPoi={handlePoiClick}
+            onEditHazard={handleHazardClick}
           />
-        )}
 
-        <ReservesPanel 
-          units={reserveUnits} 
-          isDraggable={checkIsDraggable} 
-          onUnitClick={handleUnitClick}
-        />
+          {/* Center Canvas */}
+          <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
+            {/* Floating HUD Toolbar */}
+            {activeTab === 'planning' && (
+              <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between pointer-events-none px-16">
+                <div className="pointer-events-auto flex items-center gap-2"></div>
+                <div className="pointer-events-auto flex items-center gap-2">
+                  <button onClick={handleSyncDraft} className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" title="Sincronizar mapa de planejamento com mapa de batalha" type="button">
+                    <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
+                    <div className="flex flex-col text-left">
+                      <span className="font-headline-sm text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Sync Draft</span>
+                      <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-0.5">From Live</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
 
-        <MapGrid 
-          layers={layers}
-          hiddenDynamicLayers={hiddenDynamicLayers} 
-          hiddenPois={hiddenPois}
-          hiddenHazards={hiddenHazards}
-          units={activeUnits} 
-          selectedUnitId={selectedUnitId}
-          onGridClick={activeTab === 'planning' ? handleGridClick : undefined}
-          isDraggable={checkIsDraggable}
-          onUnitDrop={handleUnitDrop}
-          onUnitClick={handleUnitClick}
-          onPOIClick={handlePoiClick}
-          onHazardClick={handleHazardClick}
-        />
+            <div className="flex-1 relative cursor-crosshair overflow-hidden">
+              <MapGrid 
+                layers={layers}
+                hiddenDynamicLayers={hiddenDynamicLayers} 
+                hiddenPois={hiddenPois}
+                hiddenHazards={hiddenHazards}
+                units={activeUnits} 
+                selectedUnitId={selectedUnitId}
+                onGridClick={activeTab === 'planning' ? handleGridClick : undefined}
+                isDraggable={checkIsDraggable}
+                onUnitDrop={handleUnitDrop}
+                onUnitClick={handleUnitClick}
+                onPOIClick={handlePoiClick}
+                onHazardClick={handleHazardClick}
+              />
+            </div>
+
+            {/* Staging Tray Dock */}
+            <div className="relative z-30 w-full bg-surface-parchment/90 backdrop-blur-md border-t border-border-parchment px-5 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
+              <ReservesPanel 
+                units={reserveUnits} 
+                isDraggable={checkIsDraggable} 
+                onUnitClick={handleUnitClick}
+              />
+            </div>
+          </div>
+          
+          {/* Right Panel */}
+          <aside className="relative w-[380px] min-w-[380px] h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out">
+            {selectedHazard ? (
+              <HazardPanel
+                selectedHazard={selectedHazard}
+                onClose={() => setSelectedHazard(null)}
+                onSelectHazard={setSelectedHazard}
+                isModerator={false}
+                targetTable="Battle_Hazards"
+              />
+            ) : selectedPoi ? (
+              <PoiPanel 
+                pois={[]} 
+                selectedPoi={selectedPoi} 
+                onClose={() => setSelectedPoi(null)} 
+                onSelectPoi={() => setSelectedPoi(null)}
+                isModerator={false} 
+                targetTable="Map_POIs"
+                role={role}
+              />
+            ) : (
+              <UnitPanel 
+                units={activeTab === 'planning' ? planningUnits : battleUnits} 
+                selectedUnit={selectedUnit} 
+                onClose={() => setSelectedUnitId(null)}
+                onSelectUnit={setSelectedUnitId}
+                isModerator={false}
+                role={role}
+                activeTab={activeTab}
+              />
+            )}
+
+            {activeTab === 'planning' && !selectedHazard && !selectedPoi && !selectedUnitId && (
+              <div className="flex-1 overflow-y-auto p-4 border-t border-border-parchment mt-4 space-y-4">
+                <UnitCreation 
+                  table="Planning_Units" 
+                  title="Plan New Unit"
+                  fixedOwner={role as 'Player A' | 'Player B'}
+                />
+              </div>
+            )}
+          </aside>
+        </div>
       </main>
-      
-      {selectedHazard ? (
-        <HazardPanel
-          selectedHazard={selectedHazard}
-          onClose={() => setSelectedHazard(null)}
-          onSelectHazard={setSelectedHazard}
-          isModerator={false}
-          targetTable="Battle_Hazards"
-        />
-      ) : selectedPoi ? (
-        <PoiPanel 
-          pois={[]} 
-          selectedPoi={selectedPoi} 
-          onClose={() => setSelectedPoi(null)} 
-          onSelectPoi={() => setSelectedPoi(null)}
-          isModerator={false} 
-          targetTable="Map_POIs"
-          role={role}
-        />
-      ) : (
-        <UnitPanel 
-          units={activeTab === 'planning' ? planningUnits : battleUnits} 
-          selectedUnit={selectedUnit} 
-          onClose={() => setSelectedUnitId(null)}
-          onSelectUnit={setSelectedUnitId}
-          isModerator={false}
-          role={role}
-          activeTab={activeTab}
-        />
-      )}
     </div>
   );
 }

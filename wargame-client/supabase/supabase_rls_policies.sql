@@ -121,3 +121,20 @@ FOR SELECT
 USING ( 
     public.get_user_role() = ANY (visible_to_teams)
 );
+
+-- ==========================================
+-- MAP_LAYERS POLICIES
+-- ==========================================
+
+DROP POLICY IF EXISTS "Moderator full access on Map_Layers" ON public."Map_Layers";
+CREATE POLICY "Moderator full access on Map_Layers" 
+ON public."Map_Layers" 
+FOR ALL 
+USING ( public.get_user_role() = 'Moderator' );
+
+DROP POLICY IF EXISTS "Player read access on Map_Layers" ON public."Map_Layers";
+CREATE POLICY "Player read access on Map_Layers" 
+ON public."Map_Layers" 
+FOR SELECT 
+USING ( is_global_visible = TRUE );
+

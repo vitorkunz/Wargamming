@@ -12,8 +12,16 @@ import UnitPanel from './UnitPanel';
 import PoiPanel from './PoiPanel';
 import HazardPanel from './HazardPanel';
 import { MapPOI, BattleHazard } from './MapGrid';
+import TopBar from './ui/TopBar';
+import Panel from './ui/Panel';
 
-export default function ModeratorDashboard() {
+interface ModeratorDashboardProps {
+  userEmail: string;
+  role: string;
+  onSignOut: () => void;
+}
+
+export default function ModeratorDashboard({ userEmail, role, onSignOut }: ModeratorDashboardProps) {
   const [hiddenDynamicLayers, setHiddenDynamicLayers] = useState<string[]>([]);
   const [hiddenPois, setHiddenPois] = useState<string[]>([]);
   const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
@@ -23,7 +31,7 @@ export default function ModeratorDashboard() {
     hazards: true
   });
 
-  const [activeView, setActiveView] = useState<'draft' | 'published'>('draft');
+  const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -32,13 +40,13 @@ export default function ModeratorDashboard() {
   
   const [clipboard, setClipboard] = useState<{ type: 'unit' | 'poi' | 'hazard', data: any } | null>(null);
 
-  const unitsTable = activeView === 'draft' ? 'Moderator_Units' : 'Battle_Units';
-  const poisTable = activeView === 'draft' ? 'Moderator_POIs' : 'Map_POIs';
-  const hazardsTable = activeView === 'draft' ? 'Moderator_Hazards' : 'Battle_Hazards';
+  const unitsTable = activeView === 'edit_map' ? 'Moderator_Units' : 'Battle_Units';
+  const poisTable = activeView === 'edit_map' ? 'Moderator_POIs' : 'Map_POIs';
+  const hazardsTable = activeView === 'edit_map' ? 'Moderator_Hazards' : 'Battle_Hazards';
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      if (activeView !== 'draft') return;
+      if (activeView !== 'edit_map') return;
       
       // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -61,46 +69,11 @@ export default function ModeratorDashboard() {
           }
         }
       }
-
-      if (e.ctrlKey && e.key === 'c') {
-        if (selectedUnitId) {
-          const unit = units.find(u => u.id === selectedUnitId);
-          if (unit) setClipboard({ type: 'unit', data: unit });
-        } else if (selectedPoi) {
-          setClipboard({ type: 'poi', data: selectedPoi });
-        } else if (selectedHazard) {
-          setClipboard({ type: 'hazard', data: selectedHazard });
-        }
-      }
-
-      if (e.ctrlKey && e.key === 'v' && clipboard) {
-        if (clipboard.type === 'unit') {
-          const u = clipboard.data as Unit;
-          await supabase.from(unitsTable).insert({
-            ...u, id: undefined, created_at: undefined,
-            x_coord: u.x_coord + 10, y_coord: u.y_coord + 10
-          });
-        } else if (clipboard.type === 'poi') {
-          const p = clipboard.data as MapPOI;
-          await supabase.from(poisTable).insert({
-            ...p, id: undefined, created_at: undefined,
-            x_coord: p.x_coord + 10, y_coord: p.y_coord + 10
-          });
-        } else if (clipboard.type === 'hazard') {
-          const h = clipboard.data as BattleHazard;
-          // Offset polygon coordinates
-          const offsetCoords = (h.coordinates as any[]).map(c => ({ x: c.x + 10, y: c.y + 10 }));
-          await supabase.from(hazardsTable).insert({
-            ...h, id: undefined, created_at: undefined,
-            coordinates: offsetCoords
-          });
-        }
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeView, selectedUnitId, selectedPoi, selectedHazard, clipboard, units, unitsTable, poisTable, hazardsTable]);
+  }, [activeView, selectedUnitId, selectedPoi, selectedHazard, unitsTable, poisTable, hazardsTable]);
 
   const [isDrawingHazard, setIsDrawingHazard] = useState(false);
   const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
@@ -156,38 +129,15 @@ export default function ModeratorDashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [unitsTable]);
 
-  // Removed duplicate handleUnitClick
-
-  // Drag Drop -> Move any unit on the map (and take it out of reserve)
   const handleUnitDrop = async (unitId: string, x: number, y: number) => {
-    if (activeView === 'published') return; // Read-only
-    // Optimistically update UI
+    if (activeView === 'view_published') return;
     setUnits(prev => prev.map(u => u.id === unitId ? { ...u, x_coord: x, y_coord: y, in_reserve: false } : u));
-
-    const { error } = await supabase
-      .from(unitsTable)
-      .update({ x_coord: x, y_coord: y, in_reserve: false })
-      .eq('id', unitId);
-
-    if (error) {
-      console.error("Failed to move unit:", error);
-      alert("Failed to move unit. Check RLS policies.");
-    }
+    await supabase.from(unitsTable).update({ x_coord: x, y_coord: y, in_reserve: false }).eq('id', unitId);
   };
 
   const handlePoiDrop = async (poiId: string, x: number, y: number) => {
-    if (activeView === 'published') return; // Read-only
-    // We don't have pois in ModeratorDashboard state (MapGrid fetches them)
-    // but the db update will trigger the realtime subscription to re-render in MapGrid.
-    const { error } = await supabase
-      .from(poisTable)
-      .update({ x_coord: x, y_coord: y })
-      .eq('id', poiId);
-
-    if (error) {
-      console.error("Failed to move POI:", error);
-      alert("Failed to move POI: " + error.message);
-    }
+    if (activeView === 'view_published') return;
+    await supabase.from(poisTable).update({ x_coord: x, y_coord: y }).eq('id', poiId);
   };
 
   const handlePublish = async () => {
@@ -211,125 +161,172 @@ export default function ModeratorDashboard() {
   const selectedUnit = units.find(u => u.id === selectedUnitId) || null;
 
   return (
-    <div className="flex h-full w-full bg-slate-100 text-slate-800 relative overflow-hidden">
-      <Sidebar 
-        layers={layers} 
-        toggleLayer={toggleLayer} 
-        hiddenDynamicLayers={hiddenDynamicLayers}
-        setHiddenDynamicLayers={setHiddenDynamicLayers}
-        hiddenPois={hiddenPois}
-        setHiddenPois={setHiddenPois}
-        hiddenHazards={hiddenHazards}
-        setHiddenHazards={setHiddenHazards}
-        isModerator={true}
-        onEditPoi={handlePOIClick}
-        onEditHazard={handleHazardClick}
-      />
-      <main className="flex-1 p-8 overflow-auto flex flex-col items-center">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-purple-700">Moderator Dashboard</h1>
-          <p className="text-slate-500">Assign players, manage units, and control the fog of war.</p>
-        </div>
+    <div className="bg-surface-canvas-void font-body-base text-on-surface min-h-screen flex flex-col overflow-hidden">
+      <TopBar userEmail={userEmail} role={role} onSignOut={onSignOut}>
+        <nav className="bg-primary/90 px-space-xs py-space-xs rounded-lg flex items-center gap-space-xs shadow-inner border border-primary-fixed-dim/20">
+          <button 
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'manage_players' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
+            onClick={() => setActiveView('manage_players')}
+          >
+            Manage Players
+          </button>
+          <button 
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'edit_map' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
+            onClick={() => setActiveView('edit_map')}
+          >
+            Edit Map
+          </button>
+          <button 
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'view_published' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
+            onClick={() => setActiveView('view_published')}
+          >
+            View Published Map
+          </button>
+        </nav>
+      </TopBar>
 
-        <div className="mb-6 flex flex-col items-center gap-4">
-          <div className="flex space-x-4 bg-white p-1 rounded-full shadow-md">
-            <button 
-              className={`px-6 py-2 rounded-full font-bold transition-colors ${activeView === 'draft' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-              onClick={() => setActiveView('draft')}
-            >
-              Draft Map
-            </button>
-            <button 
-              className={`px-6 py-2 rounded-full font-bold transition-colors ${activeView === 'published' ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-              onClick={() => setActiveView('published')}
-            >
-              Published Map
-            </button>
+      <main className="relative pt-16 w-full h-screen bg-surface-canvas-void flex flex-col">
+        <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
+          {/* Left Panel */}
+          {activeView !== 'manage_players' && (
+            <Sidebar 
+              layers={layers} 
+              toggleLayer={toggleLayer} 
+              hiddenDynamicLayers={hiddenDynamicLayers}
+              setHiddenDynamicLayers={setHiddenDynamicLayers}
+              hiddenPois={hiddenPois}
+              setHiddenPois={setHiddenPois}
+              hiddenHazards={hiddenHazards}
+              setHiddenHazards={setHiddenHazards}
+              isModerator={activeView === 'edit_map'}
+              onEditPoi={handlePOIClick}
+              onEditHazard={handleHazardClick}
+            />
+          )}
+
+          {/* Center Canvas */}
+          <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
+            {activeView === 'manage_players' ? (
+              <div className="p-8 w-full h-full overflow-y-auto bg-surface-parchment text-on-surface">
+                <h1 className="text-3xl font-bold text-primary mb-6 font-display-lg">Manage Players</h1>
+                <TeamAssignment />
+              </div>
+            ) : (
+              <>
+                {/* Floating HUD Toolbar */}
+                {activeView === 'edit_map' && (
+                  <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between pointer-events-none px-16">
+                    {/* Left HUD: Space reserved for Map tools inside MapGrid maybe, or just empty for now to match structure */}
+                    <div className="pointer-events-auto flex items-center gap-2"></div>
+                    
+                    {/* Right HUD: Sync & Publish */}
+                    <div className="pointer-events-auto flex items-center gap-2">
+                      <button onClick={handleSyncFromLive} className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" title="Sincronizar e carregar estado publicado da mesa" type="button">
+                        <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
+                        <div className="flex flex-col text-left">
+                          <span className="font-headline-sm text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Sync Draft</span>
+                          <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-0.5">From Live</span>
+                        </div>
+                      </button>
+                      <button onClick={handlePublish} className="group bg-faction-friendly hover:bg-chrome-hover text-text-on-dark px-3.5 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-secondary-fixed/40 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ring-1 ring-secondary-fixed/30" title="Publicar alterações táticas para visualização dos delegados" type="button">
+                        <span className="material-symbols-outlined text-[19px] text-secondary-fixed group-hover:scale-110 transition-transform">cell_tower</span>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-headline-sm text-[12px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Publicar Mapa</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-ping"></span>
+                          </div>
+                          <span className="font-tag-overline text-[9px] text-secondary-fixed uppercase leading-none mt-0.5 font-bold">Deploy Live</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex-1 relative cursor-crosshair overflow-hidden">
+                  <MapGrid 
+                    layers={layers}  
+                    hiddenDynamicLayers={hiddenDynamicLayers}
+                    hiddenPois={hiddenPois}
+                    hiddenHazards={hiddenHazards}
+                    units={activeUnits} 
+                    selectedUnitId={selectedUnitId}
+                    poisTable={poisTable}
+                    hazardsTable={hazardsTable}
+                    onUnitClick={handleUnitClick} 
+                    onPOIClick={handlePOIClick}
+                    onHazardClick={handleHazardClick}
+                    isDraggable={() => activeView === 'edit_map'}
+                    onUnitDrop={handleUnitDrop}
+                    isPoiDraggable={() => activeView === 'edit_map'}
+                    onPoiDrop={handlePoiDrop}
+                    isDrawingMode={isDrawingHazard && activeView === 'edit_map'}
+                    onDrawComplete={handleDrawComplete}
+                  />
+                </div>
+
+                {/* Staging Tray Dock */}
+                {activeView === 'edit_map' && (
+                  <div className="relative z-30 w-full bg-surface-parchment/90 backdrop-blur-md border-t border-border-parchment px-5 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
+                    <ReservesPanel 
+                      units={reserveUnits} 
+                      isDraggable={() => true} 
+                      onUnitClick={handleUnitClick}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
           
-          <div className="flex space-x-4">
-            {activeView === 'draft' && (
-              <button onClick={handlePublish} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow-md flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Publish Draft to Live
-              </button>
-            )}
-            <button onClick={handleSyncFromLive} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded shadow-md flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              Sync Draft from Live
-            </button>
-          </div>
+          {/* Right Panel */}
+          {activeView !== 'manage_players' && (
+            <aside className="relative w-[380px] min-w-[380px] h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out">
+              {selectedHazard ? (
+                <HazardPanel 
+                  selectedHazard={selectedHazard}
+                  onClose={() => setSelectedHazard(null)}
+                  onSelectHazard={setSelectedHazard}
+                  isModerator={activeView === 'edit_map'}
+                  targetTable={hazardsTable}
+                />
+              ) : selectedPoi ? (
+                <PoiPanel 
+                  pois={[]} 
+                  selectedPoi={selectedPoi} 
+                  onClose={() => setSelectedPoi(null)} 
+                  onSelectPoi={() => setSelectedPoi(null)} 
+                  isModerator={activeView === 'edit_map'} 
+                  targetTable={poisTable}
+                />
+              ) : (
+                <UnitPanel 
+                  units={units}
+                  selectedUnit={selectedUnit} 
+                  isModerator={activeView === 'edit_map'} 
+                  onSelectUnit={setSelectedUnitId}
+                  onClose={() => {}} 
+                  targetTable={unitsTable}
+                />
+              )}
+              
+              {activeView === 'edit_map' && !selectedHazard && !selectedPoi && !selectedUnitId && (
+                <div className="flex-1 overflow-y-auto p-4 border-t border-border-parchment mt-4 space-y-4">
+                  <h3 className="font-headline-sm text-primary uppercase">Quick Actions</h3>
+                  <UnitCreation table={unitsTable} />
+                  <PoiCreation table={poisTable} />
+                  <HazardCreation 
+                    isDrawingHazard={isDrawingHazard}
+                    setIsDrawingHazard={setIsDrawingHazard}
+                    pendingHazardPoints={pendingHazardPoints}
+                    setPendingHazardPoints={setPendingHazardPoints}
+                    table={hazardsTable}
+                  />
+                </div>
+              )}
+            </aside>
+          )}
         </div>
-
-        {activeView === 'draft' && (
-          <>
-            <TeamAssignment />
-            <UnitCreation table={unitsTable} />
-            <HazardCreation 
-              isDrawingHazard={isDrawingHazard}
-              setIsDrawingHazard={setIsDrawingHazard}
-              pendingHazardPoints={pendingHazardPoints}
-              setPendingHazardPoints={setPendingHazardPoints}
-              table={hazardsTable}
-            />
-            <PoiCreation table={poisTable} />
-          </>
-        )}
-        
-        <ReservesPanel 
-          units={reserveUnits} 
-          isDraggable={() => activeView === 'draft'} 
-          onUnitClick={handleUnitClick}
-        />
-
-        <MapGrid 
-          layers={layers}  
-          hiddenDynamicLayers={hiddenDynamicLayers}
-          hiddenPois={hiddenPois}
-          hiddenHazards={hiddenHazards}
-          units={activeUnits} 
-          selectedUnitId={selectedUnitId}
-          poisTable={poisTable}
-          hazardsTable={hazardsTable}
-          onUnitClick={handleUnitClick} 
-          onPOIClick={handlePOIClick}
-          onHazardClick={handleHazardClick}
-          isDraggable={() => activeView === 'draft'} // Only drag in draft
-          onUnitDrop={handleUnitDrop}
-          isPoiDraggable={() => activeView === 'draft'} // Only drag in draft
-          onPoiDrop={handlePoiDrop}
-          isDrawingMode={isDrawingHazard && activeView === 'draft'}
-          onDrawComplete={handleDrawComplete}
-        />
       </main>
-      
-      {selectedHazard ? (
-        <HazardPanel 
-          selectedHazard={selectedHazard}
-          onClose={() => setSelectedHazard(null)}
-          onSelectHazard={setSelectedHazard}
-          isModerator={activeView === 'draft'}
-          targetTable={hazardsTable}
-        />
-      ) : selectedPoi ? (
-        <PoiPanel 
-          pois={[]} 
-          selectedPoi={selectedPoi} 
-          onClose={() => setSelectedPoi(null)} 
-          onSelectPoi={() => setSelectedPoi(null)} 
-          isModerator={activeView === 'draft'} 
-          targetTable={poisTable}
-        />
-      ) : (
-        <UnitPanel 
-          units={units}
-          selectedUnit={selectedUnit} 
-          isModerator={activeView === 'draft'} 
-          onSelectUnit={setSelectedUnitId}
-          onClose={() => {}} 
-          targetTable={unitsTable}
-        />
-      )}
     </div>
   );
 }

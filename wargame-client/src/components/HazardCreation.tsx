@@ -52,26 +52,33 @@ export default function HazardCreation({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md border border-slate-200 mb-6 w-full max-w-4xl">
-      <h2 className="text-xl font-bold mb-4 text-orange-600">Deploy Hazard Zone</h2>
+    <div className="bg-surface-card p-4 rounded-xl shadow-sm border border-border-parchment w-full flex flex-col gap-4 relative overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border-parchment/60 pb-3">
+        <span className="material-symbols-outlined text-status-alert text-[24px]">warning</span>
+        <h2 className="text-lg font-bold text-status-alert font-headline-sm flex-1">Deploy Hazard Zone</h2>
+      </div>
       
       {!isDrawingHazard && !pendingHazardPoints && (
         <button 
           onClick={() => setIsDrawingHazard(true)}
-          className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded shadow-sm"
+          className="w-full bg-status-alert/10 hover:bg-status-alert text-status-alert hover:text-white border border-status-alert/30 font-bold py-2.5 px-4 rounded-lg transition-colors font-headline-sm text-[13px] shadow-sm flex items-center justify-center gap-2"
         >
-          ✏️ Draw New Hazard Zone
+          <span className="material-symbols-outlined text-[18px]">draw</span>
+          Draw New Hazard Zone
         </button>
       )}
 
       {isDrawingHazard && !pendingHazardPoints && (
-        <div className="flex items-center space-x-4 bg-orange-50 border border-orange-200 p-3 rounded">
-          <span className="text-orange-800 font-medium flex-1">
-            Drawing Mode Active: Click and drag on the map to draw the hazard area.
-          </span>
+        <div className="flex flex-col gap-3 bg-surface-container/50 border border-status-alert/30 p-3 rounded-lg border-dashed">
+          <div className="flex items-start gap-2">
+            <span className="material-symbols-outlined text-status-alert text-[18px] mt-0.5">gesture</span>
+            <span className="font-label-md text-on-surface-variant flex-1 leading-tight">
+              Drawing Mode Active: Click and drag on the map to draw the hazard area.
+            </span>
+          </div>
           <button 
             onClick={() => setIsDrawingHazard(false)}
-            className="text-slate-500 hover:text-slate-800 underline"
+            className="text-status-critical hover:text-status-critical/80 font-bold text-xs uppercase tracking-wider self-end"
           >
             Cancel
           </button>
@@ -79,13 +86,13 @@ export default function HazardCreation({
       )}
 
       {pendingHazardPoints && (
-        <form onSubmit={handleCreateHazard} className="flex flex-wrap gap-4 items-end bg-orange-50 p-4 border border-orange-300 rounded">
-          <div className="w-full mb-2">
-            <span className="text-sm font-bold text-orange-800">Area captured ({pendingHazardPoints.length} points). Configure and save:</span>
+        <form onSubmit={handleCreateHazard} className="flex flex-col gap-3 bg-surface-container/30 p-3 border border-status-alert/30 rounded-lg">
+          <div className="w-full mb-1">
+            <span className="font-label-md text-[11px] font-bold text-status-alert">Area captured ({pendingHazardPoints.length} points).</span>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Hazard Type</label>
-              <select className="border border-slate-300 rounded p-2 text-slate-700 w-40" value={hazardType} onChange={(e) => setHazardType(e.target.value)}>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Hazard Type</label>
+              <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={hazardType} onChange={(e) => setHazardType(e.target.value)}>
                 <option value="minefield">Minefield</option>
                 <option value="flooded_zone">Flooded Zone</option>
                 <option value="naval_blockade">Naval Blockade</option>
@@ -94,24 +101,30 @@ export default function HazardCreation({
               </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Label</label>
-            <input type="text" className="border border-slate-300 rounded p-2 w-48 text-slate-700" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Label</label>
+            <input type="text" className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none shadow-inner" value={label} onChange={(e) => setLabel(e.target.value)} />
           </div>
-          <div className="flex flex-col space-y-2 mb-2">
-            <label className="flex items-center space-x-2">
-               <input type="checkbox" checked={visibleToPlayerA} onChange={(e) => setVisibleToPlayerA(e.target.checked)} className="rounded" />
-               <span className="text-sm text-slate-600">Reveal to Player A</span>
+          <div className="flex flex-col gap-2 mt-1">
+            <label className="flex items-center gap-2 cursor-pointer group">
+               <div className={`relative inline-block w-8 rounded-full h-4 transition-colors border ${visibleToPlayerA ? 'bg-primary border-transparent' : 'bg-surface-dim border-outline-variant'}`}>
+                 <input type="checkbox" className="opacity-0 w-0 h-0" checked={visibleToPlayerA} onChange={(e) => setVisibleToPlayerA(e.target.checked)} />
+                 <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${visibleToPlayerA ? 'right-0.5 bg-white' : 'left-0.5 bg-on-surface-variant'}`}></span>
+               </div>
+               <span className="font-label-md text-[13px] font-bold text-on-surface group-hover:text-primary transition-colors">Reveal to Player A</span>
             </label>
-            <label className="flex items-center space-x-2">
-               <input type="checkbox" checked={visibleToPlayerB} onChange={(e) => setVisibleToPlayerB(e.target.checked)} className="rounded" />
-               <span className="text-sm text-slate-600">Reveal to Player B</span>
+            <label className="flex items-center gap-2 cursor-pointer group">
+               <div className={`relative inline-block w-8 rounded-full h-4 transition-colors border ${visibleToPlayerB ? 'bg-primary border-transparent' : 'bg-surface-dim border-outline-variant'}`}>
+                 <input type="checkbox" className="opacity-0 w-0 h-0" checked={visibleToPlayerB} onChange={(e) => setVisibleToPlayerB(e.target.checked)} />
+                 <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${visibleToPlayerB ? 'right-0.5 bg-white' : 'left-0.5 bg-on-surface-variant'}`}></span>
+               </div>
+               <span className="font-label-md text-[13px] font-bold text-on-surface group-hover:text-primary transition-colors">Reveal to Player B</span>
             </label>
           </div>
-          <div className="flex space-x-3 ml-auto">
-            <button type="button" onClick={handleCancel} className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded shadow-sm">
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button type="button" onClick={handleCancel} className="bg-surface-dim hover:bg-surface-container-high text-on-surface font-bold py-2 px-4 rounded-lg shadow-sm font-label-md text-[13px] transition-colors border border-border-parchment">
               Discard
             </button>
-            <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded shadow-sm">
+            <button type="submit" className="bg-status-alert hover:bg-status-alert/90 text-white font-bold py-2 px-4 rounded-lg shadow-sm font-label-md text-[13px] transition-colors">
               Save Hazard
             </button>
           </div>

@@ -69,54 +69,60 @@ export default function UnitCreation({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md border border-slate-200 mb-6 w-full max-w-4xl flex gap-6">
+    <div className="bg-surface-card p-4 rounded-xl shadow-sm border border-border-parchment w-full flex flex-col gap-4 relative overflow-hidden">
       
-      {/* Live Preview */}
-      <div className="w-32 h-32 flex flex-col items-center justify-center bg-slate-50 border rounded p-2 shrink-0">
-        <NatoSymbol sidc={sidc} size={64} />
+      <div className="flex items-center gap-4 border-b border-border-parchment/60 pb-3">
+        {/* Live Preview */}
+        <div className="w-16 h-16 flex flex-col items-center justify-center bg-surface-container border border-border-parchment rounded-lg p-1 shrink-0 shadow-inner">
+          <NatoSymbol sidc={sidc} size={42} />
+        </div>
+        <h2 className="text-lg font-bold text-primary font-headline-sm flex-1">{title}</h2>
       </div>
 
       <div className="flex-1">
-        <h2 className="text-xl font-bold mb-4 text-slate-700">{title}</h2>
-        <form onSubmit={handleCreateUnit} className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-4 items-end">
+        <form onSubmit={handleCreateUnit} className="flex flex-col gap-3">
+          <div>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Callsign / Name</label>
+            <input 
+              type="text" 
+              className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none focus:border-primary shadow-inner" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder="Ex. Fragata Liberal F-43" 
+            />
+          </div>
+          
+          {!fixedOwner && (
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Callsign / Name</label>
-              <input 
-                type="text" 
-                className="border border-slate-300 rounded p-2 text-slate-700 bg-white w-48" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                placeholder="e.g. 1st Regiment" 
-              />
+              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Owner (Force)</label>
+              <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={owner} onChange={(e) => setOwner(e.target.value as 'Player A' | 'Player B')}>
+                <option>Player A</option>
+                <option>Player B</option>
+              </select>
             </div>
-            {!fixedOwner && (
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Owner</label>
-                <select className="border border-slate-300 rounded p-2 text-slate-700 bg-white" value={owner} onChange={(e) => setOwner(e.target.value as 'Player A' | 'Player B')}>
-                  <option>Player A</option>
-                  <option>Player B</option>
-                </select>
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Health</label>
-              <input type="number" className="border border-slate-300 rounded p-2 w-24 text-slate-700 bg-white" value={health} onChange={(e) => setHealth(Number(e.target.value))} />
+          )}
+          
+          <div>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Prontidão (%)</label>
+            <div className="flex items-center bg-surface-container p-2 rounded-lg border border-border-parchment">
+              <input type="range" min="0" max="100" className="flex-1 accent-primary" value={health} onChange={(e) => setHealth(Number(e.target.value))} />
+              <span className="ml-3 text-xs font-bold text-primary w-8 text-right bg-surface-card px-1.5 py-0.5 rounded border border-border-parchment shadow-sm">{health}%</span>
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-4 items-end border-t pt-4 border-slate-100 mt-2">
+          <div className="border-t pt-3 border-border-parchment/60 mt-1 flex flex-col gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Affiliation</label>
-              <select className="border border-slate-300 rounded p-2 text-slate-700 bg-white" value={affiliation} onChange={(e) => setAffiliation(e.target.value as AffiliationKey)}>
+              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Affiliation (Fação)</label>
+              <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={affiliation} onChange={(e) => setAffiliation(e.target.value as AffiliationKey)}>
                 {Object.keys(AFFILIATIONS).map((key) => (
                   <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
                 ))}
               </select>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Unit Type</label>
-              <select className="border border-slate-300 rounded p-2 text-slate-700 bg-white" value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)}>
+              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Unit Type (Classe)</label>
+              <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)}>
                 {UNIT_CATEGORIES.map((category) => (
                   <optgroup key={category} label={category}>
                     {Object.entries(UNIT_TYPES)
@@ -128,17 +134,19 @@ export default function UnitCreation({
                 ))}
               </select>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Echelon</label>
-              <select className="border border-slate-300 rounded p-2 text-slate-700 bg-white" value={echelon} onChange={(e) => setEchelon(e.target.value as EchelonKey)}>
+              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Echelon (Escalão)</label>
+              <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={echelon} onChange={(e) => setEchelon(e.target.value as EchelonKey)}>
                 {Object.keys(ECHELONS).map((key) => (
                   <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
                 ))}
               </select>
             </div>
             
-            <button type="submit" className="ml-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-              Spawn Unit
+            <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-2.5 px-4 rounded-lg transition-colors font-headline-sm text-[13px] shadow-sm flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              Spawn Unit to Reserves
             </button>
           </div>
         </form>
