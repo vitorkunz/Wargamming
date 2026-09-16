@@ -62,8 +62,10 @@ interface MapGridProps {
   onUnitDrop?: (unitId: string, x: number, y: number) => void;
   isPoiDraggable?: (poi: MapPOI) => boolean;
   onPoiDrop?: (poiId: string, x: number, y: number) => void;
+  onSpawnUnitAt?: (templateType: string, x: number, y: number) => void;
   isDrawingMode?: boolean;
   onDrawComplete?: (points: {x: number, y: number}[]) => void;
+  hudRightActions?: React.ReactNode;
 }
 
 const CELL_SIZE = 40;
@@ -81,76 +83,148 @@ const ScaleUpdater = () => {
 
 function MapControls({ 
   isFullscreen, 
-  onToggleFullscreen 
+  onToggleFullscreen,
+  selectedTool,
+  setSelectedTool,
+  hudRightActions
 }: { 
   isFullscreen: boolean; 
   onToggleFullscreen: () => void;
+  selectedTool: string;
+  setSelectedTool: (t: string) => void;
+  hudRightActions?: React.ReactNode;
 }) {
   const { zoomIn, zoomOut, resetTransform } = useControls();
-  const [zoomPercent, setZoomPercent] = useState(100);
-
-  useTransformEffect(({ state }) => {
-    setZoomPercent(Math.round(state.scale * 100));
-  });
 
   return (
-    <div className="absolute top-3 left-3 z-30 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 rounded-lg shadow-2xl text-white select-none pointer-events-auto">
-      <button
-        type="button"
-        onClick={() => zoomOut(0.25)}
-        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
-        title="Zoom Out (-)"
-        aria-label="Zoom Out"
-      >
-        <ZoomOut size={16} />
-      </button>
+    <div 
+      className="absolute top-3 left-1/2 z-20 pointer-events-auto flex items-center gap-3 bg-[#18221d]/90 backdrop-blur-md border border-[#2d7d74]/40 rounded-xl px-3 py-1.5 shadow-2xl origin-top"
+      style={{ transform: 'translateX(-50%) scale(0.8)', transformOrigin: 'top center' }}
+    >
+      {/* 1. Map Toolset */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setSelectedTool('select')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'select'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Select / Move"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">near_me</span>
+        </button>
+        <button
+          onClick={() => setSelectedTool('drag')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'drag'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Drag Map (Arrastar Mapa)"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">pan_tool</span>
+        </button>
+        <button
+          onClick={() => setSelectedTool('place')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'place'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Place Unit Marker"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
+        </button>
+        <button
+          onClick={() => setSelectedTool('polygon')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'polygon'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Draw Operational Zone"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">polyline</span>
+        </button>
+        <button
+          onClick={() => setSelectedTool('arrow')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'arrow'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Tactical Arrow / Advance Line"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">north_east</span>
+        </button>
+        <button
+          onClick={() => setSelectedTool('target')}
+          className={`p-2 rounded-lg transition-colors ${
+            selectedTool === 'target'
+              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+              : 'hover:bg-white/10 text-text-on-dark'
+          }`}
+          title="Strategic Target Point"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">flag</span>
+        </button>
+      </div>
 
-      <button
-        type="button"
-        onClick={() => resetTransform()}
-        className="px-2 py-0.5 text-xs font-mono font-bold text-slate-300 hover:text-white hover:bg-slate-700/60 rounded transition-colors cursor-pointer"
-        title="Reset Zoom (100%)"
-      >
-        {zoomPercent}%
-      </button>
+      {/* Sleek Vertical Divider */}
+      <div className="h-6 w-[1px] bg-white/15"></div>
 
-      <button
-        type="button"
-        onClick={() => zoomIn(0.25)}
-        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
-        title="Zoom In (+)"
-        aria-label="Zoom In"
-      >
-        <ZoomIn size={16} />
-      </button>
+      {/* 2. Viewport Controls */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => zoomIn(0.2)}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+          title="Zoom In"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+        </button>
+        <button
+          onClick={() => zoomOut(0.2)}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+          title="Zoom Out"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">remove</span>
+        </button>
+        <button
+          onClick={() => resetTransform()}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+          title="Center on Selected / Ajustar à Tela"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">center_focus_strong</span>
+        </button>
+        <button
+          onClick={onToggleFullscreen}
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+          title={isFullscreen ? "Exit Fullscreen" : "Tela Cheia / Fullscreen"}
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {isFullscreen ? "fullscreen_exit" : "fullscreen"}
+          </span>
+        </button>
+      </div>
 
-      <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
-
-      <button
-        type="button"
-        onClick={() => resetTransform()}
-        className="p-1.5 hover:bg-slate-700/80 rounded text-slate-200 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
-        title="Center / Reset View"
-        aria-label="Reset View"
-      >
-        <RotateCcw size={15} />
-      </button>
-
-      <div className="w-[1px] h-4 bg-slate-700 mx-0.5" />
-
-      <button
-        type="button"
-        onClick={onToggleFullscreen}
-        className={`p-1.5 rounded transition-colors flex items-center justify-center cursor-pointer ${
-          isFullscreen 
-            ? 'bg-blue-600 hover:bg-blue-500 text-white' 
-            : 'hover:bg-slate-700/80 text-slate-200 hover:text-white'
-        }`}
-        title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen"}
-        aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-      >
-        {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-      </button>
+      {/* Sleek Vertical Divider & 3. Sincronização e Publicação */}
+      {hudRightActions && (
+        <>
+          <div className="h-6 w-[1px] bg-white/15"></div>
+          {hudRightActions}
+        </>
+      )}
     </div>
   );
 }
@@ -172,8 +246,10 @@ export default function MapGrid({
   onUnitDrop,
   isPoiDraggable,
   onPoiDrop,
+  onSpawnUnitAt,
   isDrawingMode,
-  onDrawComplete
+  onDrawComplete,
+  hudRightActions
 }: MapGridProps) {
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
   const [pois, setPois] = useState<MapPOI[]>([]);
@@ -181,6 +257,8 @@ export default function MapGrid({
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<string>('select');
+  const [gridSnapping, setGridSnapping] = useState<boolean>(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = () => {
@@ -303,6 +381,9 @@ export default function MapGrid({
       if (data.startsWith('poi:')) {
         const poiId = data.replace('poi:', '');
         if (onPoiDrop) onPoiDrop(poiId, xPixel, yPixel);
+      } else if (data.startsWith('nato-template:')) {
+        const templateType = data.replace('nato-template:', '');
+        if (onSpawnUnitAt) onSpawnUnitAt(templateType, xPixel, yPixel);
       } else {
         const unitId = data.startsWith('unit:') ? data.replace('unit:', '') : data;
         if (onUnitDrop) onUnitDrop(unitId, xPixel, yPixel);
@@ -311,7 +392,7 @@ export default function MapGrid({
   };
 
   const handleGridClick = (e: React.MouseEvent) => {
-    if (!onGridClick || isDrawingMode) return;
+    if (!onGridClick || isDrawingMode || selectedTool === 'drag') return;
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = boardWidth / rect.width;
     const scaleY = boardHeight / rect.height;
@@ -372,10 +453,16 @@ export default function MapGrid({
         minScale={0.1}
         maxScale={3}
         centerOnInit={true}
-        panning={{ disabled: isDrawingMode, excluded: ['draggable-unit'] }}
+        panning={{ disabled: isDrawingMode || selectedTool !== 'drag', excluded: ['draggable-unit'] }}
       >
         <ScaleUpdater />
-        <MapControls isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
+        <MapControls 
+          isFullscreen={isFullscreen} 
+          onToggleFullscreen={toggleFullscreen} 
+          selectedTool={selectedTool}
+          setSelectedTool={setSelectedTool}
+          hudRightActions={hudRightActions}
+        />
         <TransformComponent 
           wrapperStyle={{ 
             width: '100%', 
@@ -386,7 +473,7 @@ export default function MapGrid({
           <div 
             id="map-grid-root"
             className={`relative bg-surface-canvas-void border-2 border-primary ${
-              isDrawingMode ? 'cursor-crosshair' : onGridClick ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
+              isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' ? 'cursor-crosshair' : selectedTool === 'drag' ? 'cursor-grab active:cursor-grabbing' : onGridClick ? 'cursor-crosshair' : 'cursor-default'
             }`}
             style={{ width: boardWidth, height: boardHeight }}
             onDragOver={handleDragOver}
@@ -399,7 +486,7 @@ export default function MapGrid({
           >
             
             {/* Dynamic Map Layers */}
-            {visibleDynamicLayers.map(layer => (
+            {layers.baseMap && visibleDynamicLayers.map(layer => (
               <div 
                 key={layer.id}
                 className="absolute inset-0 pointer-events-none bg-contain bg-no-repeat bg-center"
@@ -407,32 +494,27 @@ export default function MapGrid({
               />
             ))}
 
-            {/* Grid Background */}
-            <div 
-              className="absolute inset-0 pointer-events-none"
-              style={{ 
-                zIndex: 9000,
-                backgroundImage: `
-                  linear-gradient(to right, rgba(247, 244, 235, 0.05) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(247, 244, 235, 0.05) 1px, transparent 1px)
-                `,
-                backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`
-              }}
-            />
+            {/* Bathymetric SVG & Coastline Contours */}
+            <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9000, width: boardWidth, height: boardHeight }}>
+              <defs>
+                <pattern id="tacticalGridPattern" width="60" height="60" patternUnits="userSpaceOnUse">
+                  <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#2d7d74" strokeDasharray="3 3" strokeWidth="0.35" />
+                  <circle cx="0" cy="0" r="1.5" fill="#2d7d74" opacity="0.6" />
+                </pattern>
+                
+                {/* Hazard Patterns */}
+                <pattern id="pattern-minefield" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 0,10 L 10,0 M -1,1 L 1,-1 M 9,11 L 11,9" stroke="#ef4444" strokeWidth="2" opacity="0.6"/>
+                </pattern>
+                <pattern id="pattern-blockade" width="12" height="12" patternUnits="userSpaceOnUse">
+                  <path d="M 0,0 L 0,12" stroke="#a855f7" strokeWidth="4" opacity="0.5"/>
+                </pattern>
+              </defs>
 
-            {/* Hazards SVG Canvas */}
-            {layers.hazards && (
-              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9001, width: boardWidth, height: boardHeight }}>
-                <defs>
-                  <pattern id="pattern-minefield" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path d="M 0,10 L 10,0 M -1,1 L 1,-1 M 9,11 L 11,9" stroke="#ef4444" strokeWidth="2" opacity="0.6"/>
-                  </pattern>
-                  <pattern id="pattern-blockade" width="12" height="12" patternUnits="userSpaceOnUse">
-                    <path d="M 0,0 L 0,12" stroke="#a855f7" strokeWidth="4" opacity="0.5"/>
-                  </pattern>
-                </defs>
+              {/* Grid pattern layer */}
+              {layers.tacticalGrid && <rect width="100%" height="100%" fill="url(#tacticalGridPattern)" opacity="0.45" />}
 
-                {hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
+              {layers.hazards && hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
                   const points = Array.isArray(hazard.coordinates) ? hazard.coordinates : [];
                   if (points.length < 3) return null;
                   
@@ -476,7 +558,6 @@ export default function MapGrid({
                   );
                 })}
               </svg>
-            )}
 
             {/* Live Drawing Path (Always visible when drawing) */}
             {isDrawingMode && currentPath.length > 0 && (
@@ -535,7 +616,12 @@ export default function MapGrid({
             {/* Units */}
             {layers.units && (
               <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9003 }}>
-                {units.map((unit) => {
+                {units.filter(unit => {
+                   if (unit.owner === 'Player A' && !layers.teamA) return false;
+                   if (unit.owner === 'Player B' && !layers.teamB) return false;
+                   if (unit.owner === 'Unknown' && !layers.unconfirmed) return false;
+                   return true;
+                }).map((unit) => {
                   const canDrag = isDraggable ? isDraggable(unit) : false;
                   const isSelected = selectedUnitId === unit.id;
                   
@@ -563,18 +649,61 @@ export default function MapGrid({
                          if (onUnitClick) onUnitClick(unit);
                       }}
                     >
-                      <div className={`flex items-center justify-center rounded ${
-                        isSelected
-                          ? 'ring-4 ring-cyan-400 ring-offset-1 animate-pulse bg-cyan-100 bg-opacity-30'
-                          : unit.is_visible_to_enemy 
-                            ? 'ring-2 ring-red-500 ring-offset-1' 
-                            : ''
-                      }`}>
-                        <NatoSymbol sidc={getSidcForUnit(unit)} size={30.4} />
+                      {isSelected && (
+                        <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
+                      )}
+                      
+                      {unit.health < 30 && (
+                        <span className="absolute -inset-1 rounded-lg bg-[#c03a6b] animate-ping opacity-75 pointer-events-none" />
+                      )}
+
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-2xl relative z-10 text-[#f7f4eb] ${
+                          unit.owner === 'Player A'
+                            ? 'bg-[#2d7d74] border-2 border-[#a4f1e5]'
+                            : unit.owner === 'Player B'
+                            ? 'bg-[#4e1a3d] border-2 border-[#c03a6b]'
+                            : unit.owner === 'Unknown'
+                            ? 'bg-[#414575] border-2 border-dashed border-[#a4f1e5]'
+                            : 'bg-[#26265b] border-2 border-[#a4f1e5]'
+                        } ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420]' : ''}`}
+                      >
+                        <span className="material-symbols-outlined text-[20px]">
+                          {unit.owner === 'Unknown' ? 'question_mark' : (() => {
+                            const readable = getHumanReadableFromSidc(unit.type).toLowerCase();
+                            if (readable.includes('naval') || readable.includes('ship')) return 'directions_boat';
+                            if (readable.includes('air') || readable.includes('aviation')) return 'flight';
+                            if (readable.includes('artillery')) return 'adjust';
+                            if (readable.includes('armor') || readable.includes('tank')) return 'view_in_ar';
+                            if (readable.includes('infantry')) return 'shield';
+                            if (readable.includes('logistics') || readable.includes('supply')) return 'local_shipping';
+                            if (readable.includes('air defense') || readable.includes('sam')) return 'security';
+                            return 'radar';
+                          })()}
+                        </span>
                       </div>
-                      <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-75 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                        {unit.name || getHumanReadableFromSidc(unit.type)}
-                      </span>
+
+                      {unit.health >= 30 && unit.health <= 70 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60">
+                          !
+                        </span>
+                      )}
+                      {unit.health < 30 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#c03a6b] rounded-full border border-white z-20" />
+                      )}
+
+                      <div className={`absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
+                        isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
+                      }`}>
+                        <div className={`font-mono text-[10px] font-bold leading-tight ${
+                          isSelected ? 'text-[#d4a017]' : unit.owner === 'Player A' ? 'text-[#a4f1e5]' : unit.owner === 'Player B' ? 'text-[#f26a4b]' : 'text-white'
+                        }`}>
+                          {unit.name || getHumanReadableFromSidc(unit.type)}
+                        </div>
+                        <div className="font-mono text-[8px] text-[#f7f4eb]/80 uppercase tracking-tight">
+                          {unit.health >= 70 ? 'NORMAL' : unit.health >= 30 ? 'DEGRADED' : 'CRITICAL'}
+                        </div>
+                      </div>
                     </div>
                   )
                 })}

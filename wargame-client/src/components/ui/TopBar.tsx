@@ -19,8 +19,8 @@ export default function TopBar({ userEmail, role, onSignOut, children }: TopBarP
             <span className="material-symbols-outlined text-[20px]">public</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-label-md text-label-md tracking-wider text-text-on-dark uppercase leading-tight">UFSMUN Kriegspiel</span>
-            <span className="font-tag-overline text-tag-overline text-primary-fixed-dim uppercase leading-none mt-0.5">War Cabinet Table</span>
+            <span className="font-label-md text-label-md tracking-wider text-text-on-dark uppercase leading-tight">Mapa UFSMUN</span>
+            <span className="font-tag-overline text-tag-overline text-primary-fixed-dim uppercase leading-none mt-0.5">Gabinete de Guerra</span>
           </div>
         </div>
 

@@ -19,22 +19,6 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
     setCurrentHazard(selectedHazard);
   }, [selectedHazard]);
 
-  if (!isOpen) {
-    return (
-      <aside className="absolute right-0 top-0 w-12 bg-slate-800 text-white flex flex-col items-center py-4 shadow-xl transition-all duration-300 z-50 h-full shrink-0">
-        <button 
-          onClick={() => setIsOpen(true)}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-          title="Open Hazard Panel"
-        >
-          <svg className="w-6 h-6 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-          </svg>
-        </button>
-      </aside>
-    );
-  }
-
   const handleUpdate = async (field: keyof BattleHazard, value: any) => {
     if (!currentHazard || !isModerator) return;
     setCurrentHazard(prev => prev ? { ...prev, [field]: value } : null);
@@ -84,29 +68,29 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
   ];
 
   return (
-    <aside className="absolute right-0 top-0 w-80 bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 h-full shrink-0 border-l border-border-parchment">
+    <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
       {/* Header */}
-      <div className="bg-primary-container p-3 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
-        <h2 className="font-headline-sm text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">warning</span>
+      <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
+        <h2 className="font-headline-sm text-[12px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[16px]">warning</span>
           Hazard Details
         </h2>
         <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
-          <span className="material-symbols-outlined text-[18px]">close</span>
+          <span className="material-symbols-outlined text-[16px]">keyboard_double_arrow_right</span>
         </button>
       </div>
 
-      <div className="p-4 flex-1 overflow-y-auto space-y-4 custom-scrollbar">
+      <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         {!currentHazard ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
-            <span className="material-symbols-outlined text-[32px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md">Select a Hazard on the map or sidebar to view details.</p>
+            <span className="material-symbols-outlined text-[24px] opacity-50 mb-2">touch_app</span>
+            <p className="font-label-md text-[11px]">Select a Hazard on the map or sidebar to view details.</p>
           </div>
         ) : (
           <>
             {/* Identification Card */}
-            <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
-              <span className="font-tag-overline text-[10px] text-faction-hostile uppercase font-bold tracking-wider mb-1 block">Label / Name</span>
+            <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
+              <span className="font-tag-overline text-[9px] text-faction-hostile uppercase font-bold tracking-wider mb-0.5 block">Label / Name</span>
               {isModerator ? (
                 <input
                   type="text"
@@ -114,27 +98,27 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                   defaultValue={currentHazard.label || ''}
                   placeholder="e.g. Minefield Alpha"
                   onBlur={(e) => handleUpdate('label', e.target.value)}
-                  className="font-headline-md text-[18px] font-bold text-faction-hostile tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-faction-hostile focus:outline-none"
+                  className="font-headline-md text-[14px] font-bold text-faction-hostile tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-faction-hostile focus:outline-none"
                 />
               ) : (
-                <h3 className="font-headline-md text-[18px] font-bold text-faction-hostile tracking-tight leading-tight mt-0.5">{currentHazard.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
+                <h3 className="font-headline-md text-[14px] font-bold text-faction-hostile tracking-tight leading-tight">{currentHazard.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
               )}
-              <span className="font-tag-overline text-[10px] text-on-surface-variant mt-2 block">ID: {currentHazard.id.substring(0, 8).toUpperCase()}</span>
+              <span className="font-tag-overline text-[9px] text-on-surface-variant mt-1.5 block">ID: {currentHazard.id.substring(0, 8).toUpperCase()}</span>
             </div>
 
             {/* Properties Card */}
-            <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-3">
+            <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">Properties</span>
-                <span className="material-symbols-outlined text-primary text-[16px]">tune</span>
+                <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Properties</span>
+                <span className="material-symbols-outlined text-primary text-[14px]">tune</span>
               </div>
               
-              <div className="space-y-2.5">
-                <div className="bg-surface-parchment-dim p-2.5 rounded-lg border border-border-parchment">
-                  <label className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Type</label>
+              <div className="space-y-2">
+                <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Type</label>
                   {isModerator ? (
                     <select 
-                      className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1.5 text-sm font-semibold outline-none"
+                      className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1 text-[11px] font-semibold outline-none"
                       value={currentHazard.hazard_type}
                       onChange={(e) => handleUpdate('hazard_type', e.target.value)}
                     >
@@ -146,15 +130,15 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                       )}
                     </select>
                   ) : (
-                    <p className="text-sm font-semibold capitalize text-on-surface">{currentHazard.hazard_type.replace('_', ' ')}</p>
+                    <p className="text-[11px] font-semibold capitalize text-on-surface">{currentHazard.hazard_type.replace('_', ' ')}</p>
                   )}
                 </div>
 
-                <div className="bg-surface-parchment-dim p-2.5 rounded-lg border border-border-parchment">
-                  <label className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Status</label>
+                <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Status</label>
                   <select 
                     disabled={!isModerator}
-                    className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1.5 text-sm font-semibold outline-none disabled:opacity-50"
+                    className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1 text-[11px] font-semibold outline-none disabled:opacity-50"
                     value={currentHazard.status}
                     onChange={(e) => handleUpdate('status', e.target.value)}
                   >
@@ -168,38 +152,38 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
 
             {/* Config & Notes */}
             {isModerator && (
-              <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-3">
+              <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">Moderator Settings</span>
-                  <span className="material-symbols-outlined text-primary text-[16px]">admin_panel_settings</span>
+                  <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Moderator Settings</span>
+                  <span className="material-symbols-outlined text-primary text-[14px]">admin_panel_settings</span>
                 </div>
                 
-                <div className="bg-surface-parchment-dim p-2.5 rounded-lg border border-border-parchment space-y-2">
-                  <label className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider block">Team Visibility</label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
+                <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment space-y-1.5">
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider block">Team Visibility</label>
+                  <label className="flex items-center space-x-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
                       checked={(currentHazard.visible_to_teams || []).includes('Player A')} 
                       onChange={() => handleToggleTeamVisibility('Player A')}
-                      className="w-4 h-4 rounded bg-surface-container border-border-parchment text-faction-friendly focus:ring-faction-friendly"
+                      className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-faction-friendly focus:ring-faction-friendly"
                     />
-                    <span className="font-label-md text-[13px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player A</span>
+                    <span className="font-label-md text-[11px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player A</span>
                   </label>
-                  <label className="flex items-center space-x-3 cursor-pointer group">
+                  <label className="flex items-center space-x-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
                       checked={(currentHazard.visible_to_teams || []).includes('Player B')} 
                       onChange={() => handleToggleTeamVisibility('Player B')}
-                      className="w-4 h-4 rounded bg-surface-container border-border-parchment text-faction-hostile focus:ring-faction-hostile"
+                      className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-faction-hostile focus:ring-faction-hostile"
                     />
-                    <span className="font-label-md text-[13px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player B</span>
+                    <span className="font-label-md text-[11px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player B</span>
                   </label>
                 </div>
                 
-                <div className="pt-2">
-                   <label className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Notes (Private)</label>
+                <div className="pt-1">
+                   <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Notes (Private)</label>
                    <textarea 
-                     className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-2 text-sm h-24 outline-none focus:border-primary shadow-inner custom-scrollbar"
+                     className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-1.5 text-[11px] h-20 outline-none focus:border-primary shadow-inner custom-scrollbar"
                      key={currentHazard.id + (currentHazard.notes || '')}
                      defaultValue={currentHazard.notes || ''}
                      placeholder="Add private moderator notes about this hazard..."
@@ -207,12 +191,12 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                    />
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <button 
                     onClick={handleDelete}
-                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[12px] py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-status-critical/30 font-semibold"
+                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[11px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                   >
-                    <span className="material-symbols-outlined text-[16px]">delete_forever</span>
+                    <span className="material-symbols-outlined text-[14px]">delete_forever</span>
                     <span>Delete Hazard</span>
                   </button>
                 </div>
@@ -221,6 +205,6 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
           </>
         )}
       </div>
-    </aside>
+    </div>
   );
 }

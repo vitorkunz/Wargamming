@@ -12,6 +12,14 @@ export default function TeamAssignment() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase.from('Profiles').select('*');
+    if (!error && data) {
+      setProfiles(data as Profile[]);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     fetchProfiles();
     
@@ -24,14 +32,6 @@ export default function TeamAssignment() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-
-  const fetchProfiles = async () => {
-    const { data, error } = await supabase.from('Profiles').select('*');
-    if (!error && data) {
-      setProfiles(data as Profile[]);
-    }
-    setLoading(false);
-  };
 
   const updateRole = async (id: string, newRole: string) => {
     await supabase.from('Profiles').update({ role: newRole }).eq('id', id);

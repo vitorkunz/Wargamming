@@ -26,12 +26,19 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const [hiddenPois, setHiddenPois] = useState<string[]>([]);
   const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
   const [layers, setLayers] = useState<LayerVisibility>({
-    units: true,
+    baseMap: true,
     pois: true,
-    hazards: true
+    units: true,
+    teamA: true,
+    teamB: true,
+    unconfirmed: true,
+    hazards: true,
+    tacticalGrid: true
   });
 
   const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -87,18 +94,21 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     setSelectedPoi(poi);
     setSelectedUnitId(null);
     setSelectedHazard(null);
+    setIsRightPanelOpen(true);
   };
 
   const handleHazardClick = (hazard: BattleHazard) => {
     setSelectedHazard(hazard);
     setSelectedPoi(null);
     setSelectedUnitId(null);
+    setIsRightPanelOpen(true);
   };
 
   const handleUnitClick = (unit: Unit) => {
     setSelectedUnitId(unit.id);
     setSelectedPoi(null);
     setSelectedHazard(null);
+    setIsRightPanelOpen(true);
   };
 
   const toggleLayer = (layer: keyof LayerVisibility) => {
@@ -140,6 +150,20 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     await supabase.from(poisTable).update({ x_coord: x, y_coord: y }).eq('id', poiId);
   };
 
+  const handleSpawnUnitAt = async (templateType: string, x: number, y: number) => {
+    if (activeView === 'view_published') return;
+    const newUnit = {
+      name: `New ${templateType.toUpperCase()}`,
+      owner: 'Player A',
+      unit_type: templateType,
+      health: 100,
+      in_reserve: false,
+      x_coord: x,
+      y_coord: y
+    };
+    await supabase.from(unitsTable).insert([newUnit]);
+  };
+
   const handlePublish = async () => {
     if (window.confirm("Publish Draft Map to Live? This will overwrite the current live battle map players see.")) {
       const { error } = await supabase.rpc('publish_draft_to_live');
@@ -159,6 +183,10 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const activeUnits = units.filter(u => !u.in_reserve);
   const reserveUnits = units.filter(u => u.in_reserve);
   const selectedUnit = units.find(u => u.id === selectedUnitId) || null;
+
+  const teamACount = activeUnits.filter(u => u.owner === 'Player A').length;
+  const teamBCount = activeUnits.filter(u => u.owner === 'Player B').length;
+  const unconfirmedCount = activeUnits.filter(u => u.owner === 'Unknown').length;
 
   return (
     <div className="bg-surface-canvas-void font-body-base text-on-surface min-h-screen flex flex-col overflow-hidden">
@@ -201,11 +229,42 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               isModerator={activeView === 'edit_map'}
               onEditPoi={handlePOIClick}
               onEditHazard={handleHazardClick}
+              isOpen={isLeftPanelOpen}
+              onToggleOpen={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+              teamACount={teamACount}
+              teamBCount={teamBCount}
+              unconfirmedCount={unconfirmedCount}
             />
           )}
 
           {/* Center Canvas */}
           <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
+            {/* Floating Panel Restorer / Reopen Buttons (Visible when collapsed) */}
+            {!isLeftPanelOpen && activeView !== 'manage_players' && (
+              <button 
+                className="absolute top-4 left-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                id="left-panel-expand-btn" 
+                onClick={() => setIsLeftPanelOpen(true)} 
+                title="Expandir Camadas" 
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+                <span className="text-xs uppercase tracking-wider">Layers</span>
+              </button>
+            )}
+            {!isRightPanelOpen && activeView !== 'manage_players' && (
+              <button 
+                className="absolute top-4 right-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                id="right-panel-expand-btn" 
+                onClick={() => setIsRightPanelOpen(true)} 
+                title="Expandir Dossiê da Entidade" 
+                type="button"
+              >
+                <span className="text-xs uppercase tracking-wider">Dossiê</span>
+                <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
+              </button>
+            )}
+
             {activeView === 'manage_players' ? (
               <div className="p-8 w-full h-full overflow-y-auto bg-surface-parchment text-on-surface">
                 <h1 className="text-3xl font-bold text-primary mb-6 font-display-lg">Manage Players</h1>
@@ -213,37 +272,43 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               </div>
             ) : (
               <>
-                {/* Floating HUD Toolbar */}
-                {activeView === 'edit_map' && (
-                  <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between pointer-events-none px-16">
-                    {/* Left HUD: Space reserved for Map tools inside MapGrid maybe, or just empty for now to match structure */}
-                    <div className="pointer-events-auto flex items-center gap-2"></div>
-                    
-                    {/* Right HUD: Sync & Publish */}
-                    <div className="pointer-events-auto flex items-center gap-2">
-                      <button onClick={handleSyncFromLive} className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" title="Sincronizar e carregar estado publicado da mesa" type="button">
-                        <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
-                        <div className="flex flex-col text-left">
-                          <span className="font-headline-sm text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Sync Draft</span>
-                          <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-0.5">From Live</span>
-                        </div>
-                      </button>
-                      <button onClick={handlePublish} className="group bg-faction-friendly hover:bg-chrome-hover text-text-on-dark px-3.5 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-secondary-fixed/40 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ring-1 ring-secondary-fixed/30" title="Publicar alterações táticas para visualização dos delegados" type="button">
-                        <span className="material-symbols-outlined text-[19px] text-secondary-fixed group-hover:scale-110 transition-transform">cell_tower</span>
-                        <div className="flex flex-col text-left">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-headline-sm text-[12px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Publicar Mapa</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-ping"></span>
-                          </div>
-                          <span className="font-tag-overline text-[9px] text-secondary-fixed uppercase leading-none mt-0.5 font-bold">Deploy Live</span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex-1 relative cursor-crosshair overflow-hidden">
                   <MapGrid 
+                    hudRightActions={
+                      activeView === 'edit_map' && (
+                        <div className="flex items-center gap-2">
+                          {/* Sync Draft Button */}
+                          <button 
+                            onClick={handleSyncFromLive} 
+                            className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" 
+                            title="Sincronizar e carregar estado publicado da mesa" 
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>Sync Draft</span>
+                              <span className="text-[9px] text-primary-fixed-dim leading-none mt-0.5 whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>Última sinc. há 3m</span>
+                            </div>
+                          </button>
+                          {/* Publish Map Button (Primary CTA) */}
+                          <button 
+                            onClick={handlePublish} 
+                            className="group bg-faction-friendly hover:bg-chrome-hover text-text-on-dark px-3.5 py-1.5 rounded-lg border border-secondary-fixed/40 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ring-1 ring-secondary-fixed/30 shadow-sm" 
+                            title="Publicar alterações táticas para visualização dos delegados" 
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined text-[19px] text-secondary-fixed group-hover:scale-110 transition-transform">cell_tower</span>
+                            <div className="flex flex-col text-left">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[12px] font-bold tracking-wider uppercase text-text-on-dark leading-none whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>Publicar Mapa</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-ping"></span>
+                              </div>
+                              <span className="text-[9px] text-secondary-fixed uppercase leading-none mt-0.5 font-bold whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>Deploy Live</span>
+                            </div>
+                          </button>
+                        </div>
+                      )
+                    }
                     layers={layers}  
                     hiddenDynamicLayers={hiddenDynamicLayers}
                     hiddenPois={hiddenPois}
@@ -259,6 +324,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     onUnitDrop={handleUnitDrop}
                     isPoiDraggable={() => activeView === 'edit_map'}
                     onPoiDrop={handlePoiDrop}
+                    onSpawnUnitAt={handleSpawnUnitAt}
                     isDrawingMode={isDrawingHazard && activeView === 'edit_map'}
                     onDrawComplete={handleDrawComplete}
                   />
@@ -280,11 +346,14 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           
           {/* Right Panel */}
           {activeView !== 'manage_players' && (
-            <aside className="relative w-[380px] min-w-[380px] h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out">
+            <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isRightPanelOpen ? 'w-0 min-w-0 border-l-0' : 'w-[280px] min-w-[280px]'}`}>
+
+              <div className={`flex-1 flex flex-col overflow-hidden relative z-0 ${!isRightPanelOpen ? 'hidden' : 'block'}`}>
+
               {selectedHazard ? (
                 <HazardPanel 
                   selectedHazard={selectedHazard}
-                  onClose={() => setSelectedHazard(null)}
+                  onClose={() => setIsRightPanelOpen(false)}
                   onSelectHazard={setSelectedHazard}
                   isModerator={activeView === 'edit_map'}
                   targetTable={hazardsTable}
@@ -293,7 +362,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                 <PoiPanel 
                   pois={[]} 
                   selectedPoi={selectedPoi} 
-                  onClose={() => setSelectedPoi(null)} 
+                  onClose={() => setIsRightPanelOpen(false)} 
                   onSelectPoi={() => setSelectedPoi(null)} 
                   isModerator={activeView === 'edit_map'} 
                   targetTable={poisTable}
@@ -304,7 +373,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                   selectedUnit={selectedUnit} 
                   isModerator={activeView === 'edit_map'} 
                   onSelectUnit={setSelectedUnitId}
-                  onClose={() => {}} 
+                  onClose={() => setIsRightPanelOpen(false)} 
                   targetTable={unitsTable}
                 />
               )}
@@ -323,6 +392,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                   />
                 </div>
               )}
+              </div>
             </aside>
           )}
         </div>
@@ -330,3 +400,4 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     </div>
   );
 }
+

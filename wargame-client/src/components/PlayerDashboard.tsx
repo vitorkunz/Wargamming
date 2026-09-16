@@ -21,10 +21,17 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   const [hiddenPois, setHiddenPois] = useState<string[]>([]);
   const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'planning' | 'battle'>('planning');
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [layers, setLayers] = useState<LayerVisibility>({
-    units: true,
+    baseMap: true,
     pois: true,
-    hazards: true
+    units: true,
+    teamA: true,
+    teamB: true,
+    unconfirmed: true,
+    hazards: true,
+    tacticalGrid: true
   });
   
   const [planningUnits, setPlanningUnits] = useState<Unit[]>([]);
@@ -140,18 +147,21 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     setSelectedUnitId(unit.id);
     setSelectedPoi(null);
     setSelectedHazard(null);
+    setIsRightPanelOpen(true);
   };
 
   const handlePoiClick = (poi: MapPOI) => {
     setSelectedPoi(poi);
     setSelectedUnitId(null);
     setSelectedHazard(null);
+    setIsRightPanelOpen(true);
   };
 
   const handleHazardClick = (hazard: BattleHazard) => {
     setSelectedHazard(hazard);
     setSelectedPoi(null);
     setSelectedUnitId(null);
+    setIsRightPanelOpen(true);
   };
 
   const handleGridClick = async (x: number, y: number) => {
@@ -192,6 +202,20 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     }
   };
 
+  const handleSpawnUnitAt = async (templateType: string, x: number, y: number) => {
+    if (activeTab !== 'planning') return;
+    const newUnit = {
+      name: `New ${templateType.toUpperCase()}`,
+      owner: role,
+      unit_type: templateType,
+      health: 100,
+      in_reserve: false,
+      x_coord: x,
+      y_coord: y
+    };
+    await supabase.from('Planning_Units').insert([newUnit]);
+  };
+
   const checkIsDraggable = (unit: Unit) => {
     if (activeTab === 'planning') return true;
     return unit.owner === role;
@@ -201,6 +225,10 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   const activeUnits = currentUnits.filter(u => !u.in_reserve);
   const reserveUnits = currentUnits.filter(u => u.in_reserve && (activeTab === 'planning' || u.owner === role));
   const selectedUnit = currentUnits.find(u => u.id === selectedUnitId) || null;
+
+  const teamACount = activeUnits.filter(u => u.owner === 'Player A').length;
+  const teamBCount = activeUnits.filter(u => u.owner === 'Player B').length;
+  const unconfirmedCount = activeUnits.filter(u => u.owner === 'Unknown').length;
 
   return (
     <div className="bg-surface-canvas-void font-body-base text-on-surface min-h-screen flex flex-col overflow-hidden">
@@ -236,28 +264,61 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             role={role}
             onEditPoi={handlePoiClick}
             onEditHazard={handleHazardClick}
+            isOpen={isLeftPanelOpen}
+            onToggleOpen={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+            teamACount={teamACount}
+            teamBCount={teamBCount}
+            unconfirmedCount={unconfirmedCount}
           />
 
           {/* Center Canvas */}
           <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
-            {/* Floating HUD Toolbar */}
-            {activeTab === 'planning' && (
-              <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between pointer-events-none px-16">
-                <div className="pointer-events-auto flex items-center gap-2"></div>
-                <div className="pointer-events-auto flex items-center gap-2">
-                  <button onClick={handleSyncDraft} className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" title="Sincronizar mapa de planejamento com mapa de batalha" type="button">
-                    <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
-                    <div className="flex flex-col text-left">
-                      <span className="font-headline-sm text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none">Sync Draft</span>
-                      <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-0.5">From Live</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
+            {/* Floating Panel Restorer / Reopen Buttons (Visible when collapsed) */}
+            {!isLeftPanelOpen && (
+              <button 
+                className="absolute top-4 left-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                id="left-panel-expand-btn" 
+                onClick={() => setIsLeftPanelOpen(true)} 
+                title="Expandir Camadas" 
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+                <span className="text-xs uppercase tracking-wider">Layers</span>
+              </button>
+            )}
+            {!isRightPanelOpen && (
+              <button 
+                className="absolute top-4 right-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                id="right-panel-expand-btn" 
+                onClick={() => setIsRightPanelOpen(true)} 
+                title="Expandir Dossiê da Entidade" 
+                type="button"
+              >
+                <span className="text-xs uppercase tracking-wider">Dossiê</span>
+                <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
+              </button>
             )}
 
             <div className="flex-1 relative cursor-crosshair overflow-hidden">
               <MapGrid 
+                hudRightActions={
+                  activeTab === 'planning' && (
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={handleSyncDraft} 
+                        className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" 
+                        title="Sincronizar mapa de planejamento com mapa de batalha" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
+                        <div className="flex flex-col text-left">
+                          <span className="text-[11px] font-bold tracking-wider uppercase text-text-on-dark leading-none whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>Sync Draft</span>
+                          <span className="text-[9px] text-primary-fixed-dim leading-none mt-0.5 whitespace-nowrap" style={{ fontFamily: 'var(--font-montserrat)' }}>From Live</span>
+                        </div>
+                      </button>
+                    </div>
+                  )
+                }
                 layers={layers}
                 hiddenDynamicLayers={hiddenDynamicLayers} 
                 hiddenPois={hiddenPois}
@@ -270,6 +331,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 onUnitClick={handleUnitClick}
                 onPOIClick={handlePoiClick}
                 onHazardClick={handleHazardClick}
+                onSpawnUnitAt={handleSpawnUnitAt}
               />
             </div>
 
@@ -284,11 +346,13 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
           </div>
           
           {/* Right Panel */}
-          <aside className="relative w-[380px] min-w-[380px] h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out">
-            {selectedHazard ? (
+          <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isRightPanelOpen ? 'w-0 min-w-0 border-l-0' : 'w-[280px] min-w-[280px]'}`}>
+
+            <div className={`flex-1 flex flex-col overflow-hidden relative z-0 ${!isRightPanelOpen ? 'hidden' : 'block'}`}>
+              {selectedHazard ? (
               <HazardPanel
                 selectedHazard={selectedHazard}
-                onClose={() => setSelectedHazard(null)}
+                onClose={() => setIsRightPanelOpen(false)}
                 onSelectHazard={setSelectedHazard}
                 isModerator={false}
                 targetTable="Battle_Hazards"
@@ -297,7 +361,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
               <PoiPanel 
                 pois={[]} 
                 selectedPoi={selectedPoi} 
-                onClose={() => setSelectedPoi(null)} 
+                onClose={() => setIsRightPanelOpen(false)} 
                 onSelectPoi={() => setSelectedPoi(null)}
                 isModerator={false} 
                 targetTable="Map_POIs"
@@ -307,7 +371,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
               <UnitPanel 
                 units={activeTab === 'planning' ? planningUnits : battleUnits} 
                 selectedUnit={selectedUnit} 
-                onClose={() => setSelectedUnitId(null)}
+                onClose={() => setIsRightPanelOpen(false)}
                 onSelectUnit={setSelectedUnitId}
                 isModerator={false}
                 role={role}
@@ -324,6 +388,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 />
               </div>
             )}
+            </div>
           </aside>
         </div>
       </main>
