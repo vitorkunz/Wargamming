@@ -116,3 +116,92 @@ CREATE TABLE IF NOT EXISTS public."Map_Layers" (
 ALTER TABLE public."Map_POIs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Battle_Hazards" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Map_Layers" ENABLE ROW LEVEL SECURITY;
+
+-- Create Moderator_Units table (Draft)
+CREATE TABLE IF NOT EXISTS public."Moderator_Units" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT,
+    type TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    x_coord INTEGER NOT NULL,
+    y_coord INTEGER NOT NULL,
+    health INTEGER NOT NULL,
+    is_visible_to_enemy BOOLEAN NOT NULL DEFAULT FALSE,
+    in_reserve BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create Moderator_POIs table (Draft)
+CREATE TABLE IF NOT EXISTS public."Moderator_POIs" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    x_coord INTEGER NOT NULL,
+    y_coord INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'operational',
+    notes TEXT,
+    is_visible_to_enemy BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create Moderator_Hazards table (Draft)
+CREATE TABLE IF NOT EXISTS public."Moderator_Hazards" (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hazard_type TEXT NOT NULL,
+    label TEXT,
+    created_by TEXT NOT NULL,
+    coordinates JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    visible_to_teams TEXT[] NOT NULL DEFAULT ARRAY['Moderator'],
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public."Moderator_Units" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."Moderator_POIs" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."Moderator_Hazards" ENABLE ROW LEVEL SECURITY;
+
+-- Publish / Sync Draft RPC Functions
+CREATE OR REPLACE FUNCTION public.publish_draft_to_live()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF public.get_user_role() <> 'Moderator' THEN
+    RAISE EXCEPTION 'Apenas moderadores podem publicar o mapa.';
+  END IF;
+
+  DELETE FROM public."Battle_Units";
+  INSERT INTO public."Battle_Units" (id, name, type, owner, x_coord, y_coord, health, is_visible_to_enemy, in_reserve, created_at)
+  SELECT id, name, type, owner, x_coord, y_coord, health, is_visible_to_enemy, in_reserve, created_at FROM public."Moderator_Units";
+
+  DELETE FROM public."Map_POIs";
+  INSERT INTO public."Map_POIs" (id, name, type, owner, x_coord, y_coord, status, notes, is_visible_to_enemy, created_at)
+  SELECT id, name, type, owner, x_coord, y_coord, status, notes, is_visible_to_enemy, created_at FROM public."Moderator_POIs";
+
+  DELETE FROM public."Battle_Hazards";
+  INSERT INTO public."Battle_Hazards" (id, hazard_type, label, created_by, coordinates, status, visible_to_teams, notes, created_at)
+  SELECT id, hazard_type, label, created_by, coordinates, status, visible_to_teams, notes, created_at FROM public."Moderator_Hazards";
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.sync_draft_from_live()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF public.get_user_role() <> 'Moderator' THEN
+    RAISE EXCEPTION 'Apenas moderadores podem sincronizar o rascunho.';
+  END IF;
+
+  DELETE FROM public."Moderator_Units";
+  INSERT INTO public."Moderator_Units" (id, name, type, owner, x_coord, y_coord, health, is_visible_to_enemy, in_reserve, created_at)
+  SELECT id, name, type, owner, x_coord, y_coord, health, is_visible_to_enemy, in_reserve, created_at FROM public."Battle_Units";
+
+  DELETE FROM public."Moderator_POIs";
+  INSERT INTO public."Moderator_POIs" (id, name, type, owner, x_coord, y_coord, status, notes, is_visible_to_enemy, created_at)
+  SELECT id, name, type, owner, x_coord, y_coord, status, notes, is_visible_to_enemy, created_at FROM public."Map_POIs";
+
+  DELETE FROM public."Moderator_Hazards";
+  INSERT INTO public."Moderator_Hazards" (id, hazard_type, label, created_by, coordinates, status, visible_to_teams, notes, created_at)
+  SELECT id, hazard_type, label, created_by, coordinates, status, visible_to_teams, notes, created_at FROM public."Battle_Hazards";
+END;
+$$;
+

@@ -71,26 +71,26 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
     <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
       {/* Header */}
       <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
-        <h2 className="font-headline-sm text-[12px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">warning</span>
+        <h2 className="font-headline-sm text-[9.5px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[14px]">warning</span>
           Hazard Details
         </h2>
         <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
-          <span className="material-symbols-outlined text-[16px]">keyboard_double_arrow_right</span>
+          <span className="material-symbols-outlined text-[14px]">keyboard_double_arrow_right</span>
         </button>
       </div>
 
       <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         {!currentHazard ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
-            <span className="material-symbols-outlined text-[24px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md text-[11px]">Select a Hazard on the map or sidebar to view details.</p>
+            <span className="material-symbols-outlined text-[20px] opacity-50 mb-2">touch_app</span>
+            <p className="font-label-md text-[10px]">Select a Hazard on the map or sidebar to view details.</p>
           </div>
         ) : (
           <>
             {/* Identification Card */}
             <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
-              <span className="font-tag-overline text-[9px] text-faction-hostile uppercase font-bold tracking-wider mb-0.5 block">Label / Name</span>
+              <span className="font-tag-overline text-[8.5px] text-faction-hostile uppercase font-bold tracking-wider mb-0.5 block">Label / Name</span>
               {isModerator ? (
                 <input
                   type="text"
@@ -98,12 +98,12 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                   defaultValue={currentHazard.label || ''}
                   placeholder="e.g. Minefield Alpha"
                   onBlur={(e) => handleUpdate('label', e.target.value)}
-                  className="font-headline-md text-[14px] font-bold text-faction-hostile tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-faction-hostile focus:outline-none"
+                  className="font-headline-md text-[12px] font-bold text-faction-hostile tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-faction-hostile focus:outline-none"
                 />
               ) : (
-                <h3 className="font-headline-md text-[14px] font-bold text-faction-hostile tracking-tight leading-tight">{currentHazard.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
+                <h3 className="font-headline-md text-[12px] font-bold text-faction-hostile tracking-tight leading-tight">{currentHazard.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
               )}
-              <span className="font-tag-overline text-[9px] text-on-surface-variant mt-1.5 block">ID: {currentHazard.id.substring(0, 8).toUpperCase()}</span>
+              <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-1 block">ID: {currentHazard.id.substring(0, 8).toUpperCase()}</span>
             </div>
 
             {/* Properties Card */}
@@ -194,9 +194,9 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                 <div className="pt-1">
                   <button 
                     onClick={handleDelete}
-                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[11px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
+                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                   >
-                    <span className="material-symbols-outlined text-[14px]">delete_forever</span>
+                    <span className="material-symbols-outlined text-[13px]">delete_forever</span>
                     <span>Delete Hazard</span>
                   </button>
                 </div>

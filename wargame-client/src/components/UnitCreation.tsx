@@ -42,29 +42,43 @@ export default function UnitCreation({
   const handleCreateUnit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const assignedOwner = fixedOwner || owner;
+    try {
+      console.log("UnitCreation form submitted!");
+      const assignedOwner = fixedOwner || owner;
 
-    // We store the 15-char SIDC inside the 'type' column.
-    const insertPayload: Record<string, string | number | boolean | null> = {
-      name: name.trim() || null,
-      type: sidc,
-      owner: assignedOwner,
-      health,
-      x_coord: 0,
-      y_coord: 0,
-      in_reserve: true
-    };
+      // We store the 15-char SIDC inside the 'type' column.
+      const insertPayload: Record<string, string | number | boolean | null> = {
+        name: name.trim() || null,
+        type: sidc,
+        owner: assignedOwner,
+        health,
+        ammo: 100,
+        x_coord: 0,
+        y_coord: 0,
+        in_reserve: true
+      };
 
-    if (table === 'Battle_Units') {
-      insertPayload.is_visible_to_enemy = false;
-    }
+      if (table === 'Battle_Units' || table === 'Moderator_Units') {
+        insertPayload.is_visible_to_enemy = false;
+      }
 
-    const { error } = await supabase.from(table).insert(insertPayload);
+      console.log(`Attempting to insert into table: ${table} with payload:`, insertPayload);
 
-    if (error) {
-      alert("Failed to spawn unit: " + error.message);
-    } else {
-      setName('');
+      const { data, error } = await supabase.from(table).insert(insertPayload).select();
+
+      console.log("Supabase response:", { data, error });
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        alert("Failed to spawn unit: " + error.message + "\nCheck console for details.");
+      } else {
+        console.log("Unit spawned successfully!");
+        setName('');
+        alert("Unit created successfully!");
+      }
+    } catch (err: any) {
+      console.error("Unexpected error in handleCreateUnit:", err);
+      alert("Unexpected error: " + err.message);
     }
   };
 
@@ -76,7 +90,7 @@ export default function UnitCreation({
         <div className="w-16 h-16 flex flex-col items-center justify-center bg-surface-container border border-border-parchment rounded-lg p-1 shrink-0 shadow-inner">
           <NatoSymbol sidc={sidc} size={42} />
         </div>
-        <h2 className="text-lg font-bold text-primary font-headline-sm flex-1">{title}</h2>
+        <h2 className="text-[12px] font-bold text-primary font-headline-sm flex-1">{title}</h2>
       </div>
 
       <div className="flex-1">
@@ -144,8 +158,8 @@ export default function UnitCreation({
               </select>
             </div>
             
-            <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-2.5 px-4 rounded-lg transition-colors font-headline-sm text-[13px] shadow-sm flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+            <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-1.5 px-3 rounded-lg transition-colors font-headline-sm text-[10.5px] shadow-sm flex items-center justify-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px]">add_circle</span>
               Spawn Unit to Reserves
             </button>
           </div>

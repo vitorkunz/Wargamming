@@ -221,6 +221,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     return unit.owner === role;
   };
 
+  const unitsTable = activeTab === 'planning' ? 'Planning_Units' : 'Battle_Units';
   const currentUnits = activeTab === 'planning' ? planningUnits : battleUnits;
   const activeUnits = currentUnits.filter(u => !u.in_reserve);
   const reserveUnits = currentUnits.filter(u => u.in_reserve && (activeTab === 'planning' || u.owner === role));
@@ -332,6 +333,10 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 onPOIClick={handlePoiClick}
                 onHazardClick={handleHazardClick}
                 onSpawnUnitAt={handleSpawnUnitAt}
+                unitsTable={unitsTable}
+                isModerator={false}
+                fixedOwner={role === 'Player A' || role === 'Player B' ? role : undefined}
+                hideEditingTools={activeTab === 'battle'}
               />
             </div>
 

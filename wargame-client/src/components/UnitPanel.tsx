@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
-import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
+import { getSidcForUnit, getHumanReadableFromSidc, parseSidc } from '@/lib/milsymbol/utils';
+import { UNIT_TYPES, UnitTypeKey } from '@/lib/milsymbol/constants';
+import { NatoSymbol } from './NatoSymbol';
 
 interface UnitPanelProps {
   units: Unit[];
@@ -57,10 +59,31 @@ export default function UnitPanel({
     await supabase.from(tableToUpdate).update({ name: trimmed || null }).eq('id', selectedUnit.id);
   };
 
+  const updateType = async (newTypeKey: string) => {
+    if (!selectedUnit || !canEditOrDelete) return;
+    const def = UNIT_TYPES[newTypeKey as UnitTypeKey];
+    if (!def) return;
+    const affilCode = selectedUnit.type[1] || 'F';
+    const newSidc = `S${affilCode}${def.dimension}P${def.code}-----`;
+    await supabase.from(tableToUpdate).update({ type: newSidc }).eq('id', selectedUnit.id);
+  };
+
   const updateHealth = async (newHealth: number) => {
     if (!selectedUnit || !canEditOrDelete) return;
     if (isNaN(newHealth) || newHealth === selectedUnit.health) return;
     await supabase.from(tableToUpdate).update({ health: newHealth }).eq('id', selectedUnit.id);
+  };
+
+  const updateAmmo = async (newAmmo: number) => {
+    if (!selectedUnit || !canEditOrDelete) return;
+    if (isNaN(newAmmo) || newAmmo === (selectedUnit.ammo ?? 100)) return;
+    await supabase.from(tableToUpdate).update({ ammo: newAmmo }).eq('id', selectedUnit.id);
+  };
+
+  const updateOwner = async (newOwner: string) => {
+    if (!selectedUnit || !isModerator) return;
+    if (newOwner === selectedUnit.owner) return;
+    await supabase.from(tableToUpdate).update({ owner: newOwner }).eq('id', selectedUnit.id);
   };
 
   const toggleVisibility = async (visible?: boolean) => {
@@ -97,18 +120,6 @@ export default function UnitPanel({
     return true;
   });
 
-  const renderIcon = (type: string) => {
-    const readable = getHumanReadableFromSidc(type).toLowerCase();
-    if (readable.includes('naval') || readable.includes('ship')) return 'directions_boat';
-    if (readable.includes('air') || readable.includes('aviation')) return 'flight';
-    if (readable.includes('artillery')) return 'adjust';
-    if (readable.includes('armor') || readable.includes('tank')) return 'view_in_ar';
-    if (readable.includes('infantry')) return 'shield';
-    if (readable.includes('logistics') || readable.includes('supply')) return 'local_shipping';
-    if (readable.includes('air defense') || readable.includes('sam')) return 'security';
-    return 'radar';
-  };
-
   const getStatusText = (health: number) => {
     if (health >= 70) return 'PRONTIDÃO NORMAL';
     if (health >= 30) return 'CAPACIDADE DEGRADADA';
@@ -118,11 +129,11 @@ export default function UnitPanel({
   return (
     <div className="w-full h-full flex flex-col select-none">
       {/* Tab Switcher Header */}
-      <div className="bg-primary-container p-1.5 flex items-center gap-1 shadow-sm border-b border-white/10 text-white">
+      <div className="bg-primary-container p-1 flex items-center gap-1 shadow-sm border-b border-white/10 text-white">
         <button
           type="button"
           onClick={() => { setActivePanelTab('roster'); onSelectUnit(null); }}
-          className={`flex-1 py-1 px-1.5 text-center font-headline-sm text-[10px] rounded-lg transition-all flex items-center justify-center gap-1 ${
+          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${
             activePanelTab === 'roster'
               ? 'bg-white text-primary font-bold shadow-sm'
               : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'
@@ -133,7 +144,7 @@ export default function UnitPanel({
         <button
           type="button"
           onClick={() => { if(selectedUnit) setActivePanelTab('details'); }}
-          className={`flex-1 py-1 px-1.5 text-center font-headline-sm text-[10px] rounded-lg transition-all flex items-center justify-center gap-1 ${
+          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${
             activePanelTab === 'details'
               ? 'bg-white text-primary font-bold shadow-sm'
               : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'
@@ -147,7 +158,7 @@ export default function UnitPanel({
           className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors ml-0.5"
           title="Recolher Dossiê"
         >
-          <span className="material-symbols-outlined text-[16px]">keyboard_double_arrow_right</span>
+          <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_right</span>
         </button>
       </div>
 
@@ -159,18 +170,18 @@ export default function UnitPanel({
             {/* Search & Filter Header Box */}
             <div className="bg-white/95 p-1 rounded-lg border border-border-parchment shadow-sm space-y-1">
               <div className="relative flex items-center">
-                <span className="material-symbols-outlined absolute left-1.5 text-outline text-[12px]">search</span>
+                <span className="material-symbols-outlined absolute left-1.5 text-outline text-[11px]">search</span>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filtrar por indicativo ou classe..."
-                  className="w-full pl-6 pr-1.5 py-0.5 rounded text-[9px] font-body-base bg-surface-parchment-dim/80 text-on-surface border border-border-parchment focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="w-full pl-5 pr-1.5 py-0.5 rounded text-[8px] font-body-base bg-surface-parchment-dim/80 text-on-surface border border-border-parchment focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
                 />
               </div>
 
               {/* Category Filter Pills */}
-              <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5 text-[8px] font-headline-sm font-bold custom-scrollbar">
+              <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5 text-[7.5px] font-bold custom-scrollbar">
                 <button
                   type="button"
                   onClick={() => setFactionFilter('all')}
@@ -207,11 +218,11 @@ export default function UnitPanel({
               </div>
 
               {/* Group By Selector */}
-              <div className="pt-1 border-t border-border-parchment/60 flex items-center justify-between gap-1 text-[8px]">
-                <span className="font-headline-sm text-primary font-bold uppercase tracking-wider">Agrupar por:</span>
+              <div className="pt-1 border-t border-border-parchment/60 flex items-center justify-between gap-1 text-[7.5px]">
+                <span className="text-primary font-bold uppercase tracking-wider">Agrupar por:</span>
                 <div className="flex items-center bg-surface-parchment-dim rounded p-0.5 border border-border-parchment">
-                  <button onClick={() => setGroupBy('faction')} className={`px-1 py-0.5 rounded-sm font-headline-sm font-bold ${groupBy === 'faction' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Facção</button>
-                  <button onClick={() => setGroupBy('type')} className={`px-1 py-0.5 rounded-sm font-headline-sm font-bold ${groupBy === 'type' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Tipo</button>
+                  <button onClick={() => setGroupBy('faction')} className={`px-1 py-0.5 rounded-sm font-bold ${groupBy === 'faction' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Facção</button>
+                  <button onClick={() => setGroupBy('type')} className={`px-1 py-0.5 rounded-sm font-bold ${groupBy === 'type' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Tipo</button>
                 </div>
               </div>
             </div>
@@ -228,71 +239,92 @@ export default function UnitPanel({
                   <div
                     key={unit.id}
                     onClick={() => { onSelectUnit(unit.id); setActivePanelTab('details'); }}
-                    className={`bg-white/95 rounded-xl p-2 border shadow-sm hover:shadow transition-all cursor-pointer relative ${
-                      isSelected ? 'border-2 border-status-objective' : 'border-border-parchment'
+                    className={`bg-white rounded-lg px-2 py-1.5 shadow-sm hover:shadow transition-all cursor-pointer relative border ${
+                      isSelected ? 'border-2 border-[#D4AF37]' : 'border-border-parchment'
                     } ${
-                      isTeamA ? 'border-l-4 border-l-faction-friendly' : isTeamB ? 'border-l-4 border-l-faction-hostile' : isUnknown ? 'border-l-4 border-l-faction-unknown' : 'border-l-4 border-l-faction-neutral'
+                      isTeamA ? 'border-l-[4px] border-l-[#2d7d74]' : isTeamB ? 'border-l-[4px] border-l-[#c03a6b]' : isUnknown ? 'border-l-[4px] border-l-[#414575]' : 'border-l-[4px] border-l-gray-400'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-1.5">
+                    {/* Top Row: Icon, Title, Buttons */}
+                    <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-white ${
-                            isTeamA ? 'bg-faction-friendly' : isTeamB ? 'bg-faction-hostile' : isUnknown ? 'bg-faction-unknown' : 'bg-faction-neutral'
-                        }`}>
-                          <span className="material-symbols-outlined text-[16px]">{renderIcon(unit.type)}</span>
+                        {/* Icon */}
+                        <div className="flex-shrink-0 flex items-center justify-center">
+                          <NatoSymbol sidc={getSidcForUnit(unit)} size={26} className="drop-shadow-sm" />
                         </div>
 
+                        {/* Text */}
                         <div className="min-w-0 flex flex-col justify-center">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-headline-sm text-[11px] font-bold text-on-surface truncate leading-tight">
+                            <span className="text-[12.5px] font-bold text-[#1a2f2b] truncate leading-tight tracking-tight">
                               {unit.name || getHumanReadableFromSidc(unit.type)}
                             </span>
-                            {unit.health < 70 && unit.health >= 30 && <span className="w-1.5 h-1.5 rounded-full bg-status-alert animate-ping flex-shrink-0" />}
-                            {unit.health < 30 && <span className="w-1.5 h-1.5 rounded-full bg-status-critical animate-ping flex-shrink-0" />}
+                            {/* Status Dot */}
+                            {unit.health < 70 ? (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#f87171] flex-shrink-0 animate-pulse" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#fca5a5] flex-shrink-0" />
+                            )}
                           </div>
-                          <span className="font-headline-sm text-[9px] text-on-surface-variant truncate block uppercase mt-0.5">{getHumanReadableFromSidc(unit.type)}</span>
+                          <span className="text-[9.5px] text-[#5e716d] font-semibold truncate block leading-tight">
+                            {unit.id.substring(0,8).toUpperCase()} • {getHumanReadableFromSidc(unit.type)}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end flex-shrink-0">
-                        <div className="bg-surface-container-high px-1.5 py-0.5 rounded text-[9px] font-bold text-on-surface flex items-center gap-1 mb-1">
-                          <span className="material-symbols-outlined text-[10px]">health_and_safety</span>
-                          {unit.health}%
-                        </div>
+                      {/* Action Buttons */}
+                      <div className="flex gap-1 shrink-0">
+                        <button className="w-6 h-6 rounded bg-[#fef3c7] hover:bg-[#fde68a] text-[#b45309] flex items-center justify-center transition-colors">
+                          <span className="material-symbols-outlined text-[13px]">center_focus_strong</span>
+                        </button>
+                        <button className="w-6 h-6 rounded bg-[#f3f4f6] hover:bg-[#e5e7eb] text-[#374151] flex items-center justify-center transition-colors">
+                          <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-border-parchment/60 text-[9px]">
+                    {/* Divider */}
+                    <div className="h-px w-full bg-[#e5e7eb] my-1"></div>
+
+                    {/* Middle Row: Pills and Toggles */}
+                    <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1">
-                        <span className={`font-headline-sm px-1 py-0.5 rounded font-bold ${isTeamA ? 'bg-faction-friendly/15 text-faction-friendly' : isTeamB ? 'bg-faction-hostile/15 text-faction-hostile' : 'bg-gray-100 text-gray-700'}`}>
+                        <span className={`px-1.5 py-0.5 rounded font-bold text-[9.5px] leading-tight ${isTeamA ? 'bg-[#d1fae5] text-[#047857]' : isTeamB ? 'bg-[#fce7f3] text-[#be185d]' : 'bg-gray-200 text-gray-700'}`}>
                           {isTeamA ? 'Time A' : isTeamB ? 'Time B' : 'Neutro'}
                         </span>
+                        
+                        {unit.health < 70 && (
+                          <span className="px-1.5 py-0.5 rounded font-bold text-[9.5px] leading-tight bg-[#fee2e2] text-[#ef4444]">
+                            {unit.health < 30 ? 'Estado Crítico' : 'Alerta Contato'}
+                          </span>
+                        )}
                       </div>
 
                       {isModerator && (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); toggleVisibility(); }}
-                          className={`px-1.5 py-0.5 rounded text-[8px] font-headline-sm font-bold flex items-center gap-0.5 transition-colors border ${
+                          className={`px-1.5 py-0.5 rounded text-[9.5px] leading-tight font-bold flex items-center gap-1 transition-colors border ${
                             unit.is_visible_to_enemy
-                              ? 'bg-status-alert/15 hover:bg-status-alert/25 text-status-alert border-status-alert/30'
-                              : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant border-border-parchment'
+                              ? 'bg-[#fee2e2] text-[#ef4444] border-[#fca5a5] hover:bg-[#fecaca]'
+                              : 'bg-[#f3f4f6] text-[#4b5563] border-[#e5e7eb] hover:bg-[#e5e7eb]'
                           }`}
                         >
-                          <span className="material-symbols-outlined text-[10px]">{unit.is_visible_to_enemy ? 'visibility' : 'visibility_off'}</span>
-                          <span>{unit.is_visible_to_enemy ? 'Visível ao Oponente' : 'Oculto / Névoa'}</span>
+                          <span className="material-symbols-outlined text-[12px]">{unit.is_visible_to_enemy ? 'visibility' : 'visibility_off'}</span>
+                          <span>{unit.is_visible_to_enemy ? 'Visível' : 'Oculto'}</span>
                         </button>
                       )}
                     </div>
 
-                    <div className="mt-1.5">
-                      <div className="flex justify-between items-center text-[8px] font-headline-sm font-semibold mb-0.5 text-on-surface-variant">
+                    {/* Bottom Row: Health Bar */}
+                    <div className="mt-1">
+                      <div className="flex justify-between items-center text-[9px] font-bold mb-0.5 text-[#374151] leading-tight">
                         <span>Prontidão de Combate</span>
-                        <span className="font-bold text-primary">{unit.health}%</span>
+                        <span className="text-[#047857]">{unit.health}%</span>
                       </div>
-                      <div className="w-full bg-surface-container h-1 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#e5e7eb] h-1 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${unit.health >= 75 ? 'bg-primary-container' : unit.health >= 40 ? 'bg-status-degraded' : 'bg-status-critical'}`}
+                          className={`h-full rounded-full transition-all ${unit.health >= 75 ? 'bg-[#004B41]' : unit.health >= 40 ? 'bg-[#f59e0b]' : 'bg-[#ef4444]'}`}
                           style={{ width: `${unit.health}%` }}
                         />
                       </div>
@@ -306,12 +338,12 @@ export default function UnitPanel({
 
         {/* DETAILS TAB CONTENT */}
         {activePanelTab === 'details' && selectedUnit && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-on-surface">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 text-on-surface">
             {/* CARD 1: Header Identification Card */}
-            <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col">
-                  <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">{getHumanReadableFromSidc(selectedUnit.type)}</span>
+                  <span className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider">{getHumanReadableFromSidc(selectedUnit.type)}</span>
                   {canRename ? (
                     <input
                       type="text"
@@ -319,160 +351,195 @@ export default function UnitPanel({
                       onChange={(e) => setNameInput(e.target.value)}
                       onBlur={updateName}
                       onKeyDown={(e) => e.key === 'Enter' && updateName()}
-                      className="font-headline-md text-[18px] font-bold text-primary tracking-tight leading-tight mt-0.5 bg-surface-container rounded px-1 border-none focus:outline-none focus:ring-1 focus:ring-primary w-full"
+                      className="font-headline-md text-[10.5px] font-bold text-primary tracking-tight leading-tight mt-0.5 bg-surface-container rounded px-1 border-none focus:outline-none focus:ring-1 focus:ring-primary w-full"
                     />
                   ) : (
-                    <h3 className="font-headline-md text-[18px] font-bold text-primary tracking-tight leading-tight mt-0.5">
+                    <h3 className="font-headline-md text-[10.5px] font-bold text-primary tracking-tight leading-tight mt-0.5">
                       {selectedUnit.name || getHumanReadableFromSidc(selectedUnit.type)}
                     </h3>
                   )}
-                  <span className="font-tag-overline text-[10px] text-on-surface-variant mt-1">Proprietário: {selectedUnit.owner}</span>
+                  {isModerator ? (
+                    <select
+                      value={parseSidc(selectedUnit.type).typeKey}
+                      onChange={(e) => updateType(e.target.value)}
+                      className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5 bg-surface-container rounded px-1 py-0.5 border-none focus:outline-none focus:ring-1 focus:ring-primary w-fit uppercase font-bold"
+                    >
+                      {Object.entries(UNIT_TYPES).map(([key, def]) => (
+                        <option key={key} value={key}>{def.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5">Tipo: {getHumanReadableFromSidc(selectedUnit.type)}</span>
+                  )}
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-faction-friendly text-text-on-dark flex items-center justify-center shadow-md flex-shrink-0">
-                  <span className="material-symbols-outlined text-[24px]">{renderIcon(selectedUnit.type)}</span>
+                <div className="flex-shrink-0 flex items-center justify-center">
+                  <NatoSymbol sidc={getSidcForUnit(selectedUnit)} size={44} className="drop-shadow-md" />
                 </div>
               </div>
 
               {/* Status & Allegiance Badges */}
-              <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-border-parchment/60">
-                <span className={`font-label-md text-[11px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border ${
-                  selectedUnit.owner === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' : 
-                  selectedUnit.owner === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' : 
-                  'bg-gray-100 text-gray-700 border-gray-300'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${selectedUnit.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit.owner === 'Player B' ? 'bg-faction-hostile' : 'bg-gray-500'}`}></span>
-                  {selectedUnit.owner === 'Player A' ? 'Time A' : selectedUnit.owner === 'Player B' ? 'Time B' : selectedUnit.owner}
-                </span>
+              <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border-parchment/60">
+                {isModerator ? (
+                  <select 
+                    value={selectedUnit.owner}
+                    onChange={(e) => updateOwner(e.target.value)}
+                    className={`font-label-md text-[9px] px-2 py-0.5 rounded-full font-bold border cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary ${
+                      selectedUnit.owner === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' : 
+                      selectedUnit.owner === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' : 
+                      'bg-gray-100 text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    <option value="Player A">Time A</option>
+                    <option value="Player B">Time B</option>
+                    <option value="Unknown">Incógnita</option>
+                    <option value="Neutral">Neutro</option>
+                  </select>
+                ) : (
+                  <span className={`font-label-md text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
+                    selectedUnit.owner === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' : 
+                    selectedUnit.owner === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' : 
+                    'bg-gray-100 text-gray-700 border-gray-300'
+                  }`}>
+                    <span className={`w-1 h-1 rounded-full ${selectedUnit.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit.owner === 'Player B' ? 'bg-faction-hostile' : 'bg-gray-500'}`}></span>
+                    {selectedUnit.owner === 'Player A' ? 'Time A' : selectedUnit.owner === 'Player B' ? 'Time B' : selectedUnit.owner}
+                  </span>
+                )}
 
-                <span className={`font-label-md text-[11px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border ${
+                <span className={`font-label-md text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
                   selectedUnit.health < 30 ? 'bg-status-critical/15 text-status-critical border-status-critical/20' : 
                   selectedUnit.health < 70 ? 'bg-status-degraded/15 text-status-degraded border-status-degraded/20' : 
                   'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${selectedUnit.health < 30 ? 'bg-status-critical' : selectedUnit.health < 70 ? 'bg-status-degraded' : 'bg-faction-friendly'}`}></span>
+                  <span className={`w-1 h-1 rounded-full ${selectedUnit.health < 30 ? 'bg-status-critical' : selectedUnit.health < 70 ? 'bg-status-degraded' : 'bg-faction-friendly'}`}></span>
                   Status: {getStatusText(selectedUnit.health)}
                 </span>
               </div>
             </div>
 
             {/* CARD 2: Combat Stats & Operational Readings Card */}
-            <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-3">
+            <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">Operational Readings / Status Tally</span>
-                <span className="material-symbols-outlined text-primary text-[16px]">tune</span>
+                <span className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider">Operational Readings / Status Tally</span>
+                <span className="material-symbols-outlined text-primary text-[14px]">tune</span>
               </div>
 
               {/* Readiness / Combat Strength Slider */}
-              <div className="bg-surface-parchment/50 p-2.5 rounded-lg border border-border-parchment/70">
-                <div className="flex justify-between items-center text-label-sm font-semibold mb-1.5">
+              <div className="bg-surface-parchment/50 p-2 rounded-lg border border-border-parchment/70">
+                <div className="flex justify-between items-center text-[9px] font-semibold mb-1">
                   <span className="text-on-surface">Combat Strength / Prontidão</span>
-                  <span className="font-bold text-primary text-[13px] bg-white px-2 py-0.5 rounded border border-border-parchment shadow-xs">{selectedUnit.health}%</span>
+                  <span className="font-bold text-primary text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-border-parchment shadow-xs">{selectedUnit.health}%</span>
                 </div>
                 {canEditOrDelete ? (
-                  <input type="range" min="0" max="100" value={selectedUnit.health} onChange={(e) => updateHealth(Number(e.target.value))} className="w-full accent-primary h-2 bg-surface-container rounded-lg cursor-pointer" />
+                  <input type="range" min="0" max="100" value={selectedUnit.health} onChange={(e) => updateHealth(Number(e.target.value))} className="w-full accent-primary h-1.5 bg-surface-container rounded-lg cursor-pointer" />
                 ) : (
-                  <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
                     <div className="bg-primary h-full rounded-full" style={{ width: `${selectedUnit.health}%` }} />
                   </div>
                 )}
               </div>
 
-              {/* Fuel / Supply Metric (Visual Placeholder) */}
-              <div className="bg-surface-parchment/50 p-2.5 rounded-lg border border-border-parchment/70">
-                <div className="flex justify-between items-center text-label-sm font-semibold mb-1.5">
-                  <span className="text-on-surface">Fuel & Ammunition Stores</span>
-                  <span className="font-bold text-secondary text-[13px] bg-white px-2 py-0.5 rounded border border-border-parchment shadow-xs">72%</span>
-                </div>
-                <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
-                  <div className="bg-secondary h-full rounded-full" style={{ width: '72%' }}></div>
+              {/* Fuel & Ammo Metrics */}
+              <div className="bg-surface-parchment/50 p-2 rounded-lg border border-border-parchment/70 space-y-3">
+                <div>
+                  <div className="flex justify-between items-center text-[9px] font-semibold mb-1">
+                    <span className="text-on-surface">Combustível & Munição</span>
+                    <span className="font-bold text-[#c03a6b] text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-border-parchment shadow-xs">{selectedUnit.ammo ?? 100}%</span>
+                  </div>
+                  {canEditOrDelete ? (
+                    <input type="range" min="0" max="100" value={selectedUnit.ammo ?? 100} onChange={(e) => updateAmmo(Number(e.target.value))} className="w-full accent-[#c03a6b] h-1.5 bg-surface-container rounded-lg cursor-pointer" />
+                  ) : (
+                    <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-[#c03a6b] h-full rounded-full" style={{ width: `${selectedUnit.ammo ?? 100}%` }}></div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* CARD 4: SITREP / Moderator Situation Log Card */}
             {isModerator && (
-              <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-2.5">
+              <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">Sitrep / Diretrizes do Moderador</span>
-                  <span className="material-symbols-outlined text-[16px] text-primary">edit_note</span>
+                  <span className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider">Sitrep / Diretrizes do Moderador</span>
+                  <span className="material-symbols-outlined text-[14px] text-primary">edit_note</span>
                 </div>
                 <textarea 
-                  className="w-full bg-surface-parchment-dim/80 text-on-surface p-2.5 rounded-lg text-[12px] font-body-ui focus:outline-none focus:ring-1 focus:ring-primary border border-border-parchment resize-none leading-relaxed shadow-inner" 
+                  className="w-full bg-surface-parchment-dim/80 text-on-surface p-2 rounded-lg text-[10px] font-body-ui focus:outline-none focus:ring-1 focus:ring-primary border border-border-parchment resize-none leading-relaxed shadow-inner" 
                   placeholder="Instruções e ordens da rodada..." 
-                  rows={3}
+                  rows={2}
                 ></textarea>
               </div>
             )}
 
             {/* CARD 5: Command Action Panel Card */}
             {isModerator && (
-              <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-2.5">
-                <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider block">Painel de Ações do Comando</span>
+              <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
+                <span className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider block">Painel de Ações do Comando</span>
                 
                 {/* Primary Action: Update Orders */}
-                <div className="bg-surface-parchment-dim/80 rounded-lg p-2 border border-border-parchment space-y-1.5" id="enemy-visibility-control">
+                <div className="bg-surface-parchment-dim/80 rounded-lg p-1.5 border border-border-parchment space-y-1" id="enemy-visibility-control">
                   <div className="flex items-center justify-between">
-                    <span className="font-tag-overline text-[9px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px] text-secondary">radar</span>
+                    <span className="font-tag-overline text-[8px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px] text-secondary">radar</span>
                       Visibilidade Inimiga
                     </span>
-                    <span className={`font-tag-overline text-[9px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                    <span className={`font-tag-overline text-[8px] px-1.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
                       selectedUnit.is_visible_to_enemy ? 'bg-status-alert/15 text-status-alert border-status-alert/30' : 'bg-gray-100 text-gray-500 border-gray-300'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${selectedUnit.is_visible_to_enemy ? 'bg-status-alert' : 'bg-gray-400'}`}></span>
+                      <span className={`w-1 h-1 rounded-full ${selectedUnit.is_visible_to_enemy ? 'bg-status-alert' : 'bg-gray-400'}`}></span>
                       {selectedUnit.is_visible_to_enemy ? 'Visível' : 'Oculto'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5 p-0.5 bg-surface-container rounded-lg border border-border-parchment/60">
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-surface-container rounded-lg border border-border-parchment/60">
                     <button 
                       onClick={() => toggleVisibility(true)} 
-                      className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md font-label-md text-[11px] transition-all ${
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
                         selectedUnit.is_visible_to_enemy 
                           ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
                           : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
                       }`} 
                       type="button"
                     >
-                      <span className={`material-symbols-outlined text-[15px] ${selectedUnit.is_visible_to_enemy ? 'text-status-alert' : ''}`}>visibility</span>
+                      <span className={`material-symbols-outlined text-[13px] ${selectedUnit.is_visible_to_enemy ? 'text-status-alert' : ''}`}>visibility</span>
                       <span>Visível</span>
                     </button>
                     <button 
                       onClick={() => toggleVisibility(false)} 
-                      className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md font-label-md text-[11px] transition-all ${
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
                         !selectedUnit.is_visible_to_enemy 
                           ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
                           : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
                       }`} 
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[15px]">visibility_off</span>
+                      <span className="material-symbols-outlined text-[13px]">visibility_off</span>
                       <span>Ocultar</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Secondary: Move to Staging Area */}
-                <button onClick={moveToReserve} className="w-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-[12px] py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-border-parchment" type="button">
-                  <span className="material-symbols-outlined text-[16px]">archive</span>
+                <button onClick={moveToReserve} className="w-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-border-parchment font-bold" type="button">
+                  <span className="material-symbols-outlined text-[13px]">archive</span>
                   <span>Mover de Volta às Reservas</span>
                 </button>
 
                 {/* Status Selector Buttons */}
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
-                  <button onClick={() => updateHealth(100)} className="bg-faction-friendly/15 hover:bg-faction-friendly/25 text-faction-friendly font-tag-overline text-[10px] py-1.5 rounded-lg transition-colors uppercase font-bold text-center border border-faction-friendly/30" type="button">
+                <div className="grid grid-cols-3 gap-1 pt-0.5">
+                  <button onClick={() => updateHealth(100)} className="bg-faction-friendly/15 hover:bg-faction-friendly/25 text-faction-friendly font-tag-overline text-[7px] py-1 rounded-md transition-colors uppercase font-bold text-center border border-faction-friendly/30" type="button">
                     Pronto
                   </button>
-                  <button onClick={() => updateHealth(60)} className="bg-status-degraded/15 hover:bg-status-degraded/25 text-status-degraded font-tag-overline text-[10px] py-1.5 rounded-lg transition-colors uppercase font-bold text-center border border-status-degraded/30" type="button">
+                  <button onClick={() => updateHealth(60)} className="bg-status-degraded/15 hover:bg-status-degraded/25 text-status-degraded font-tag-overline text-[7px] py-1 rounded-md transition-colors uppercase font-bold text-center border border-status-degraded/30" type="button">
                     Degradado
                   </button>
-                  <button onClick={() => updateHealth(10)} className="bg-status-critical/15 hover:bg-status-critical/25 text-status-critical font-tag-overline text-[10px] py-1.5 rounded-lg transition-colors uppercase font-bold text-center border border-status-critical/30" type="button">
+                  <button onClick={() => updateHealth(10)} className="bg-status-critical/15 hover:bg-status-critical/25 text-status-critical font-tag-overline text-[7px] py-1 rounded-md transition-colors uppercase font-bold text-center border border-status-critical/30" type="button">
                     Crítico
                   </button>
                 </div>
 
                 {/* Danger Action: Kill/Eliminate Unit */}
-                <button onClick={deleteUnit} className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[12px] py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 mt-1 border border-status-critical/30 font-semibold" type="button">
-                  <span className="material-symbols-outlined text-[16px]">dangerous</span>
+                <button onClick={deleteUnit} className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 mt-0.5 border border-status-critical/30 font-semibold" type="button">
+                  <span className="material-symbols-outlined text-[13px]">dangerous</span>
                   <span>Destruir / Eliminar Unidade</span>
                 </button>
               </div>

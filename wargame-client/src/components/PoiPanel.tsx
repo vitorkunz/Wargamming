@@ -66,20 +66,20 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
     <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
       {/* Header */}
       <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
-        <h2 className="font-headline-sm text-[12px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">location_on</span>
+        <h2 className="font-headline-sm text-[9.5px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[14px]">location_on</span>
           POI Details
         </h2>
         <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
-          <span className="material-symbols-outlined text-[16px]">keyboard_double_arrow_right</span>
+          <span className="material-symbols-outlined text-[14px]">keyboard_double_arrow_right</span>
         </button>
       </div>
 
       <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         {!currentPoi ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
-            <span className="material-symbols-outlined text-[24px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md text-[11px]">Select a POI on the map or sidebar to view details.</p>
+            <span className="material-symbols-outlined text-[20px] opacity-50 mb-2">touch_app</span>
+            <p className="font-label-md text-[10px]">Select a POI on the map or sidebar to view details.</p>
           </div>
         ) : (
           <>
@@ -88,8 +88,8 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
               <div className="flex items-center gap-3 mb-2 pb-2 border-b border-border-parchment/60">
                  <PoiBadge type={currentPoi.type} owner={currentPoi.owner} status={currentPoi.status} size={32} />
                  <div className="flex-1">
-                   <label className="font-tag-overline text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Status</label>
-                   <span className={`font-label-md text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
+                   <label className="font-tag-overline text-[8.5px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Status</label>
+                   <span className={`font-label-md text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
                      currentPoi.status === 'damaged' ? 'bg-status-alert/20 text-status-alert border-status-alert/30' :
                      currentPoi.status === 'destroyed' ? 'bg-status-critical/20 text-status-critical border-status-critical/30' :
                      currentPoi.status === 'under_construction' ? 'bg-secondary/20 text-secondary border-secondary/30' :
@@ -101,19 +101,19 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
               </div>
 
               <div>
-                <span className="font-tag-overline text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Name</span>
+                <span className="font-tag-overline text-[8.5px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Name</span>
                 {isModerator ? (
                   <input
                     type="text"
                     key={currentPoi.id + currentPoi.name}
                     defaultValue={currentPoi.name}
                     onBlur={(e) => handleUpdate('name', e.target.value)}
-                    className="font-headline-md text-[14px] font-bold text-on-surface tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-primary focus:outline-none"
+                    className="font-headline-md text-[12px] font-bold text-on-surface tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-primary focus:outline-none"
                   />
                 ) : (
-                  <h3 className="font-headline-md text-[14px] font-bold text-on-surface tracking-tight leading-tight">{currentPoi.name}</h3>
+                  <h3 className="font-headline-md text-[12px] font-bold text-on-surface tracking-tight leading-tight">{currentPoi.name}</h3>
                 )}
-                <span className="font-tag-overline text-[9px] text-on-surface-variant mt-1.5 block">ID: {currentPoi.id.substring(0, 8).toUpperCase()}</span>
+                <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-1 block">ID: {currentPoi.id.substring(0, 8).toUpperCase()}</span>
               </div>
             </div>
             
@@ -213,9 +213,9 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                 <div className="pt-1">
                   <button 
                     onClick={handleDelete}
-                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[11px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
+                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                   >
-                    <span className="material-symbols-outlined text-[14px]">delete_forever</span>
+                    <span className="material-symbols-outlined text-[13px]">delete_forever</span>
                     <span>Delete POI</span>
                   </button>
                 </div>

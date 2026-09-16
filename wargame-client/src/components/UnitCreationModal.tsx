@@ -18,13 +18,15 @@ interface UnitCreationModalProps {
   fixedOwner?: 'Player A' | 'Player B';
   onClose: () => void;
   isModerator?: boolean;
+  initialCoordinates?: { x: number, y: number } | null;
 }
 
 export default function UnitCreationModal({ 
   table = 'Battle_Units', 
   fixedOwner,
   onClose,
-  isModerator = true
+  isModerator = true,
+  initialCoordinates
 }: UnitCreationModalProps) {
   const [name, setName] = useState('');
   const [health, setHealth] = useState(95);
@@ -33,7 +35,7 @@ export default function UnitCreationModal({
   const [type, setType] = useState<UnitTypeKey>('surfaceCombatant');
   
   const [visibility, setVisibility] = useState<'visible' | 'hidden'>('visible');
-  const [allocation, setAllocation] = useState<'reserve' | 'map'>('reserve');
+  const [allocation, setAllocation] = useState<'reserve' | 'map'>(initialCoordinates ? 'map' : 'reserve');
   const [notes, setNotes] = useState('');
 
   // Default derivation based on owner
@@ -44,48 +46,48 @@ export default function UnitCreationModal({
 
   const affiliationCode = AFFILIATIONS[affiliation];
   const typeDef = UNIT_TYPES[type] || UNIT_TYPES['infantry'];
-  const echelonCode = ECHELONS['company'];
+  const echelonCode = ECHELONS['none'];
   const sidc = `S${affiliationCode}${typeDef.dimension}P${typeDef.code}-${echelonCode}---`;
 
-  const renderIcon = () => {
-    const cat = typeDef.category;
-    const lbl = typeDef.label.toLowerCase();
-    if (cat === 'Maritime Units') return 'directions_boat';
-    if (cat === 'Air Units') return 'flight';
-    if (lbl.includes('artillery')) return 'adjust';
-    if (lbl.includes('armor') || lbl.includes('mechanized')) return 'view_in_ar';
-    if (lbl.includes('infantry') || lbl.includes('special forces')) return 'shield';
-    if (lbl.includes('supply') || lbl.includes('transportation') || lbl.includes('medical')) return 'local_shipping';
-    if (lbl.includes('engineer') || lbl.includes('maintenance')) return 'build';
-    if (lbl.includes('police')) return 'local_police';
-    if (lbl.includes('signal') || lbl.includes('electronic')) return 'podcasts';
-    return 'radar';
-  };
+  // Removed renderIcon
 
   const handleCreateUnit = async (spawnOnMap: boolean) => {
-    const assignedOwner = fixedOwner || owner;
-    const isVisible = visibility === 'visible';
+    try {
+      console.log("Button clicked! spawnOnMap:", spawnOnMap);
+      const assignedOwner = fixedOwner || owner;
+      const isVisible = visibility === 'visible';
 
-    const insertPayload: Record<string, string | number | boolean | null> = {
-      name: name.trim() || null,
-      type: sidc,
-      owner: assignedOwner,
-      health,
-      x_coord: 0, // In a real app, if spawnOnMap is true, we'd need to place it centrally or enter a placement mode
-      y_coord: 0,
-      in_reserve: !spawnOnMap
-    };
+      const insertPayload: Record<string, string | number | boolean | null> = {
+        name: name.trim() || null,
+        type: sidc,
+        owner: assignedOwner,
+        health,
+        ammo,
+        x_coord: spawnOnMap && initialCoordinates ? initialCoordinates.x : 0, 
+        y_coord: spawnOnMap && initialCoordinates ? initialCoordinates.y : 0,
+        in_reserve: !spawnOnMap
+      };
 
-    if (table === 'Battle_Units' || table === 'Moderator_Units') {
-      insertPayload.is_visible_to_enemy = isVisible;
-    }
+      if (table === 'Battle_Units' || table === 'Moderator_Units') {
+        insertPayload.is_visible_to_enemy = isVisible;
+      }
+      
+      console.log(`Attempting to insert into table: ${table} with payload:`, insertPayload);
 
-    const { error } = await supabase.from(table === 'Moderator_Units' ? 'Battle_Units' : table).insert(insertPayload);
+      const { data, error } = await supabase.from(table).insert(insertPayload).select();
 
-    if (error) {
-      alert("Failed to spawn unit: " + error.message);
-    } else {
-      onClose();
+      console.log("Supabase response:", { data, error });
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        alert("Failed to spawn unit: " + error.message + "\nCheck console for details.");
+      } else {
+        console.log("Unit spawned successfully!");
+        onClose();
+      }
+    } catch (err: any) {
+      console.error("Unexpected error in handleCreateUnit:", err);
+      alert("Unexpected error: " + err.message);
     }
   };
 
@@ -172,14 +174,10 @@ export default function UnitCreationModal({
               <div className="col-span-1 space-y-1.5">
                 <label className="text-[11px] font-bold text-on-surface">Tipo de Força / Símbolo NATO *</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                    <div className={`w-6 h-6 rounded flex items-center justify-center text-white ${
-                      owner === 'Player A' ? 'bg-[#2d7d74]' : owner === 'Player B' ? 'bg-[#c03a6b]' : owner === 'Unknown' ? 'bg-[#414575]' : 'bg-[#26265b]'
-                    }`}>
-                      <span className="material-symbols-outlined text-[16px]">{renderIcon()}</span>
-                    </div>
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <NatoSymbol sidc={sidc} size={30} className="drop-shadow-sm" />
                   </div>
-                  <select value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)} className="w-full pl-10 pr-3 py-2.5 bg-white border border-border-parchment rounded-lg text-[13px] font-headline-sm font-bold text-on-surface appearance-none focus:outline-none focus:border-primary">
+                  <select value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)} className="w-full pl-12 pr-3 py-2.5 bg-white border border-border-parchment rounded-lg text-[13px] font-headline-sm font-bold text-on-surface appearance-none focus:outline-none focus:border-primary">
                     {Object.entries(UNIT_TYPES).map(([key, def]) => (
                       <option key={key} value={key}>{def.label}</option>
                     ))}
@@ -199,7 +197,7 @@ export default function UnitCreationModal({
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2 bg-[#F4F1E1] p-3 rounded-lg border border-border-parchment/60">
                   <div className="flex justify-between items-center text-[11px] font-bold">
-                    <span>Força de Combate / Prontidão</span>
+                    <span>Força de Combate</span>
                     <span className="text-[#2d7d74]">{health}%</span>
                   </div>
                   <input type="range" min="0" max="100" value={health} onChange={(e) => setHealth(Number(e.target.value))} className="w-full accent-[#2d7d74] cursor-pointer" />
@@ -273,8 +271,12 @@ export default function UnitCreationModal({
                     {allocation === 'map' && <span className="w-2 h-2 rounded-full bg-[#2d7d74]"></span>}
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-bold text-[12px] text-on-surface">Direto no Mapa Tático</span>
-                    <span className="text-[10px] text-on-surface-variant">Posicionar no centro das coordenadas</span>
+                    <span className="font-bold text-[12px] text-on-surface">
+                      {initialCoordinates ? `Direto no Ponto Clicado (X: ${initialCoordinates.x}, Y: ${initialCoordinates.y})` : 'Direto no Mapa Tático'}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant">
+                      {initialCoordinates ? 'Posicionar exatamente no local clicado do mapa' : 'Posicionar no centro das coordenadas'}
+                    </span>
                   </div>
                 </label>
               </div>
@@ -297,15 +299,15 @@ export default function UnitCreationModal({
 
         {/* Footer */}
         <div className="bg-[#F4F1E1] border-t border-border-parchment p-4 flex justify-between items-center z-10">
-          <button onClick={onClose} className="text-[13px] font-bold text-on-surface-variant hover:text-on-surface">
+          <button type="button" onClick={onClose} className="text-[13px] font-bold text-on-surface-variant hover:text-on-surface">
             Cancelar
           </button>
           <div className="flex items-center gap-3">
-            <button onClick={() => handleCreateUnit(false)} className="bg-white border border-[#2d7d74] text-[#2d7d74] hover:bg-[#E3F2EE] font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors text-[13px]">
+            <button type="button" onClick={() => handleCreateUnit(false)} className="bg-white border border-[#2d7d74] text-[#2d7d74] hover:bg-[#E3F2EE] font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors text-[13px]">
               <span className="material-symbols-outlined text-[18px]">archive</span>
               Criar na Reserva
             </button>
-            <button onClick={() => handleCreateUnit(true)} className="bg-[#004B41] hover:bg-[#003831] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors text-[13px]">
+            <button type="button" onClick={() => handleCreateUnit(true)} className="bg-[#004B41] hover:bg-[#003831] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors text-[13px]">
               <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
               Criar & Posicionar no Mapa
             </button>

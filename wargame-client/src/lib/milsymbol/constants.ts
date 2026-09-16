@@ -84,3 +84,30 @@ export const ECHELONS = {
 } as const;
 
 export type EchelonKey = keyof typeof ECHELONS;
+// Custom Color palettes to integrate milsymbol with Wargame's CSS theme
+export const WARGAME_COLOR_MODE = {
+  Friend: '#2d7d74',   // Player A: Teal green
+  Hostile: '#4e1a3d',  // Player B: Dark plum
+  Neutral: '#26265b',  // Neutral: Navy slate
+  Unknown: '#414575',  // Unknown: Indigo slate
+  Civilian: '#26265b',
+  Suspect: '#c03a6b'
+};
+
+export const WARGAME_FRAME_COLOR_MODE = {
+  Friend: '#a4f1e5',   // Player A: Mint accent
+  Hostile: '#c03a6b',  // Player B: Magenta accent
+  Neutral: '#a4f1e5',  // Neutral: Light cyan
+  Unknown: '#a4f1e5',  // Unknown: Light cyan
+  Civilian: '#a4f1e5',
+  Suspect: '#c03a6b'
+};
+
+export const WARGAME_ICON_COLOR_MODE = {
+  Friend: '#ffffff',
+  Hostile: '#ffffff',
+  Neutral: '#ffffff',
+  Unknown: '#ffffff',
+  Civilian: '#ffffff',
+  Suspect: '#ffffff'
+};

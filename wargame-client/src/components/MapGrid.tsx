@@ -5,10 +5,11 @@ import { LayerVisibility } from './Sidebar';
 import { supabase } from '@/lib/supabaseClient';
 import { MapLayer } from './LayerManager';
 import { TransformWrapper, TransformComponent, useTransformEffect, useControls } from 'react-zoom-pan-pinch';
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw, Eye } from 'lucide-react';
 import { NatoSymbol } from './NatoSymbol';
 import { PoiBadge } from './PoiBadge';
 import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
+import UnitCreationModal from './UnitCreationModal';
 export interface Unit {
   id: string;
   name?: string;
@@ -17,6 +18,7 @@ export interface Unit {
   x_coord: number;
   y_coord: number;
   health: number;
+  ammo: number;
   is_visible_to_enemy?: boolean;
   is_health_visible_to_enemy?: boolean;
   in_reserve?: boolean;
@@ -66,6 +68,10 @@ interface MapGridProps {
   isDrawingMode?: boolean;
   onDrawComplete?: (points: {x: number, y: number}[]) => void;
   hudRightActions?: React.ReactNode;
+  hideEditingTools?: boolean;
+  unitsTable?: string;
+  isModerator?: boolean;
+  fixedOwner?: 'Player A' | 'Player B';
 }
 
 const CELL_SIZE = 40;
@@ -86,15 +92,21 @@ function MapControls({
   onToggleFullscreen,
   selectedTool,
   setSelectedTool,
-  hudRightActions
+  hudRightActions,
+  hideEditingTools,
+  isDragMode
 }: { 
   isFullscreen: boolean; 
   onToggleFullscreen: () => void;
   selectedTool: string;
   setSelectedTool: (t: string) => void;
   hudRightActions?: React.ReactNode;
+  hideEditingTools?: boolean;
+  isDragMode?: boolean;
 }) {
   const { zoomIn, zoomOut, resetTransform } = useControls();
+
+  const isDragActive = isDragMode !== undefined ? isDragMode : selectedTool === 'drag';
 
   return (
     <div 
@@ -106,7 +118,7 @@ function MapControls({
         <button
           onClick={() => setSelectedTool('select')}
           className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'select'
+            selectedTool === 'select' && !isDragActive
               ? 'bg-faction-friendly text-text-on-dark shadow-sm'
               : 'hover:bg-white/10 text-text-on-dark'
           }`}
@@ -118,63 +130,68 @@ function MapControls({
         <button
           onClick={() => setSelectedTool('drag')}
           className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'drag'
+            isDragActive
               ? 'bg-faction-friendly text-text-on-dark shadow-sm'
               : 'hover:bg-white/10 text-text-on-dark'
           }`}
-          title="Drag Map (Arrastar Mapa)"
+          title="Drag Map (Arrastar Mapa) - Espaço ou clique"
           type="button"
         >
           <span className="material-symbols-outlined text-[18px]">pan_tool</span>
         </button>
-        <button
-          onClick={() => setSelectedTool('place')}
-          className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'place'
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Place Unit Marker"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
-        </button>
-        <button
-          onClick={() => setSelectedTool('polygon')}
-          className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'polygon'
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Draw Operational Zone"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">polyline</span>
-        </button>
-        <button
-          onClick={() => setSelectedTool('arrow')}
-          className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'arrow'
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Tactical Arrow / Advance Line"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">north_east</span>
-        </button>
-        <button
-          onClick={() => setSelectedTool('target')}
-          className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'target'
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Strategic Target Point"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">flag</span>
-        </button>
+
+        {!hideEditingTools && (
+          <>
+            <button
+              onClick={() => setSelectedTool('place')}
+              className={`p-2 rounded-lg transition-colors ${
+                selectedTool === 'place'
+                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                  : 'hover:bg-white/10 text-text-on-dark'
+              }`}
+              title="Place Unit Marker"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
+            </button>
+            <button
+              onClick={() => setSelectedTool('polygon')}
+              className={`p-2 rounded-lg transition-colors ${
+                selectedTool === 'polygon'
+                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                  : 'hover:bg-white/10 text-text-on-dark'
+              }`}
+              title="Draw Operational Zone"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">polyline</span>
+            </button>
+            <button
+              onClick={() => setSelectedTool('arrow')}
+              className={`p-2 rounded-lg transition-colors ${
+                selectedTool === 'arrow'
+                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                  : 'hover:bg-white/10 text-text-on-dark'
+              }`}
+              title="Tactical Arrow / Advance Line"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">north_east</span>
+            </button>
+            <button
+              onClick={() => setSelectedTool('target')}
+              className={`p-2 rounded-lg transition-colors ${
+                selectedTool === 'target'
+                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                  : 'hover:bg-white/10 text-text-on-dark'
+              }`}
+              title="Strategic Target Point"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">flag</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Sleek Vertical Divider */}
@@ -249,7 +266,11 @@ export default function MapGrid({
   onSpawnUnitAt,
   isDrawingMode,
   onDrawComplete,
-  hudRightActions
+  hudRightActions,
+  hideEditingTools,
+  unitsTable = 'Battle_Units',
+  isModerator = true,
+  fixedOwner
 }: MapGridProps) {
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
   const [pois, setPois] = useState<MapPOI[]>([]);
@@ -258,8 +279,54 @@ export default function MapGrid({
   const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>('select');
+  const [creationCoords, setCreationCoords] = useState<{ x: number, y: number } | null>(null);
+  const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
   const [gridSnapping, setGridSnapping] = useState<boolean>(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const isDragMode = selectedTool === 'drag' || isSpacePressed;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target && 
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsSpacePressed(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false);
+      }
+    };
+
+    const handleBlur = () => {
+      setIsSpacePressed(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hideEditingTools && !['select', 'drag'].includes(selectedTool)) {
+      setSelectedTool('select');
+    }
+  }, [hideEditingTools, selectedTool]);
 
   const toggleFullscreen = () => {
     if (!isFullscreen) {
@@ -342,18 +409,26 @@ export default function MapGrid({
   }, [poisTable, hazardsTable]);
 
   useEffect(() => {
-    if (!isDrawingMode) {
+    if (!isDrawingMode && selectedTool !== 'polygon') {
       setCurrentPath([]);
       setIsCapturing(false);
     }
-  }, [isDrawingMode]);
+  }, [isDrawingMode, selectedTool]);
 
   const handleDragStart = (e: React.DragEvent, unit: Unit) => {
+    if (isDragMode) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', `unit:${unit.id}`);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handlePoiDragStart = (e: React.DragEvent, poi: MapPOI) => {
+    if (isDragMode) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', `poi:${poi.id}`);
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -392,7 +467,7 @@ export default function MapGrid({
   };
 
   const handleGridClick = (e: React.MouseEvent) => {
-    if (!onGridClick || isDrawingMode || selectedTool === 'drag') return;
+    if (isDrawingMode || isDragMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = boardWidth / rect.width;
     const scaleY = boardHeight / rect.height;
@@ -401,7 +476,13 @@ export default function MapGrid({
     const yPixel = Math.round((e.clientY - rect.top) * scaleY - (CELL_SIZE / 2));
     
     if (xPixel >= -CELL_SIZE && xPixel <= boardWidth && yPixel >= -CELL_SIZE && yPixel <= boardHeight) {
-      onGridClick(xPixel, yPixel);
+      if (selectedTool === 'place') {
+        setCreationCoords({ x: xPixel, y: yPixel });
+        return;
+      }
+      if (onGridClick) {
+        onGridClick(xPixel, yPixel);
+      }
     }
   };
 
@@ -415,23 +496,28 @@ export default function MapGrid({
     };
   };
 
+  const activeDrawingMode = isDrawingMode || selectedTool === 'polygon';
+
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isDrawingMode) return;
+    if (!activeDrawingMode) return;
     setIsCapturing(true);
     setCurrentPath([getEventCoordinates(e)]);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawingMode || !isCapturing) return;
+    if (!activeDrawingMode || !isCapturing) return;
     const coords = getEventCoordinates(e);
     setCurrentPath(prev => [...prev, coords]);
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDrawingMode || !isCapturing) return;
+    if (!activeDrawingMode || !isCapturing) return;
     setIsCapturing(false);
     if (onDrawComplete && currentPath.length > 2) {
       onDrawComplete(currentPath);
+      if (selectedTool === 'polygon') {
+        setSelectedTool('select');
+      }
     }
   };
 
@@ -453,7 +539,7 @@ export default function MapGrid({
         minScale={0.1}
         maxScale={3}
         centerOnInit={true}
-        panning={{ disabled: isDrawingMode || selectedTool !== 'drag', excluded: ['draggable-unit'] }}
+        panning={{ disabled: isDrawingMode || !isDragMode, excluded: isDragMode ? [] : ['draggable-unit'] }}
       >
         <ScaleUpdater />
         <MapControls 
@@ -462,6 +548,8 @@ export default function MapGrid({
           selectedTool={selectedTool}
           setSelectedTool={setSelectedTool}
           hudRightActions={hudRightActions}
+          hideEditingTools={hideEditingTools}
+          isDragMode={isDragMode}
         />
         <TransformComponent 
           wrapperStyle={{ 
@@ -473,7 +561,13 @@ export default function MapGrid({
           <div 
             id="map-grid-root"
             className={`relative bg-surface-canvas-void border-2 border-primary ${
-              isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' ? 'cursor-crosshair' : selectedTool === 'drag' ? 'cursor-grab active:cursor-grabbing' : onGridClick ? 'cursor-crosshair' : 'cursor-default'
+              isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' 
+                ? 'cursor-crosshair' 
+                : isDragMode 
+                ? 'cursor-grab active:cursor-grabbing' 
+                : onGridClick 
+                ? 'cursor-crosshair' 
+                : 'cursor-default'
             }`}
             style={{ width: boardWidth, height: boardHeight }}
             onDragOver={handleDragOver}
@@ -560,9 +654,9 @@ export default function MapGrid({
               </svg>
 
             {/* Live Drawing Path (Always visible when drawing) */}
-            {isDrawingMode && currentPath.length > 0 && (
+            {activeDrawingMode && currentPath.length > 0 && (
               <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9005, width: boardWidth, height: boardHeight }}>
-                <polyline 
+                <polygon 
                   points={currentPath.map(p => `${p.x},${p.y}`).join(' ')}
                   fill="rgba(234, 88, 12, 0.3)"
                   stroke="#ea580c"
@@ -576,14 +670,16 @@ export default function MapGrid({
               {layers.pois && (
                 <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9002 }}>
                   {pois.filter(poi => !hiddenPois.includes(poi.id)).map(poi => {
-                    const canDrag = isPoiDraggable ? isPoiDraggable(poi) : false;
+                    const canDrag = !isDragMode && isPoiDraggable ? isPoiDraggable(poi) : false;
                   return (
                   <div
                     key={poi.id}
                     draggable={canDrag}
                     onDragStart={(e) => handlePoiDragStart(e, poi)}
                     onDragEnd={handleDragEnd}
-                    className={`absolute flex flex-col items-center justify-center pointer-events-auto group ${canDrag ? 'cursor-grab active:cursor-grabbing draggable-unit' : 'cursor-pointer'}`}
+                    className={`absolute flex flex-col items-center justify-center group ${
+                      isDragMode ? 'pointer-events-none select-none' : 'pointer-events-auto'
+                    } ${canDrag ? 'cursor-grab active:cursor-grabbing draggable-unit' : 'cursor-pointer'}`}
                     style={{
                       left: poi.x_coord,
                       top: poi.y_coord,
@@ -592,6 +688,7 @@ export default function MapGrid({
                       transform: 'scale(var(--unit-inverse-scale, 1))'
                     }}
                     onClick={(e) => {
+                      if (isDragMode) return;
                       e.stopPropagation();
                       if (onPOIClick) onPOIClick(poi);
                     }}
@@ -622,7 +719,7 @@ export default function MapGrid({
                    if (unit.owner === 'Unknown' && !layers.unconfirmed) return false;
                    return true;
                 }).map((unit) => {
-                  const canDrag = isDraggable ? isDraggable(unit) : false;
+                  const canDrag = !isDragMode && isDraggable ? isDraggable(unit) : false;
                   const isSelected = selectedUnitId === unit.id;
                   
                   return (
@@ -631,9 +728,9 @@ export default function MapGrid({
                       draggable={canDrag}
                       onDragStart={(e) => handleDragStart(e, unit)}
                       onDragEnd={handleDragEnd}
-                      className={`draggable-unit absolute flex flex-col items-center justify-center pointer-events-auto opacity-100 group
-                        ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}
-                      `}
+                      className={`absolute flex flex-col items-center justify-center opacity-100 group ${
+                        isDragMode ? 'pointer-events-none select-none' : 'draggable-unit pointer-events-auto'
+                      } ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}`}
                       style={{ 
                         left: unit.x_coord, 
                         top: unit.y_coord, 
@@ -644,6 +741,7 @@ export default function MapGrid({
                       }}
                       title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy ? '- Visible to Enemy' : ''}`}
                       onClick={(e) => {
+                         if (isDragMode) return;
                          // Prevent triggering grid click when clicking a unit
                          e.stopPropagation();
                          if (onUnitClick) onUnitClick(unit);
@@ -658,38 +756,37 @@ export default function MapGrid({
                       )}
 
                       <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-2xl relative z-10 text-[#f7f4eb] ${
-                          unit.owner === 'Player A'
-                            ? 'bg-[#2d7d74] border-2 border-[#a4f1e5]'
-                            : unit.owner === 'Player B'
-                            ? 'bg-[#4e1a3d] border-2 border-[#c03a6b]'
-                            : unit.owner === 'Unknown'
-                            ? 'bg-[#414575] border-2 border-dashed border-[#a4f1e5]'
-                            : 'bg-[#26265b] border-2 border-[#a4f1e5]'
-                        } ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420]' : ''}`}
+                        className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}
                       >
-                        <span className="material-symbols-outlined text-[20px]">
-                          {unit.owner === 'Unknown' ? 'question_mark' : (() => {
-                            const readable = getHumanReadableFromSidc(unit.type).toLowerCase();
-                            if (readable.includes('naval') || readable.includes('ship')) return 'directions_boat';
-                            if (readable.includes('air') || readable.includes('aviation')) return 'flight';
-                            if (readable.includes('artillery')) return 'adjust';
-                            if (readable.includes('armor') || readable.includes('tank')) return 'view_in_ar';
-                            if (readable.includes('infantry')) return 'shield';
-                            if (readable.includes('logistics') || readable.includes('supply')) return 'local_shipping';
-                            if (readable.includes('air defense') || readable.includes('sam')) return 'security';
-                            return 'radar';
-                          })()}
-                        </span>
+                        <NatoSymbol sidc={getSidcForUnit(unit)} size={34} className="drop-shadow-xl" />
                       </div>
 
-                      {unit.health >= 30 && unit.health <= 70 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60">
+                      {/* Left indicator: Eye icon when visible to enemy */}
+                      {unit.is_visible_to_enemy && (
+                        <span 
+                          className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70"
+                          title="Visível ao adversário"
+                        >
+                          <Eye size={9} className="text-white" strokeWidth={2.5} />
+                        </span>
+                      )}
+
+                      {/* Right indicator: Readiness */}
+                      {unit.health < 30 && (
+                        <span 
+                          className="absolute top-0 -right-0.5 w-4 h-4 bg-[#c03a6b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60"
+                          title="Prontidão crítica"
+                        >
                           !
                         </span>
                       )}
-                      {unit.health < 30 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#c03a6b] rounded-full border border-white z-20" />
+                      {unit.health >= 30 && unit.health <= 70 && (
+                        <span 
+                          className="absolute top-0 -right-0.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60"
+                          title="Prontidão degradada"
+                        >
+                          !
+                        </span>
                       )}
 
                       <div className={`absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
@@ -713,6 +810,19 @@ export default function MapGrid({
           </div>
         </TransformComponent>
       </TransformWrapper>
+
+      {creationCoords && (
+        <UnitCreationModal 
+          table={unitsTable}
+          isModerator={isModerator}
+          fixedOwner={fixedOwner}
+          initialCoordinates={creationCoords}
+          onClose={() => {
+            setCreationCoords(null);
+            setSelectedTool('select');
+          }}
+        />
+      )}
     </div>
   );
 }

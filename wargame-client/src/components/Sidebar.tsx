@@ -37,6 +37,9 @@ interface SidebarProps {
   teamACount?: number;
   teamBCount?: number;
   unconfirmedCount?: number;
+  poisTable?: string;
+  hazardsTable?: string;
+  unitsTable?: string;
 }
 
 export default function Sidebar({ 
@@ -49,7 +52,10 @@ export default function Sidebar({
   onToggleOpen,
   teamACount = 0,
   teamBCount = 0,
-  unconfirmedCount = 0
+  unconfirmedCount = 0,
+  poisTable = 'Map_POIs',
+  hazardsTable = 'Battle_Hazards',
+  unitsTable
 }: SidebarProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(true);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -70,12 +76,12 @@ export default function Sidebar({
     };
 
     const fetchPois = async () => {
-      const { data } = await supabase.from('Map_POIs').select('*');
+      const { data } = await supabase.from(poisTable).select('*');
       if (data) setPois(data as MapPOI[]);
     };
 
     const fetchHazards = async () => {
-      const { data } = await supabase.from('Battle_Hazards').select('*');
+      const { data } = await supabase.from(hazardsTable).select('*');
       if (data) setHazards(data as BattleHazard[]);
     };
 
@@ -85,7 +91,7 @@ export default function Sidebar({
       fetchHazards();
     } else if (role) {
       const fetchPlayerPois = async () => {
-        const { data } = await supabase.from('Map_POIs').select('*').or(`owner.eq.${role},is_visible_to_enemy.eq.true`);
+        const { data } = await supabase.from(poisTable).select('*').or(`owner.eq.${role},is_visible_to_enemy.eq.true`);
         if (data) setPois(data as MapPOI[]);
       };
       fetchPlayerPois();
@@ -99,11 +105,11 @@ export default function Sidebar({
     let hazardChannel: ReturnType<typeof supabase.channel> | null = null;
 
     if (isModerator || role) {
-      poiChannel = supabase.channel('sidebar-map-pois')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Map_POIs' }, () => {
+      poiChannel = supabase.channel(`sidebar-map-pois-${poisTable}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: poisTable }, () => {
           if (isModerator) fetchPois();
           else if (role) {
-             supabase.from('Map_POIs').select('*').or(`owner.eq.${role},is_visible_to_enemy.eq.true`).then(({data}) => {
+             supabase.from(poisTable).select('*').or(`owner.eq.${role},is_visible_to_enemy.eq.true`).then(({data}) => {
                 if(data) setPois(data as MapPOI[]);
              });
           }
@@ -111,8 +117,8 @@ export default function Sidebar({
         .subscribe();
     }
     if (isModerator) {
-      hazardChannel = supabase.channel('sidebar-map-hazards')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Battle_Hazards' }, () => fetchHazards())
+      hazardChannel = supabase.channel(`sidebar-map-hazards-${hazardsTable}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: hazardsTable }, () => fetchHazards())
         .subscribe();
     }
 
@@ -121,7 +127,7 @@ export default function Sidebar({
       if (poiChannel) supabase.removeChannel(poiChannel);
       if (hazardChannel) supabase.removeChannel(hazardChannel);
     };
-  }, [isModerator, role]);
+  }, [isModerator, role, poisTable, hazardsTable]);
 
   const toggleDynamic = (id: string) => {
     if (hiddenDynamicLayers.includes(id)) {
@@ -148,26 +154,26 @@ export default function Sidebar({
     <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isOpen ? 'w-0 min-w-0 border-r-0' : 'w-[300px] min-w-[300px]'}`} id="left-panel">
       
       {/* Left Panel Section Header */}
-      <div className="bg-primary-container px-4 py-3 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
+      <div className="bg-primary-container px-3 py-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
         {isOpen && (
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary-fixed-dim text-[20px]">layers</span>
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-primary-fixed-dim text-[17px]">layers</span>
             <div className="flex flex-col">
-              <span className="font-headline-sm text-[11px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">Layers &amp; Camadas</span>
-              <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-0.5">Sector Cartography</span>
+              <span className="font-headline-sm text-[9.5px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">Layers &amp; Camadas</span>
+              <span className="font-tag-overline text-[8px] text-primary-fixed-dim leading-none mt-0.5">Sector Cartography</span>
             </div>
           </div>
         )}
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
           {isOpen && isModerator && (
             <button 
               onClick={() => setShowUploadModal(true)}
-              className="bg-primary hover:bg-chrome-hover px-2.5 py-1 rounded text-text-on-dark transition-colors flex items-center gap-1 shadow-sm text-label-sm font-semibold border border-primary-fixed-dim/20" 
+              className="bg-primary hover:bg-chrome-hover px-2 py-0.5 rounded text-text-on-dark transition-colors flex items-center gap-1 shadow-sm font-semibold border border-primary-fixed-dim/20" 
               title="Upload Layer Data" 
               type="button"
             >
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              <span className="text-[11px]">Upload</span>
+              <span className="material-symbols-outlined text-[12px]">add</span>
+              <span className="text-[9.5px]">Upload</span>
             </button>
           )}
           <button 
@@ -176,7 +182,7 @@ export default function Sidebar({
             title="Recolher Painel de Camadas" 
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">{isOpen ? 'keyboard_double_arrow_left' : 'keyboard_double_arrow_right'}</span>
+            <span className="material-symbols-outlined text-[16px]">{isOpen ? 'keyboard_double_arrow_left' : 'keyboard_double_arrow_right'}</span>
           </button>
         </div>
       </div>
@@ -193,16 +199,16 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.baseMap ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.baseMap ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
-                <span className="font-tag-overline text-[9px] text-on-surface-variant truncate">Hormuz — Sector Alpha</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
+                <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Hormuz — Sector Alpha</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-outline text-[14px]">lock</span>
-              <span className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] font-label-md font-semibold text-on-surface-variant">100%</span>
+              <span className="material-symbols-outlined text-outline text-[13px]">lock</span>
+              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-label-md font-semibold text-on-surface-variant">100%</span>
             </div>
           </div>
         </div>
@@ -217,31 +223,31 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.pois ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.pois ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Strategic Objectives</span>
-                <span className={`font-tag-overline text-[9px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>{pois.length} Key Assets</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Strategic Objectives</span>
+                <span className={`font-tag-overline text-[8px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>{pois.length} Key Assets</span>
               </div>
             </div>
-            <span className="material-symbols-outlined text-outline text-[16px]">{isPoiExpanded ? 'expand_less' : 'expand_more'}</span>
+            <span className="material-symbols-outlined text-outline text-[15px]">{isPoiExpanded ? 'expand_less' : 'expand_more'}</span>
           </div>
           
           {/* POI Sub-Items */}
           {isPoiExpanded && (
             <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60">
               {pois.length === 0 ? (
-                <div className="text-[10px] italic text-on-surface-variant">No active objectives</div>
+                <div className="text-[9px] italic text-on-surface-variant">No active objectives</div>
               ) : (
                 pois.map(poi => {
                    const isVisible = !hiddenPois.includes(poi.id);
                    return (
-                     <div key={poi.id} className="flex items-center justify-between text-[11px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalPoi(poi.id)}>
+                     <div key={poi.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalPoi(poi.id)}>
                        <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
-                         <span className={`w-2 h-2 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-status-objective' : 'bg-surface-dim'}`}></span>
+                         <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-status-objective' : 'bg-surface-dim'}`}></span>
                          <span className="truncate">{poi.name}</span>
                        </span>
-                       <span className={`material-symbols-outlined text-[13px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
+                       <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
                          {isVisible ? 'check' : 'add'}
                        </span>
                      </div>
@@ -262,14 +268,14 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.teamA ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.teamA ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.teamA ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time A</span>
-                <span className={`font-tag-overline text-[9px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>{teamACount} Units Deployed</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamA ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time A</span>
+                <span className={`font-tag-overline text-[8px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>{teamACount} Units Deployed</span>
               </div>
             </div>
-            <span className={`w-3 h-3 rounded-full shadow-sm ${layers.teamA ? 'bg-faction-friendly ring-2 ring-faction-friendly/20' : 'bg-surface-dim'}`}></span>
+            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamA ? 'bg-faction-friendly ring-2 ring-faction-friendly/20' : 'bg-surface-dim'}`}></span>
           </div>
         </div>
 
@@ -283,14 +289,14 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.teamB ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.teamB ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.teamB ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time B</span>
-                <span className={`font-tag-overline text-[9px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>{teamBCount} Units Active</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamB ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time B</span>
+                <span className={`font-tag-overline text-[8px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>{teamBCount} Units Active</span>
               </div>
             </div>
-            <span className={`w-3 h-3 rounded-full shadow-sm ${layers.teamB ? 'bg-faction-hostile ring-2 ring-faction-hostile/20' : 'bg-surface-dim'}`}></span>
+            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamB ? 'bg-faction-hostile ring-2 ring-faction-hostile/20' : 'bg-surface-dim'}`}></span>
           </div>
         </div>
 
@@ -304,14 +310,14 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.unconfirmed ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.unconfirmed ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Unconfirmed Contacts</span>
-                <span className={`font-tag-overline text-[9px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>{unconfirmedCount} Ambiguous Pings</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Unconfirmed Contacts</span>
+                <span className={`font-tag-overline text-[8px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>{unconfirmedCount} Ambiguous Pings</span>
               </div>
             </div>
-            <span className={`w-3 h-3 rounded-full shadow-sm ${layers.unconfirmed ? 'bg-faction-unknown ring-2 ring-faction-unknown/20' : 'bg-surface-dim'}`}></span>
+            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.unconfirmed ? 'bg-faction-unknown ring-2 ring-faction-unknown/20' : 'bg-surface-dim'}`}></span>
           </div>
         </div>
 
@@ -325,14 +331,14 @@ export default function Sidebar({
                 className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.hazards ? 'polyline' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.hazards ? 'polyline' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Operational Sectors</span>
-                <span className="font-tag-overline text-[9px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Operational Sectors</span>
+                <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
               </div>
             </div>
-            <span className={`material-symbols-outlined text-[16px] ${layers.hazards ? 'text-on-surface-variant' : 'text-outline-variant'}`}>polyline</span>
+            <span className={`material-symbols-outlined text-[15px] ${layers.hazards ? 'text-on-surface-variant' : 'text-outline-variant'}`}>polyline</span>
           </div>
         </div>
 
@@ -346,14 +352,14 @@ export default function Sidebar({
                 className="text-outline hover:text-on-surface transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">{layers.tacticalGrid ? 'visibility' : 'visibility_off'}</span>
+                <span className="material-symbols-outlined text-[16px]">{layers.tacticalGrid ? 'visibility' : 'visibility_off'}</span>
               </button>
               <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[12px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Tactical Grid (MGRS 10k)</span>
-                <span className={`font-tag-overline text-[9px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
+                <span className={`font-label-md text-[10px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Tactical Grid (MGRS 10k)</span>
+                <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
               </div>
             </div>
-            <span className={`material-symbols-outlined text-[16px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
+            <span className={`material-symbols-outlined text-[15px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
           </div>
         </div>
 
@@ -370,18 +376,18 @@ export default function Sidebar({
                     className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[18px]">{isVisible ? 'visibility' : 'visibility_off'}</span>
+                    <span className="material-symbols-outlined text-[16px]">{isVisible ? 'visibility' : 'visibility_off'}</span>
                   </button>
                   <div className="flex flex-col min-w-0">
-                    <span className={`font-label-md text-[12px] truncate font-bold ${isVisible ? 'text-on-surface' : 'text-on-surface-variant'}`}>{layer.name}</span>
-                    <span className="font-tag-overline text-[9px] text-on-surface-variant">Custom Layer</span>
+                    <span className={`font-label-md text-[10px] truncate font-bold ${isVisible ? 'text-on-surface' : 'text-on-surface-variant'}`}>{layer.name}</span>
+                    <span className="font-tag-overline text-[8px] text-on-surface-variant">Custom Layer</span>
                   </div>
                 </div>
                 {isModerator && (
                   <button onClick={async () => {
                      if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
                   }} className="text-status-alert hover:text-red-700 p-1">
-                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                    <span className="material-symbols-outlined text-[13px]">delete</span>
                   </button>
                 )}
               </div>
@@ -394,47 +400,47 @@ export default function Sidebar({
       {isOpen && (
         <div className="p-3 bg-surface-parchment-dim/90 border-t border-border-parchment shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">NATO Counter Palette</span>
-            <span className="font-tag-overline text-[9px] text-on-surface-variant">Drag to Map</span>
+            <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">NATO Counter Palette</span>
+            <span className="font-tag-overline text-[8px] text-on-surface-variant">Drag to Map</span>
           </div>
           <button 
             onClick={() => setShowNovaUnidadeModal(true)}
-            className="w-full mb-2.5 py-2 px-3 bg-primary-container hover:bg-chrome-hover text-text-on-dark font-headline-sm text-[13px] font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5 border border-primary-fixed-dim/20 transition-all active:scale-95" 
+            className="w-full mb-2 py-1.5 px-2.5 bg-primary-container hover:bg-chrome-hover text-text-on-dark font-headline-sm text-[11px] font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5 border border-primary-fixed-dim/20 transition-all active:scale-95" 
             type="button"
           >
-            <span className="material-symbols-outlined text-[17px] text-primary-fixed-dim">add_circle</span>
+            <span className="material-symbols-outlined text-[15px] text-primary-fixed-dim">add_circle</span>
             <span>Nova Unidade</span>
           </button>
           <div className="grid grid-cols-3 gap-1.5 text-center">
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'infantry')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">shield</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">Infantry</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'infantry')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">shield</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Infantry</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'armor')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">view_in_ar</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">Armor</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'armor')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">view_in_ar</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Armor</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'artillery')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">adjust</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">Artillery</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'artillery')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">adjust</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Artillery</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'surfaceCombatant')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">directions_boat</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">Naval</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'surfaceCombatant')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">directions_boat</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Naval</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'fighter')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">flight</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">Air Wing</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'fighter')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">flight</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Air Wing</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'signal')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-2 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">flag</span>
-              <span className="font-tag-overline text-[9px] text-on-surface mt-0.5">HQ Post</span>
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'signal')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">flag</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">HQ Post</span>
             </div>
             
           </div>
@@ -460,7 +466,7 @@ export default function Sidebar({
 
       {showNovaUnidadeModal && (
         <UnitCreationModal 
-          table={isModerator ? 'Moderator_Units' : 'Planning_Units'} 
+          table={unitsTable || (isModerator ? 'Moderator_Units' : 'Planning_Units')} 
           fixedOwner={role === 'Player A' || role === 'Player B' ? role as 'Player A' | 'Player B' : undefined}
           isModerator={isModerator}
           onClose={() => setShowNovaUnidadeModal(false)}

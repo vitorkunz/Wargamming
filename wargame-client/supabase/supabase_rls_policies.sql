@@ -138,3 +138,26 @@ ON public."Map_Layers"
 FOR SELECT 
 USING ( is_global_visible = TRUE );
 
+-- ==========================================
+-- MODERATOR DRAFT TABLES POLICIES
+-- ==========================================
+
+DROP POLICY IF EXISTS "Moderator full access on Moderator_Units" ON public."Moderator_Units";
+CREATE POLICY "Moderator full access on Moderator_Units" 
+ON public."Moderator_Units" 
+FOR ALL 
+USING ( public.get_user_role() = 'Moderator' );
+
+DROP POLICY IF EXISTS "Moderator full access on Moderator_POIs" ON public."Moderator_POIs";
+CREATE POLICY "Moderator full access on Moderator_POIs" 
+ON public."Moderator_POIs" 
+FOR ALL 
+USING ( public.get_user_role() = 'Moderator' );
+
+DROP POLICY IF EXISTS "Moderator full access on Moderator_Hazards" ON public."Moderator_Hazards";
+CREATE POLICY "Moderator full access on Moderator_Hazards" 
+ON public."Moderator_Hazards" 
+FOR ALL 
+USING ( public.get_user_role() = 'Moderator' );
+
+

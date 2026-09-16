@@ -9,15 +9,30 @@ import { AFFILIATIONS, UNIT_TYPES, ECHELONS, UnitTypeKey, UnitTypeDefinition } f
 export function getSidcForUnit(unit: { type: string, owner?: string }): string {
   // If it's already an SIDC (15 chars, usually starts with S)
   if (unit.type && unit.type.length === 15 && unit.type.startsWith('S')) {
+    let currentSidc = unit.type;
     // If it was created with the previous erroneous medical code (UAM---), patch to USM---
-    if (unit.type.includes('UAM---')) {
-      return unit.type.replace('UAM---', 'USM---');
+    if (currentSidc.includes('UAM---')) {
+      currentSidc = currentSidc.replace('UAM---', 'USM---');
     }
-    return unit.type;
+    // Override affiliation if owner is provided (e.g., when a unit changes teams)
+    if (unit.owner) {
+      const expectedAffiliation = 
+        unit.owner === 'Player A' ? 'F' : 
+        unit.owner === 'Player B' ? 'H' : 
+        unit.owner === 'Unknown' ? 'U' : 'N';
+      if (currentSidc[1] !== expectedAffiliation) {
+        currentSidc = currentSidc.substring(0, 1) + expectedAffiliation + currentSidc.substring(2);
+      }
+    }
+    // Force echelon to unspecified '-'
+    if (currentSidc[11] !== '-') {
+      currentSidc = currentSidc.substring(0, 11) + '-' + currentSidc.substring(12);
+    }
+    return currentSidc;
   }
 
   // Legacy mapping
-  const affiliation = unit.owner === 'Player A' ? 'H' : (unit.owner === 'Player B' ? 'F' : 'U');
+  const affiliation = unit.owner === 'Player A' ? 'F' : (unit.owner === 'Player B' ? 'H' : (unit.owner === 'Unknown' ? 'U' : 'N'));
   let selectedDef: UnitTypeDefinition = UNIT_TYPES.infantry;
   
   const lowerType = (unit.type || '').toLowerCase();
@@ -83,7 +98,7 @@ export function getSidcForUnit(unit: { type: string, owner?: string }): string {
     selectedDef = UNIT_TYPES.engineer;
   }
 
-  return `S${affiliation}${selectedDef.dimension}P${selectedDef.code}-F---`;
+  return `S${affiliation}${selectedDef.dimension}P${selectedDef.code}-----`;
 }
 
 /**

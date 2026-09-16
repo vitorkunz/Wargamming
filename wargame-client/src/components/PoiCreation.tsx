@@ -46,7 +46,7 @@ export default function PoiCreation({ table = 'Map_POIs' }: PoiCreationProps) {
         <div className="w-16 h-16 flex flex-col items-center justify-center bg-surface-container border border-border-parchment rounded-lg p-1 shrink-0 shadow-inner">
           <PoiBadge type={type} owner={owner} size={42} />
         </div>
-        <h2 className="text-lg font-bold text-primary font-headline-sm flex-1">Construct POI</h2>
+        <h2 className="text-[12px] font-bold text-primary font-headline-sm flex-1">Construct POI</h2>
       </div>
 
       <div className="flex-1">
@@ -99,8 +99,8 @@ export default function PoiCreation({ table = 'Map_POIs' }: PoiCreationProps) {
              </div>
           </div>
           
-          <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-2.5 px-4 rounded-lg transition-colors font-headline-sm text-[13px] shadow-sm flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">add_location</span>
+          <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-1.5 px-3 rounded-lg transition-colors font-headline-sm text-[10.5px] shadow-sm flex items-center justify-center gap-1.5">
+            <span className="material-symbols-outlined text-[15px]">add_location</span>
             Deploy to Map
           </button>
         </form>

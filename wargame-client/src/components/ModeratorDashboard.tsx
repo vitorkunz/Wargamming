@@ -5,12 +5,13 @@ import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import TeamAssignment from './TeamAssignment';
 import UnitCreation from './UnitCreation';
-import HazardCreation from './HazardCreation';
+import HazardCreationModal from './HazardCreationModal';
 import PoiCreation from './PoiCreation';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
 import PoiPanel from './PoiPanel';
 import HazardPanel from './HazardPanel';
+import OperationalSectorsList from './OperationalSectorsList';
 import { MapPOI, BattleHazard } from './MapGrid';
 import TopBar from './ui/TopBar';
 import Panel from './ui/Panel';
@@ -41,6 +42,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
   const [units, setUnits] = useState<Unit[]>([]);
+  const [hazards, setHazards] = useState<BattleHazard[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
   const [selectedHazard, setSelectedHazard] = useState<BattleHazard | null>(null);
@@ -122,7 +124,13 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     };
     fetchUnits();
 
-    const channel = supabase
+    const fetchHazards = async () => {
+      const { data, error } = await supabase.from(hazardsTable).select('*');
+      if (!error && data) setHazards(data as BattleHazard[]);
+    };
+    fetchHazards();
+
+    const unitsChannel = supabase
       .channel(`mod-units-${unitsTable}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: unitsTable }, (payload) => {
         if (payload.eventType === 'INSERT') {
@@ -136,8 +144,25 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [unitsTable]);
+    const hazardsChannel = supabase
+      .channel(`mod-hazards-${hazardsTable}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: hazardsTable }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setHazards((prev) => [...prev, payload.new as BattleHazard]);
+        } else if (payload.eventType === 'UPDATE') {
+          setHazards((prev) => prev.map(h => (h.id === payload.new.id ? (payload.new as BattleHazard) : h)));
+        } else if (payload.eventType === 'DELETE') {
+          setHazards((prev) => prev.filter(h => h.id !== payload.old.id));
+          setSelectedHazard(prevId => prevId?.id === payload.old.id ? null : prevId);
+        }
+      })
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(unitsChannel); 
+      supabase.removeChannel(hazardsChannel);
+    };
+  }, [unitsTable, hazardsTable]);
 
   const handleUnitDrop = async (unitId: string, x: number, y: number) => {
     if (activeView === 'view_published') return;
@@ -175,8 +200,13 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const handleSyncFromLive = async () => {
     if (window.confirm("Overwrite your current draft with the Live Map? Any unsaved draft work will be lost.")) {
       const { error } = await supabase.rpc('sync_draft_from_live');
-      if (error) alert("Failed to sync map: " + error.message);
-      else alert("Draft map synced from live successfully!");
+      if (error) {
+        alert("Failed to sync map: " + error.message);
+      } else {
+        const { data } = await supabase.from(unitsTable).select('*');
+        if (data) setUnits(data as Unit[]);
+        alert("Draft map synced from live successfully!");
+      }
     }
   };
 
@@ -227,6 +257,9 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               hiddenHazards={hiddenHazards}
               setHiddenHazards={setHiddenHazards}
               isModerator={activeView === 'edit_map'}
+              poisTable={poisTable}
+              hazardsTable={hazardsTable}
+              unitsTable={unitsTable}
               onEditPoi={handlePOIClick}
               onEditHazard={handleHazardClick}
               isOpen={isLeftPanelOpen}
@@ -317,6 +350,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     selectedUnitId={selectedUnitId}
                     poisTable={poisTable}
                     hazardsTable={hazardsTable}
+                    unitsTable={unitsTable}
+                    isModerator={activeView === 'edit_map'}
                     onUnitClick={handleUnitClick} 
                     onPOIClick={handlePOIClick}
                     onHazardClick={handleHazardClick}
@@ -327,6 +362,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     onSpawnUnitAt={handleSpawnUnitAt}
                     isDrawingMode={isDrawingHazard && activeView === 'edit_map'}
                     onDrawComplete={handleDrawComplete}
+                    hideEditingTools={activeView === 'view_published'}
                   />
                 </div>
 
@@ -380,17 +416,24 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               
               {activeView === 'edit_map' && !selectedHazard && !selectedPoi && !selectedUnitId && (
                 <div className="flex-1 overflow-y-auto p-4 border-t border-border-parchment mt-4 space-y-4">
-                  <h3 className="font-headline-sm text-primary uppercase">Quick Actions</h3>
+                  <h3 className="font-headline-sm text-primary uppercase text-[10px] font-bold tracking-wider">Quick Actions</h3>
                   <UnitCreation table={unitsTable} />
                   <PoiCreation table={poisTable} />
-                  <HazardCreation 
+                  <OperationalSectorsList 
+                    hazards={hazards}
+                    onHazardClick={handleHazardClick}
                     isDrawingHazard={isDrawingHazard}
                     setIsDrawingHazard={setIsDrawingHazard}
-                    pendingHazardPoints={pendingHazardPoints}
-                    setPendingHazardPoints={setPendingHazardPoints}
-                    table={hazardsTable}
                   />
                 </div>
+              )}
+              
+              {pendingHazardPoints && (
+                <HazardCreationModal 
+                  pendingHazardPoints={pendingHazardPoints}
+                  onClose={() => setPendingHazardPoints(null)}
+                  table={hazardsTable}
+                />
               )}
               </div>
             </aside>
