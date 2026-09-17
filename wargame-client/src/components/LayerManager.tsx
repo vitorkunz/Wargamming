@@ -14,9 +14,17 @@ interface LayerManagerProps {
   layers: MapLayer[];
   hiddenDynamicLayers: string[];
   toggleLocalDynamic: (id: string) => void;
+  layerOpacities?: Record<string, number>;
+  onOpacityChange?: (id: string, opacity: number) => void;
 }
 
-export default function LayerManager({ layers, hiddenDynamicLayers, toggleLocalDynamic }: LayerManagerProps) {
+export default function LayerManager({ 
+  layers, 
+  hiddenDynamicLayers, 
+  toggleLocalDynamic,
+  layerOpacities,
+  onOpacityChange
+}: LayerManagerProps) {
   const [uploading, setUploading] = useState(false);
   const [newLayerName, setNewLayerName] = useState("");
 
@@ -191,6 +199,23 @@ export default function LayerManager({ layers, hiddenDynamicLayers, toggleLocalD
                       <span className="text-slate-300 group-hover:text-white">Global</span>
                    </label>
                 </div>
+
+                {onOpacityChange && (
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-600/70">
+                    <span className="text-xs text-slate-300 font-medium whitespace-nowrap">Opacity:</span>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}
+                      onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
+                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <span className="text-xs text-slate-300 font-mono w-8 text-right">
+                      {Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}%
+                    </span>
+                  </div>
+                )}
                 
               </div>
             ))}

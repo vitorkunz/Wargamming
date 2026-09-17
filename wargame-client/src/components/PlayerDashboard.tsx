@@ -34,6 +34,33 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     tacticalGrid: true
   });
   
+  const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('wargame_layer_opacities');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error loading layer opacities from localStorage', e);
+      }
+    }
+    return { baseMap: 1, tacticalGrid: 0.45 };
+  });
+
+  const handleOpacityChange = (layerId: string, opacity: number) => {
+    const clamped = Math.max(0, Math.min(1, Math.round(opacity * 100) / 100));
+    setLayerOpacities(prev => {
+      const next = { ...prev, [layerId]: clamped };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('wargame_layer_opacities', JSON.stringify(next));
+        } catch (e) {
+          console.error('Error saving layer opacities to localStorage', e);
+        }
+      }
+      return next;
+    });
+  };
+
   const [planningUnits, setPlanningUnits] = useState<Unit[]>([]);
   const [battleUnits, setBattleUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -270,6 +297,8 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             teamACount={teamACount}
             teamBCount={teamBCount}
             unconfirmedCount={unconfirmedCount}
+            layerOpacities={layerOpacities}
+            onOpacityChange={handleOpacityChange}
           />
 
           {/* Center Canvas */}
@@ -337,6 +366,8 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 isModerator={false}
                 fixedOwner={role === 'Player A' || role === 'Player B' ? role : undefined}
                 hideEditingTools={activeTab === 'battle'}
+                layerOpacities={layerOpacities}
+                onOpacityChange={handleOpacityChange}
               />
             </div>
 

@@ -73,6 +73,8 @@ interface MapGridProps {
   unitsTable?: string;
   isModerator?: boolean;
   fixedOwner?: 'Player A' | 'Player B';
+  layerOpacities?: Record<string, number>;
+  onOpacityChange?: (layerId: string, opacity: number) => void;
 }
 
 const CELL_SIZE = 40;
@@ -95,7 +97,10 @@ function MapControls({
   setSelectedTool,
   hudRightActions,
   hideEditingTools,
-  isDragMode
+  isDragMode,
+  visibleLayers,
+  layerOpacities,
+  onOpacityChange
 }: { 
   isFullscreen: boolean; 
   onToggleFullscreen: () => void;
@@ -104,8 +109,12 @@ function MapControls({
   hudRightActions?: React.ReactNode;
   hideEditingTools?: boolean;
   isDragMode?: boolean;
+  visibleLayers?: MapLayer[];
+  layerOpacities?: Record<string, number>;
+  onOpacityChange?: (layerId: string, opacity: number) => void;
 }) {
   const { zoomIn, zoomOut, resetTransform } = useControls();
+  const [showOpacityMenu, setShowOpacityMenu] = useState(false);
 
   const isDragActive = isDragMode !== undefined ? isDragMode : selectedTool === 'drag';
 
@@ -234,6 +243,105 @@ function MapControls({
             {isFullscreen ? "fullscreen_exit" : "fullscreen"}
           </span>
         </button>
+
+        {/* Opacity HUD button */}
+        {onOpacityChange && (
+          <div className="relative">
+            <button
+              onClick={() => setShowOpacityMenu(!showOpacityMenu)}
+              className={`p-2 rounded-lg transition-colors text-text-on-dark ${
+                showOpacityMenu ? 'bg-faction-friendly text-white shadow-sm' : 'hover:bg-white/10'
+              }`}
+              title="Transparência das Camadas / Layer Opacity"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">opacity</span>
+            </button>
+
+            {showOpacityMenu && (
+              <div 
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-[#18221d]/95 backdrop-blur-md border border-[#2d7d74]/50 rounded-xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 text-text-on-dark cursor-default"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/15">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim">opacity</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-primary-fixed-dim">
+                      Layer Opacity
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setShowOpacityMenu(false)}
+                    className="text-white/60 hover:text-white text-[12px] p-0.5"
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Master Base Map slider */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between text-[10px] font-bold">
+                    <span>Base Map</span>
+                    <span className="font-mono text-primary-fixed-dim">
+                      {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
+                    onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
+                    className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                  />
+                </div>
+
+                {/* Dynamic Layers sliders */}
+                {visibleLayers && visibleLayers.length > 0 && (
+                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    {visibleLayers.map(layer => (
+                      <div key={layer.id} className="flex flex-col gap-1">
+                        <div className="flex justify-between text-[10px] truncate">
+                          <span className="truncate pr-2">{layer.name}</span>
+                          <span className="font-mono text-primary-fixed-dim shrink-0">
+                            {Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}%
+                          </span>
+                        </div>
+                        <input 
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}
+                          onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
+                          className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tactical Grid slider */}
+                <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
+                  <div className="flex justify-between text-[10px] text-white/80">
+                    <span>Tactical Grid</span>
+                    <span className="font-mono text-primary-fixed-dim">
+                      {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
+                    onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
+                    className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sleek Vertical Divider & 3. Sincronização e Publicação */}
@@ -271,7 +379,9 @@ export default function MapGrid({
   hideEditingTools,
   unitsTable = 'Battle_Units',
   isModerator = true,
-  fixedOwner
+  fixedOwner,
+  layerOpacities,
+  onOpacityChange
 }: MapGridProps) {
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
   const [pois, setPois] = useState<MapPOI[]>([]);
@@ -556,6 +666,9 @@ export default function MapGrid({
           hudRightActions={hudRightActions}
           hideEditingTools={hideEditingTools}
           isDragMode={isDragMode}
+          visibleLayers={visibleDynamicLayers}
+          layerOpacities={layerOpacities}
+          onOpacityChange={onOpacityChange}
         />
         <TransformComponent 
           wrapperStyle={{ 
@@ -586,13 +699,22 @@ export default function MapGrid({
           >
             
             {/* Dynamic Map Layers */}
-            {layers.baseMap && visibleDynamicLayers.map(layer => (
-              <div 
-                key={layer.id}
-                className="absolute inset-0 pointer-events-none bg-contain bg-no-repeat bg-center"
-                style={{ backgroundImage: `url(${layer.image_url})`, zIndex: layer.z_index }}
-              />
-            ))}
+            {layers.baseMap && visibleDynamicLayers.map(layer => {
+              const baseOpacity = layerOpacities?.['baseMap'] !== undefined ? layerOpacities['baseMap'] : 1;
+              const layerOpacity = (layerOpacities?.[layer.id] !== undefined ? layerOpacities[layer.id] : 1) * baseOpacity;
+
+              return (
+                <div 
+                  key={layer.id}
+                  className="absolute inset-0 pointer-events-none bg-contain bg-no-repeat bg-center transition-opacity duration-75"
+                  style={{ 
+                    backgroundImage: `url(${layer.image_url})`, 
+                    zIndex: layer.z_index,
+                    opacity: layerOpacity
+                  }}
+                />
+              );
+            })}
 
             {/* Bathymetric SVG & Coastline Contours */}
             <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9000, width: boardWidth, height: boardHeight }}>
@@ -612,7 +734,7 @@ export default function MapGrid({
               </defs>
 
               {/* Grid pattern layer */}
-              {layers.tacticalGrid && <rect width="100%" height="100%" fill="url(#tacticalGridPattern)" opacity="0.45" />}
+              {layers.tacticalGrid && <rect width="100%" height="100%" fill="url(#tacticalGridPattern)" opacity={layerOpacities?.tacticalGrid ?? 0.45} />}
 
               {layers.hazards && hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
                   const points = Array.isArray(hazard.coordinates) ? hazard.coordinates : [];

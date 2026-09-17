@@ -40,6 +40,8 @@ interface SidebarProps {
   poisTable?: string;
   hazardsTable?: string;
   unitsTable?: string;
+  layerOpacities?: Record<string, number>;
+  onOpacityChange?: (layerId: string, opacity: number) => void;
 }
 
 export default function Sidebar({ 
@@ -55,7 +57,9 @@ export default function Sidebar({
   unconfirmedCount = 0,
   poisTable = 'Map_POIs',
   hazardsTable = 'Battle_Hazards',
-  unitsTable
+  unitsTable,
+  layerOpacities,
+  onOpacityChange
 }: SidebarProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(true);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -203,14 +207,33 @@ export default function Sidebar({
               </button>
               <div className="flex flex-col min-w-0">
                 <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
-                <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Hormuz — Sector Alpha</span>
+                <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Master Cartography</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-outline text-[13px]">lock</span>
-              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-label-md font-semibold text-on-surface-variant">100%</span>
+              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+              </span>
             </div>
           </div>
+
+          {/* Transparency Slider */}
+          {layers.baseMap && onOpacityChange && (
+            <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
+              <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência">opacity</span>
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
+                onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
+                className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+              />
+              <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Layer 2: Strategic POIs & Objectives (Expandable) */}
@@ -359,13 +382,37 @@ export default function Sidebar({
                 <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
               </div>
             </div>
-            <span className={`material-symbols-outlined text-[15px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
+            <div className="flex items-center gap-1.5">
+              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+              </span>
+              <span className={`material-symbols-outlined text-[15px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
+            </div>
           </div>
+
+          {/* Transparency Slider */}
+          {layers.tacticalGrid && onOpacityChange && (
+            <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
+              <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Grade">opacity</span>
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
+                onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
+                className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+              />
+              <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Uploaded Layers */}
         {dynamicLayers.map(layer => {
           const isVisible = !hiddenDynamicLayers.includes(layer.id) && layer.is_global_visible;
+          const currentOpacity = layerOpacities?.[layer.id] ?? 1;
           return (
             <div key={layer.id} className={`rounded-lg p-2.5 border shadow-sm transition-all ${isVisible ? 'bg-surface-card/90 border-border-parchment hover:border-primary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
               <div className="flex items-center justify-between gap-2">
@@ -383,14 +430,37 @@ export default function Sidebar({
                     <span className="font-tag-overline text-[8px] text-on-surface-variant">Custom Layer</span>
                   </div>
                 </div>
-                {isModerator && (
-                  <button onClick={async () => {
-                     if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
-                  }} className="text-status-alert hover:text-red-700 p-1">
-                    <span className="material-symbols-outlined text-[13px]">delete</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                    {Math.round(currentOpacity * 100)}%
+                  </span>
+                  {isModerator && (
+                    <button onClick={async () => {
+                       if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
+                    }} className="text-status-alert hover:text-red-700 p-1" title="Delete layer">
+                      <span className="material-symbols-outlined text-[13px]">delete</span>
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Transparency Slider */}
+              {isVisible && onOpacityChange && (
+                <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Camada">opacity</span>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={Math.round(currentOpacity * 100)}
+                    onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
+                    className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+                  />
+                  <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                    {Math.round(currentOpacity * 100)}%
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -458,7 +528,13 @@ export default function Sidebar({
               </button>
             </div>
             <div className="overflow-y-auto">
-               <LayerManager layers={dynamicLayers} hiddenDynamicLayers={hiddenDynamicLayers} toggleLocalDynamic={toggleDynamic} />
+               <LayerManager 
+                 layers={dynamicLayers} 
+                 hiddenDynamicLayers={hiddenDynamicLayers} 
+                 toggleLocalDynamic={toggleDynamic}
+                 layerOpacities={layerOpacities}
+                 onOpacityChange={onOpacityChange}
+               />
             </div>
           </div>
         </div>

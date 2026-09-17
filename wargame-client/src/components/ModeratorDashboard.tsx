@@ -37,6 +37,33 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     tacticalGrid: true
   });
 
+  const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('wargame_layer_opacities');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error loading layer opacities from localStorage', e);
+      }
+    }
+    return { baseMap: 1, tacticalGrid: 0.45 };
+  });
+
+  const handleOpacityChange = (layerId: string, opacity: number) => {
+    const clamped = Math.max(0, Math.min(1, Math.round(opacity * 100) / 100));
+    setLayerOpacities(prev => {
+      const next = { ...prev, [layerId]: clamped };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('wargame_layer_opacities', JSON.stringify(next));
+        } catch (e) {
+          console.error('Error saving layer opacities to localStorage', e);
+        }
+      }
+      return next;
+    });
+  };
+
   const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
@@ -267,6 +294,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               teamACount={teamACount}
               teamBCount={teamBCount}
               unconfirmedCount={unconfirmedCount}
+              layerOpacities={layerOpacities}
+              onOpacityChange={handleOpacityChange}
             />
           )}
 
@@ -363,6 +392,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     isDrawingMode={isDrawingHazard && activeView === 'edit_map'}
                     onDrawComplete={handleDrawComplete}
                     hideEditingTools={activeView === 'view_published'}
+                    layerOpacities={layerOpacities}
+                    onOpacityChange={handleOpacityChange}
                   />
                 </div>
 
