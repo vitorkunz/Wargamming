@@ -10,6 +10,7 @@ import { NatoSymbol } from './NatoSymbol';
 import { PoiBadge } from './PoiBadge';
 import { getSidcForUnit, getHumanReadableFromSidc } from '@/lib/milsymbol/utils';
 import UnitCreationModal from './UnitCreationModal';
+import PoiCreationModal from './PoiCreationModal';
 export interface Unit {
   id: string;
   name?: string;
@@ -280,6 +281,7 @@ export default function MapGrid({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>('select');
   const [creationCoords, setCreationCoords] = useState<{ x: number, y: number } | null>(null);
+  const [creationPoiCoords, setCreationPoiCoords] = useState<{ x: number, y: number } | null>(null);
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
   const [gridSnapping, setGridSnapping] = useState<boolean>(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -480,6 +482,10 @@ export default function MapGrid({
         setCreationCoords({ x: xPixel, y: yPixel });
         return;
       }
+      if (selectedTool === 'target') {
+        setCreationPoiCoords({ x: xPixel, y: yPixel });
+        return;
+      }
       if (onGridClick) {
         onGridClick(xPixel, yPixel);
       }
@@ -561,7 +567,7 @@ export default function MapGrid({
           <div 
             id="map-grid-root"
             className={`relative bg-surface-canvas-void border-2 border-primary ${
-              isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' 
+              isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' || selectedTool === 'target'
                 ? 'cursor-crosshair' 
                 : isDragMode 
                 ? 'cursor-grab active:cursor-grabbing' 
@@ -819,6 +825,19 @@ export default function MapGrid({
           initialCoordinates={creationCoords}
           onClose={() => {
             setCreationCoords(null);
+            setSelectedTool('select');
+          }}
+        />
+      )}
+
+      {creationPoiCoords && (
+        <PoiCreationModal 
+          table={poisTable}
+          isModerator={isModerator}
+          fixedOwner={fixedOwner}
+          initialCoordinates={creationPoiCoords}
+          onClose={() => {
+            setCreationPoiCoords(null);
             setSelectedTool('select');
           }}
         />

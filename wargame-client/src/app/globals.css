@@ -137,6 +137,8 @@
   .font-headline-md { font-size: 24px; line-height: 32px; letter-spacing: 0em; font-weight: 600; font-family: var(--font-montserrat); }
   .font-label-md { font-size: 14px; line-height: 16px; letter-spacing: 0.02em; font-weight: 600; font-family: var(--font-montserrat); }
   .font-label-sm { font-size: 12px; line-height: 18px; letter-spacing: 0.01em; font-weight: 400; font-family: var(--font-karla); }
+  .font-heading { font-family: var(--font-montserrat); }
+  .font-karla { font-family: var(--font-karla); }
 }
 
 :root {
@@ -147,4 +149,28 @@
 body {
   color: var(--foreground);
   background: var(--background);
+}
+
+.tactical-grid-bg {
+  background-color: #181d1a;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 75, 65, 0.12) 0%, transparent 70%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+}
+.parchment-card {
+  background: #f7f4eb;
+  border: 1px solid #E3DFD1;
+  box-shadow: 0 20px 40px -15px rgba(0, 75, 65, 0.35), 0 0 0 1px rgba(201, 195, 174, 0.6);
+}
+.tactical-input {
+  background-color: #ffffff;
+  border: 1px solid #C9C3AE;
+  transition: all 0.15s ease-in-out;
+}
+.tactical-input:focus {
+  outline: none;
+  border-color: #004b41;
+  box-shadow: 0 0 0 3px rgba(0, 75, 65, 0.18);
 }
