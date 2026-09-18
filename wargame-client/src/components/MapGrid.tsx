@@ -878,15 +878,11 @@ export default function MapGrid({
                       {isSelected && (
                         <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
                       )}
-                      
-                      {unit.health < 30 && (
-                        <span className="absolute -inset-1 rounded-lg bg-[#c03a6b] animate-ping opacity-75 pointer-events-none" />
-                      )}
 
                       <div
                         className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}
                       >
-                        <NatoSymbol sidc={getSidcForUnit(unit)} size={34} className="drop-shadow-xl" />
+                        <NatoSymbol sidc={getSidcForUnit(unit)} size={30.6} className="drop-shadow-xl" />
                       </div>
 
                       {/* Left indicator: Eye icon when visible to enemy */}
