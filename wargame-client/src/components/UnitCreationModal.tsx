@@ -20,6 +20,7 @@ interface UnitCreationModalProps {
   isModerator?: boolean;
   initialCoordinates?: { x: number, y: number } | null;
   initialType?: string;
+  draftOwner?: string;
 }
 
 export default function UnitCreationModal({ 
@@ -28,7 +29,8 @@ export default function UnitCreationModal({
   onClose,
   isModerator = true,
   initialCoordinates,
-  initialType
+  initialType,
+  draftOwner
 }: UnitCreationModalProps) {
   const [name, setName] = useState('');
   const [health, setHealth] = useState(100);
@@ -72,6 +74,8 @@ export default function UnitCreationModal({
 
       if (table === 'Battle_Units' || table === 'Moderator_Units') {
         insertPayload.is_visible_to_enemy = isVisible;
+      } else if (table === 'Planning_Units') {
+        insertPayload.draft_owner = draftOwner || assignedOwner;
       }
       
       console.log(`Attempting to insert into table: ${table} with payload:`, insertPayload);

@@ -102,13 +102,13 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   const handleSyncDraft = async () => {
     if (!confirm("Are you sure you want to sync your planning map from the live battle map? This will overwrite your current planned units!")) return;
     
-    const { error: delError } = await supabase.from('Planning_Units').delete().eq('owner', role);
+    const { error: delError } = await supabase.from('Planning_Units').delete().eq('draft_owner', role);
     if (delError) {
       alert("Failed to clear planning units: " + delError.message);
       return;
     }
 
-    const { data: liveUnits, error: fetchError } = await supabase.from('Battle_Units').select('*').eq('owner', role);
+    const { data: liveUnits, error: fetchError } = await supabase.from('Battle_Units').select('*').or(`owner.eq.${role},is_visible_to_enemy.eq.true`);
     if (fetchError) {
       alert("Failed to fetch live units: " + fetchError.message);
       return;
@@ -117,13 +117,13 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     if (liveUnits && liveUnits.length > 0) {
       const unitsToInsert = liveUnits.map(u => {
         const { id, created_at, is_visible_to_enemy, is_health_visible_to_enemy, ...rest } = u;
-        return rest;
+        return { ...rest, draft_owner: role };
       });
       const { error: insertError } = await supabase.from('Planning_Units').insert(unitsToInsert);
       if (insertError) {
         alert("Failed to sync units: " + insertError.message);
       } else {
-        const { data } = await supabase.from('Planning_Units').select('*');
+        const { data } = await supabase.from('Planning_Units').select('*').eq('draft_owner', role);
         if (data) setPlanningUnits(data as Unit[]);
       }
     }
@@ -135,7 +135,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
 
   useEffect(() => {
     const fetchPlanning = async () => {
-      const { data } = await supabase.from('Planning_Units').select('*').eq('owner', role);
+      const { data } = await supabase.from('Planning_Units').select('*').eq('draft_owner', role);
       if (data) setPlanningUnits(data as Unit[]);
     };
     
@@ -148,7 +148,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     fetchBattle();
 
     const planChannel = supabase.channel('player-planning')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units', filter: `owner=eq.${role}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units', filter: `draft_owner=eq.${role}` }, (payload) => {
         if (payload.eventType === 'INSERT') setPlanningUnits(p => [...p, payload.new as Unit]);
         if (payload.eventType === 'UPDATE') setPlanningUnits(p => p.map(u => u.id === payload.new.id ? payload.new as Unit : u));
         if (payload.eventType === 'DELETE') {
@@ -400,7 +400,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 <UnitCreation 
                   table="Planning_Units" 
                   title="Plan New Unit"
-                  fixedOwner={role as 'Player A' | 'Player B'}
+                  draftOwner={role}
                 />
               </div>
             )}
@@ -412,7 +412,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
       {spawnModalData && (
         <UnitCreationModal 
           table="Planning_Units" 
-          fixedOwner={role as 'Player A' | 'Player B'}
+          draftOwner={role}
           isModerator={false}
           initialCoordinates={{ x: spawnModalData.x, y: spawnModalData.y }}
           initialType={spawnModalData.templateType}

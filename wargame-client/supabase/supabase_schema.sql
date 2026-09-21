@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public."Planning_Units" (
     name TEXT,
     type TEXT NOT NULL,
     owner TEXT NOT NULL,
+    draft_owner TEXT,
     x_coord INTEGER NOT NULL,
     y_coord INTEGER NOT NULL,
     health INTEGER NOT NULL,

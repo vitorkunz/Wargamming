@@ -558,7 +558,7 @@ export default function Sidebar({
       {showNovaUnidadeModal && (
         <UnitCreationModal 
           table={unitsTable || (isModerator ? 'Moderator_Units' : 'Planning_Units')} 
-          fixedOwner={role === 'Player A' || role === 'Player B' ? role as 'Player A' | 'Player B' : undefined}
+          draftOwner={role}
           isModerator={isModerator}
           onClose={() => setShowNovaUnidadeModal(false)}
         />

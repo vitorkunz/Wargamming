@@ -16,12 +16,14 @@ interface UnitCreationProps {
   table?: string;
   fixedOwner?: 'Player A' | 'Player B';
   title?: string;
+  draftOwner?: string;
 }
 
 export default function UnitCreation({ 
   table = 'Battle_Units', 
   fixedOwner,
-  title = "Spawn New Unit"
+  title = "Spawn New Unit",
+  draftOwner
 }: UnitCreationProps) {
   const [name, setName] = useState('');
   const [health, setHealth] = useState(100);
@@ -60,6 +62,8 @@ export default function UnitCreation({
 
       if (table === 'Battle_Units' || table === 'Moderator_Units') {
         insertPayload.is_visible_to_enemy = false;
+      } else if (table === 'Planning_Units') {
+        insertPayload.draft_owner = draftOwner || assignedOwner;
       }
 
       console.log(`Attempting to insert into table: ${table} with payload:`, insertPayload);
