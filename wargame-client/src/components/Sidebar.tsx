@@ -44,6 +44,7 @@ interface SidebarProps {
   layerOpacities?: Record<string, number>;
   onOpacityChange?: (layerId: string, opacity: number) => void;
   activeTab?: 'planning' | 'battle';
+  isMobileOpen?: boolean;
 }
 
 export default function Sidebar({ 
@@ -54,6 +55,7 @@ export default function Sidebar({
   isModerator, onEditPoi, onEditHazard, role,
   isOpen: externalIsOpen,
   onToggleOpen,
+  isMobileOpen,
   teamACount = 0,
   teamBCount = 0,
   unconfirmedCount = 0,
@@ -158,10 +160,11 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isOpen ? 'w-0 min-w-0 border-r-0' : 'w-[300px] min-w-[300px]'}`} id="left-panel">
+    <aside className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment transition-all duration-300 ease-in-out overflow-hidden absolute top-0 left-0 lg:relative ${isMobileOpen ? 'w-[300px] min-w-[300px] border-r shadow-[4px_0_20px_rgba(0,0,0,0.12)]' : 'w-0 min-w-0 border-r-0 shadow-none'} ${!isOpen ? 'lg:w-0 lg:min-w-0 lg:border-r-0 lg:shadow-none' : 'lg:w-[300px] lg:min-w-[300px] lg:border-r lg:shadow-[4px_0_20px_rgba(0,0,0,0.12)]'}`} id="left-panel">
       
       {/* Left Panel Section Header */}
       <div className="bg-primary-container px-3 py-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
+
         {isOpen && (
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-primary-fixed-dim text-[17px]">layers</span>

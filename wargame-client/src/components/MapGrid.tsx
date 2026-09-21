@@ -119,240 +119,265 @@ function MapControls({
 
   const isDragActive = isDragMode !== undefined ? isDragMode : selectedTool === 'drag';
 
-  return (
-    <div 
-      className="absolute top-3 left-1/2 z-20 pointer-events-auto flex items-center gap-3 bg-[#18221d]/90 backdrop-blur-md border border-[#2d7d74]/40 rounded-xl px-3 py-1.5 shadow-2xl origin-top"
-      style={{ transform: 'translateX(-50%) scale(0.8)', transformOrigin: 'top center' }}
-    >
-      {/* 1. Map Toolset */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => setSelectedTool('select')}
-          className={`p-2 rounded-lg transition-colors ${
-            selectedTool === 'select' && !isDragActive
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Select / Move"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">near_me</span>
-        </button>
-        <button
-          onClick={() => setSelectedTool('drag')}
-          className={`p-2 rounded-lg transition-colors ${
-            isDragActive
-              ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-              : 'hover:bg-white/10 text-text-on-dark'
-          }`}
-          title="Drag Map (Arrastar Mapa) - Espaço ou clique"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">pan_tool</span>
-        </button>
+  const renderTools = () => (
+    <>
+      <button
+        onClick={() => setSelectedTool('select')}
+        className={`p-2 rounded-lg transition-colors ${
+          selectedTool === 'select' && !isDragActive
+            ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+            : 'hover:bg-white/10 text-text-on-dark'
+        }`}
+        title="Select / Move"
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">near_me</span>
+      </button>
+      <button
+        onClick={() => setSelectedTool('drag')}
+        className={`p-2 rounded-lg transition-colors ${
+          isDragActive
+            ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+            : 'hover:bg-white/10 text-text-on-dark'
+        }`}
+        title="Drag Map (Arrastar Mapa) - Espaço ou clique"
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">pan_tool</span>
+      </button>
 
-        {!hideEditingTools && (
+      {!hideEditingTools && (
+        <>
+          <button
+            onClick={() => setSelectedTool('place')}
+            className={`p-2 rounded-lg transition-colors ${
+              selectedTool === 'place'
+                ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                : 'hover:bg-white/10 text-text-on-dark'
+            }`}
+            title="Place Unit Marker"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
+          </button>
+          <button
+            onClick={() => setSelectedTool('polygon')}
+            className={`p-2 rounded-lg transition-colors ${
+              selectedTool === 'polygon'
+                ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                : 'hover:bg-white/10 text-text-on-dark'
+            }`}
+            title="Draw Operational Zone"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">polyline</span>
+          </button>
+          <button
+            onClick={() => setSelectedTool('arrow')}
+            className={`p-2 rounded-lg transition-colors ${
+              selectedTool === 'arrow'
+                ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                : 'hover:bg-white/10 text-text-on-dark'
+            }`}
+            title="Tactical Arrow / Advance Line"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">north_east</span>
+          </button>
+          <button
+            onClick={() => setSelectedTool('target')}
+            className={`p-2 rounded-lg transition-colors ${
+              selectedTool === 'target'
+                ? 'bg-faction-friendly text-text-on-dark shadow-sm'
+                : 'hover:bg-white/10 text-text-on-dark'
+            }`}
+            title="Strategic Target Point"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">flag</span>
+          </button>
+        </>
+      )}
+    </>
+  );
+
+  const renderViewportControls = () => (
+    <>
+      <button
+        onClick={() => zoomIn(0.2)}
+        className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+        title="Zoom In"
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">add</span>
+      </button>
+      <button
+        onClick={() => zoomOut(0.2)}
+        className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+        title="Zoom Out"
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">remove</span>
+      </button>
+      <button
+        onClick={() => resetTransform()}
+        className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+        title="Center on Selected / Ajustar à Tela"
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">center_focus_strong</span>
+      </button>
+      <button
+        onClick={onToggleFullscreen}
+        className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
+        title={isFullscreen ? "Exit Fullscreen" : "Tela Cheia / Fullscreen"}
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">
+          {isFullscreen ? "fullscreen_exit" : "fullscreen"}
+        </span>
+      </button>
+
+      {onOpacityChange && (
+        <div className="relative">
+          <button
+            onClick={() => setShowOpacityMenu(!showOpacityMenu)}
+            className={`p-2 rounded-lg transition-colors text-text-on-dark ${
+              showOpacityMenu ? 'bg-faction-friendly text-white shadow-sm' : 'hover:bg-white/10'
+            }`}
+            title="Transparência das Camadas / Layer Opacity"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">opacity</span>
+          </button>
+
+          {showOpacityMenu && (
+            <div 
+              className="absolute top-full lg:left-1/2 lg:-translate-x-1/2 left-0 mt-2 w-64 bg-[#18221d]/95 backdrop-blur-md border border-[#2d7d74]/50 rounded-xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 text-text-on-dark cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-1.5 border-b border-white/15">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim">opacity</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-primary-fixed-dim">
+                    Layer Opacity
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setShowOpacityMenu(false)}
+                  className="text-white/60 hover:text-white text-[12px] p-0.5"
+                  type="button"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between text-[10px] font-bold">
+                  <span>Base Map</span>
+                  <span className="font-mono text-primary-fixed-dim">
+                    {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+                  </span>
+                </div>
+                <input 
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
+                  onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
+                  className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                />
+              </div>
+
+              {visibleLayers && visibleLayers.length > 0 && (
+                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                  {visibleLayers.map(layer => (
+                    <div key={layer.id} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-[10px] truncate">
+                        <span className="truncate pr-2">{layer.name}</span>
+                        <span className="font-mono text-primary-fixed-dim shrink-0">
+                          {Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}%
+                        </span>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}
+                        onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
+                <div className="flex justify-between text-[10px] text-white/80">
+                  <span>Tactical Grid</span>
+                  <span className="font-mono text-primary-fixed-dim">
+                    {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+                  </span>
+                </div>
+                <input 
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
+                  onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
+                  className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Toolbar */}
+      <div 
+        className="hidden lg:flex absolute top-3 left-1/2 z-20 pointer-events-auto items-center gap-3 bg-[#18221d]/90 backdrop-blur-md border border-[#2d7d74]/40 rounded-xl px-3 py-1.5 shadow-2xl origin-top"
+        style={{ transform: 'translateX(-50%) scale(0.8)', transformOrigin: 'top center' }}
+      >
+        <div className="flex items-center gap-1">
+          {renderTools()}
+        </div>
+        <div className="h-6 w-[1px] bg-white/15"></div>
+        <div className="flex items-center gap-1">
+          {renderViewportControls()}
+        </div>
+        {hudRightActions && (
           <>
-            <button
-              onClick={() => setSelectedTool('place')}
-              className={`p-2 rounded-lg transition-colors ${
-                selectedTool === 'place'
-                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-                  : 'hover:bg-white/10 text-text-on-dark'
-              }`}
-              title="Place Unit Marker"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
-            </button>
-            <button
-              onClick={() => setSelectedTool('polygon')}
-              className={`p-2 rounded-lg transition-colors ${
-                selectedTool === 'polygon'
-                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-                  : 'hover:bg-white/10 text-text-on-dark'
-              }`}
-              title="Draw Operational Zone"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">polyline</span>
-            </button>
-            <button
-              onClick={() => setSelectedTool('arrow')}
-              className={`p-2 rounded-lg transition-colors ${
-                selectedTool === 'arrow'
-                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-                  : 'hover:bg-white/10 text-text-on-dark'
-              }`}
-              title="Tactical Arrow / Advance Line"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">north_east</span>
-            </button>
-            <button
-              onClick={() => setSelectedTool('target')}
-              className={`p-2 rounded-lg transition-colors ${
-                selectedTool === 'target'
-                  ? 'bg-faction-friendly text-text-on-dark shadow-sm'
-                  : 'hover:bg-white/10 text-text-on-dark'
-              }`}
-              title="Strategic Target Point"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">flag</span>
-            </button>
+            <div className="h-6 w-[1px] bg-white/15"></div>
+            {hudRightActions}
           </>
         )}
       </div>
 
-      {/* Sleek Vertical Divider */}
-      <div className="h-6 w-[1px] bg-white/15"></div>
-
-      {/* 2. Viewport Controls */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => zoomIn(0.2)}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-          title="Zoom In"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-        </button>
-        <button
-          onClick={() => zoomOut(0.2)}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-          title="Zoom Out"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">remove</span>
-        </button>
-        <button
-          onClick={() => resetTransform()}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-          title="Center on Selected / Ajustar à Tela"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">center_focus_strong</span>
-        </button>
-        <button
-          onClick={onToggleFullscreen}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-          title={isFullscreen ? "Exit Fullscreen" : "Tela Cheia / Fullscreen"}
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {isFullscreen ? "fullscreen_exit" : "fullscreen"}
-          </span>
-        </button>
-
-        {/* Opacity HUD button */}
-        {onOpacityChange && (
-          <div className="relative">
-            <button
-              onClick={() => setShowOpacityMenu(!showOpacityMenu)}
-              className={`p-2 rounded-lg transition-colors text-text-on-dark ${
-                showOpacityMenu ? 'bg-faction-friendly text-white shadow-sm' : 'hover:bg-white/10'
-              }`}
-              title="Transparência das Camadas / Layer Opacity"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">opacity</span>
-            </button>
-
-            {showOpacityMenu && (
-              <div 
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-[#18221d]/95 backdrop-blur-md border border-[#2d7d74]/50 rounded-xl p-3 shadow-2xl z-50 flex flex-col gap-2.5 text-text-on-dark cursor-default"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between pb-1.5 border-b border-white/15">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim">opacity</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-primary-fixed-dim">
-                      Layer Opacity
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => setShowOpacityMenu(false)}
-                    className="text-white/60 hover:text-white text-[12px] p-0.5"
-                    type="button"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Master Base Map slider */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span>Base Map</span>
-                    <span className="font-mono text-primary-fixed-dim">
-                      {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
-                    </span>
-                  </div>
-                  <input 
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
-                    onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
-                    className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
-                  />
-                </div>
-
-                {/* Dynamic Layers sliders */}
-                {visibleLayers && visibleLayers.length > 0 && (
-                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
-                    {visibleLayers.map(layer => (
-                      <div key={layer.id} className="flex flex-col gap-1">
-                        <div className="flex justify-between text-[10px] truncate">
-                          <span className="truncate pr-2">{layer.name}</span>
-                          <span className="font-mono text-primary-fixed-dim shrink-0">
-                            {Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}%
-                          </span>
-                        </div>
-                        <input 
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={Math.round((layerOpacities?.[layer.id] ?? 1) * 100)}
-                          onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
-                          className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Tactical Grid slider */}
-                <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
-                  <div className="flex justify-between text-[10px] text-white/80">
-                    <span>Tactical Grid</span>
-                    <span className="font-mono text-primary-fixed-dim">
-                      {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
-                    </span>
-                  </div>
-                  <input 
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
-                    onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
-                    className="w-full h-1.5 bg-black/40 rounded appearance-none cursor-pointer accent-[#2d7d74]"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Mobile Toolbar (Left Vertical) */}
+      <div className="flex lg:hidden absolute top-4 left-2 z-20 pointer-events-auto flex-col items-center gap-2 bg-[#18221d]/90 backdrop-blur-md border border-[#2d7d74]/40 rounded-xl p-1.5 shadow-2xl origin-top-left scale-90">
+        <div className="flex flex-col gap-1">
+          {renderTools()}
+        </div>
+        <div className="w-6 h-[1px] bg-white/15"></div>
+        <div className="flex flex-col gap-1">
+          {renderViewportControls()}
+        </div>
       </div>
 
-      {/* Sleek Vertical Divider & 3. Sincronização e Publicação */}
+      {/* Mobile HUD Right Actions (Top Center) */}
       {hudRightActions && (
-        <>
-          <div className="h-6 w-[1px] bg-white/15"></div>
+        <div 
+          className="flex lg:hidden absolute top-4 left-1/2 z-20 pointer-events-auto items-center gap-2 bg-[#18221d]/90 backdrop-blur-md border border-[#2d7d74]/40 rounded-xl px-2 py-1 shadow-2xl origin-top"
+          style={{ transform: 'translateX(-50%) scale(0.9)', transformOrigin: 'top center' }}
+        >
           {hudRightActions}
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -13,6 +13,7 @@ import HazardPanel from './HazardPanel';
 import { MapPOI, BattleHazard } from './MapGrid';
 import TopBar from './ui/TopBar';
 import Panel from './ui/Panel';
+import BottomNavbar, { BottomPanelType } from './BottomNavbar';
 
 interface ModeratorDashboardProps {
   userEmail: string;
@@ -65,6 +66,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [activeBottomPanel, setActiveBottomPanel] = useState<BottomPanelType>(null);
+
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [hazards, setHazards] = useState<BattleHazard[]>([]);
@@ -261,7 +264,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
         </nav>
       </TopBar>
 
-      <main className="relative pt-16 w-full h-screen bg-surface-canvas-void flex flex-col">
+      <main className="relative pt-[104px] lg:pt-16 w-full h-screen bg-surface-canvas-void flex flex-col">
         <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
           {/* Left Panel */}
           {activeView !== 'manage_players' && (
@@ -280,8 +283,12 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               unitsTable={unitsTable}
               onEditPoi={handlePOIClick}
               onEditHazard={handleHazardClick}
-              isOpen={isLeftPanelOpen}
-              onToggleOpen={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+              isOpen={isLeftPanelOpen || activeBottomPanel === 'layers'}
+              onToggleOpen={() => {
+                setIsLeftPanelOpen(!isLeftPanelOpen);
+                if (activeBottomPanel === 'layers') setActiveBottomPanel(null);
+              }}
+              isMobileOpen={activeBottomPanel === 'layers'}
               teamACount={teamACount}
               teamBCount={teamBCount}
               unconfirmedCount={unconfirmedCount}
@@ -292,10 +299,10 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
 
           {/* Center Canvas */}
           <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
-            {/* Floating Panel Restorer / Reopen Buttons (Visible when collapsed) */}
+            {/* Floating Panel Restorer / Reopen Buttons (Visible when collapsed on Desktop) */}
             {!isLeftPanelOpen && activeView !== 'manage_players' && (
               <button 
-                className="absolute top-4 left-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                className="hidden lg:flex absolute top-4 left-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md items-center gap-1.5 transition-all text-label-md font-bold" 
                 id="left-panel-expand-btn" 
                 onClick={() => setIsLeftPanelOpen(true)} 
                 title="Expandir Camadas" 
@@ -307,7 +314,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
             )}
             {!isRightPanelOpen && activeView !== 'manage_players' && (
               <button 
-                className="absolute top-4 right-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md flex items-center gap-1.5 transition-all text-label-md font-bold" 
+                className="hidden lg:flex absolute top-4 right-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md items-center gap-1.5 transition-all text-label-md font-bold" 
                 id="right-panel-expand-btn" 
                 onClick={() => setIsRightPanelOpen(true)} 
                 title="Expandir Dossiê da Entidade" 
@@ -390,7 +397,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
 
                 {/* Staging Tray Dock */}
                 {activeView === 'edit_map' && (
-                  <div className="relative z-30 w-full bg-surface-parchment/90 backdrop-blur-md border-t border-border-parchment px-5 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
+                  <div className={`lg:relative lg:block lg:z-30 lg:w-full lg:bg-surface-parchment/90 lg:backdrop-blur-md lg:border-t lg:border-border-parchment lg:px-5 lg:py-3 lg:shadow-[0_-8px_24px_rgba(0,0,0,0.25)]
+                    ${activeBottomPanel === 'reserves' ? 'absolute bottom-[80px] left-0 w-full z-30 bg-surface-parchment/95 backdrop-blur-md border-t border-border-parchment px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]' : 'hidden lg:block'}`}>
                     <ReservesPanel 
                       units={reserveUnits} 
                       isDraggable={() => true} 
@@ -404,14 +412,14 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           
           {/* Right Panel */}
           {activeView !== 'manage_players' && (
-            <aside className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out overflow-hidden ${!isRightPanelOpen ? 'w-0 min-w-0 border-l-0' : 'w-[280px] min-w-[280px]'}`}>
+            <aside className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment transition-all duration-300 ease-in-out overflow-hidden absolute top-0 right-0 lg:relative ${activeBottomPanel === 'dossier' ? 'w-[280px] min-w-[280px] border-l shadow-[-4px_0_20px_rgba(0,0,0,0.12)]' : 'w-0 min-w-0 border-l-0 shadow-none'} ${!isRightPanelOpen ? 'lg:w-0 lg:min-w-0 lg:border-l-0 lg:shadow-none' : 'lg:w-[280px] lg:min-w-[280px] lg:border-l lg:shadow-[-4px_0_20px_rgba(0,0,0,0.12)]'}`}>
 
-              <div className={`flex-1 flex flex-col overflow-hidden relative z-0 ${!isRightPanelOpen ? 'hidden' : 'block'}`}>
+              <div className={`flex-1 flex flex-col overflow-hidden relative z-0 ${(!isRightPanelOpen && activeBottomPanel !== 'dossier') ? 'hidden' : 'block'}`}>
 
               {selectedHazard ? (
                 <HazardPanel 
                   selectedHazard={selectedHazard}
-                  onClose={() => setIsRightPanelOpen(false)}
+                  onClose={() => { setIsRightPanelOpen(false); setActiveBottomPanel(null); }}
                   onSelectHazard={setSelectedHazard}
                   isModerator={activeView === 'edit_map'}
                   targetTable={hazardsTable}
@@ -420,7 +428,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                 <PoiPanel 
                   pois={[]} 
                   selectedPoi={selectedPoi} 
-                  onClose={() => setIsRightPanelOpen(false)} 
+                  onClose={() => { setIsRightPanelOpen(false); setActiveBottomPanel(null); }} 
                   onSelectPoi={() => setSelectedPoi(null)} 
                   isModerator={activeView === 'edit_map'} 
                   targetTable={poisTable}
@@ -431,7 +439,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                   selectedUnit={selectedUnit} 
                   isModerator={activeView === 'edit_map'} 
                   onSelectUnit={setSelectedUnitId}
-                  onClose={() => setIsRightPanelOpen(false)} 
+                  onClose={() => { setIsRightPanelOpen(false); setActiveBottomPanel(null); }} 
                   targetTable={unitsTable}
                 />
               )}
@@ -447,6 +455,9 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               </div>
             </aside>
           )}
+          
+          {/* Bottom Navbar for Mobile */}
+          <BottomNavbar activePanel={activeBottomPanel} onTogglePanel={setActiveBottomPanel} />
         </div>
       </main>
       
