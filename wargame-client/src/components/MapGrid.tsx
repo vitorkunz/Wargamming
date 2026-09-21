@@ -575,11 +575,27 @@ export default function MapGrid({
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
+      if (e.key === 'Escape') {
+        if (creationCoords || creationPoiCoords) {
+          setCreationCoords(null);
+          setCreationPoiCoords(null);
+          return;
         }
-        setIsFullscreen(false);
+        if (currentPath.length > 0 || isCapturing) {
+          setCurrentPath([]);
+          setIsCapturing(false);
+          return;
+        }
+        if (selectedTool !== 'select') {
+          setSelectedTool('select');
+          return;
+        }
+        if (isFullscreen) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          }
+          setIsFullscreen(false);
+        }
       }
     };
 
@@ -590,7 +606,7 @@ export default function MapGrid({
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, creationCoords, creationPoiCoords, selectedTool, currentPath.length, isCapturing]);
   
   const { width, height } = mapConfig.gridSize;
   const boardWidth = width * CELL_SIZE;

@@ -147,6 +147,33 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      // Escape key to deselect
+      if (e.key === 'Escape') {
+        if (
+          e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement ||
+          (e.target as HTMLElement)?.isContentEditable
+        ) {
+          (e.target as HTMLElement).blur();
+        }
+        if (selectedUnitId) {
+          e.preventDefault();
+          setSelectedUnitId(null);
+          return;
+        }
+        if (selectedPoi) {
+          e.preventDefault();
+          setSelectedPoi(null);
+          return;
+        }
+        if (selectedHazard) {
+          e.preventDefault();
+          setSelectedHazard(null);
+          return;
+        }
+        return;
+      }
+
       // Ignore if user is typing in an input or textarea
       if (
         e.target instanceof HTMLInputElement || 

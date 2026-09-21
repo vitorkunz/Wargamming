@@ -74,6 +74,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<MapPOI | null>(null);
   const [selectedHazard, setSelectedHazard] = useState<BattleHazard | null>(null);
+  const [isDrawingHazard, setIsDrawingHazard] = useState(false);
+  const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
   
   const [clipboard, setClipboard] = useState<{ type: 'unit' | 'poi' | 'hazard', data: any } | null>(null);
 
@@ -125,6 +127,38 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (activeView !== 'edit_map') return;
       
+      // Escape key to deselect
+      if (e.key === 'Escape') {
+        if (
+          e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement ||
+          (e.target as HTMLElement)?.isContentEditable
+        ) {
+          (e.target as HTMLElement).blur();
+        }
+        if (pendingHazardPoints) {
+          e.preventDefault();
+          setPendingHazardPoints(null);
+          return;
+        }
+        if (selectedUnitId) {
+          e.preventDefault();
+          setSelectedUnitId(null);
+          return;
+        }
+        if (selectedPoi) {
+          e.preventDefault();
+          setSelectedPoi(null);
+          return;
+        }
+        if (selectedHazard) {
+          e.preventDefault();
+          setSelectedHazard(null);
+          return;
+        }
+        return;
+      }
+
       // Ignore if user is typing in an input or textarea
       if (
         e.target instanceof HTMLInputElement || 
@@ -173,10 +207,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeView, selectedUnitId, selectedPoi, selectedHazard, unitsTable, poisTable, hazardsTable]);
-
-  const [isDrawingHazard, setIsDrawingHazard] = useState(false);
-  const [pendingHazardPoints, setPendingHazardPoints] = useState<{x:number, y:number}[] | null>(null);
+  }, [activeView, selectedUnitId, selectedPoi, selectedHazard, unitsTable, poisTable, hazardsTable, pendingHazardPoints]);
 
   const handleDrawComplete = (points: {x:number, y:number}[]) => {
     setPendingHazardPoints(points);
