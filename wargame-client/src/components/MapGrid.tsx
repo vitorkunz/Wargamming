@@ -4,7 +4,7 @@ import mapConfig from '../data/mapConfig.json';
 import { LayerVisibility } from './Sidebar';
 import { supabase } from '@/lib/supabaseClient';
 import { MapLayer } from './LayerManager';
-import { TransformWrapper, TransformComponent, useTransformEffect, useControls } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, useTransformEffect, useControls, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { ZoomIn, ZoomOut, Maximize2, Minimize2, RotateCcw, Eye } from 'lucide-react';
 import { NatoSymbol } from './NatoSymbol';
 import { PoiBadge } from './PoiBadge';
@@ -423,6 +423,7 @@ export default function MapGrid({
   const [isMiddleMouseDown, setIsMiddleMouseDown] = useState<boolean>(false);
   const [gridSnapping, setGridSnapping] = useState<boolean>(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const transformComponentRef = React.useRef<ReactZoomPanPinchRef | null>(null);
 
   const isDragMode = selectedTool === 'drag' || isSpacePressed || isMiddleMouseDown;
 
@@ -498,6 +499,54 @@ export default function MapGrid({
       window.removeEventListener('mousedown', handleMouseDownCapture, true);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Allow native trackpad pinch gestures (which send ctrlKey === true and small continuous deltas)
+      const isTrackpadPinch = e.ctrlKey && Math.abs(e.deltaY) < 50 && e.deltaMode === 0;
+      if (isTrackpadPinch) {
+        return;
+      }
+
+      // Handle physical mouse wheel zooming with smooth, incremental steps
+      const ref = transformComponentRef.current;
+      if (!ref) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      let delta = e.deltaY;
+      if (e.deltaMode === 1) {
+        // Line delta mode (e.g. Firefox)
+        delta *= 35;
+      } else if (e.deltaMode === 2) {
+        // Page delta mode
+        delta *= 500;
+      }
+
+      const { scale } = ref.state;
+      const minScale = 0.1;
+      const maxScale = 3.0;
+
+      // Smooth incremental zoom factor (~8-10% per standard 100-120px notch)
+      // Exponential scaling guarantees identical relative feel across all zoom levels
+      const zoomFactor = Math.pow(0.999, delta);
+      const newScale = Math.max(minScale, Math.min(maxScale, scale * zoomFactor));
+
+      if (Math.abs(newScale - scale) < 0.0001) return;
+
+      ref.zoomToPoint(newScale, e.clientX, e.clientY, 0);
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel, { capture: true });
     };
   }, []);
 
@@ -734,10 +783,15 @@ export default function MapGrid({
       }`}
     >
       <TransformWrapper
+        ref={transformComponentRef}
         initialScale={1}
         minScale={0.1}
         maxScale={3}
         centerOnInit={true}
+        wheel={{
+          wheelDisabled: true, // Handled incrementally above for mouse wheel; trackpad pinch remains enabled
+          touchPadDisabled: false,
+        }}
         panning={{
           disabled: isDrawingMode,
           allowLeftClickPan: isDragMode,
