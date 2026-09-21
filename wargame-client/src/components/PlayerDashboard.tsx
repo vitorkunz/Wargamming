@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit, MapPOI, BattleHazard } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import UnitCreation from './UnitCreation';
+import UnitCreationModal from './UnitCreationModal';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
 import PoiPanel from './PoiPanel';
@@ -229,18 +230,11 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     }
   };
 
+  const [spawnModalData, setSpawnModalData] = useState<{ templateType: string, x: number, y: number } | null>(null);
+
   const handleSpawnUnitAt = async (templateType: string, x: number, y: number) => {
     if (activeTab !== 'planning') return;
-    const newUnit = {
-      name: `New ${templateType.toUpperCase()}`,
-      owner: role,
-      unit_type: templateType,
-      health: 100,
-      in_reserve: false,
-      x_coord: x,
-      y_coord: y
-    };
-    await supabase.from('Planning_Units').insert([newUnit]);
+    setSpawnModalData({ templateType, x, y });
   };
 
   const checkIsDraggable = (unit: Unit) => {
@@ -428,6 +422,17 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
           </aside>
         </div>
       </main>
+      
+      {spawnModalData && (
+        <UnitCreationModal 
+          table="Planning_Units" 
+          fixedOwner={role as 'Player A' | 'Player B'}
+          isModerator={false}
+          initialCoordinates={{ x: spawnModalData.x, y: spawnModalData.y }}
+          initialType={spawnModalData.templateType}
+          onClose={() => setSpawnModalData(null)}
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { MapLayer } from './LayerManager';
 import LayerManager from './LayerManager';
 import { MapPOI, BattleHazard } from './MapGrid';
 import UnitCreationModal from './UnitCreationModal';
+import { NatoSymbol } from './NatoSymbol';
 
 export interface LayerVisibility {
   baseMap: boolean;
@@ -151,7 +152,7 @@ export default function Sidebar({
 
   const handleDragStartNATO = (e: React.DragEvent, type: string) => {
     e.dataTransfer.setData('text/plain', `nato-template:${type}`);
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.effectAllowed = 'all';
   };
 
   return (
@@ -484,32 +485,44 @@ export default function Sidebar({
           <div className="grid grid-cols-3 gap-1.5 text-center">
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'infantry')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">shield</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCI--------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Infantry</span>
             </div>
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'armor')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">view_in_ar</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCA--------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Armor</span>
             </div>
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'artillery')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">adjust</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCF--------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Artillery</span>
             </div>
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'surfaceCombatant')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">directions_boat</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}SPCL---------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Naval</span>
             </div>
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'fighter')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">flight</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}APMF---------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Air Wing</span>
             </div>
             
             <div draggable onDragStart={(e) => handleDragStartNATO(e, 'signal')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
-              <span className="material-symbols-outlined text-[18px] text-primary group-hover:scale-110 transition-transform">flag</span>
+              <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
+                <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUUS--------`} size={20} variant="quick-panel" />
+              </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">HQ Post</span>
             </div>
             

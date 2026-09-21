@@ -274,9 +274,21 @@ export default function UnitPanel({
 
                       {/* Action Buttons */}
                       <div className="flex gap-1 shrink-0">
-                        <button className="w-6 h-6 rounded bg-[#fef3c7] hover:bg-[#fde68a] text-[#b45309] flex items-center justify-center transition-colors">
-                          <span className="material-symbols-outlined text-[13px]">center_focus_strong</span>
-                        </button>
+                        {canEditOrDelete && (
+                          <button 
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Excluir unidade?')) {
+                                await supabase.from(tableToUpdate).delete().eq('id', unit.id);
+                                if (selectedUnit?.id === unit.id) onSelectUnit(null);
+                              }
+                            }}
+                            className="w-6 h-6 rounded bg-[#fee2e2] hover:bg-[#fecaca] text-[#ef4444] flex items-center justify-center transition-colors"
+                            title="Excluir Unidade"
+                          >
+                            <span className="material-symbols-outlined text-[13px]">delete</span>
+                          </button>
+                        )}
                         <button className="w-6 h-6 rounded bg-[#f3f4f6] hover:bg-[#e5e7eb] text-[#374151] flex items-center justify-center transition-colors">
                           <span className="material-symbols-outlined text-[13px]">open_in_new</span>
                         </button>

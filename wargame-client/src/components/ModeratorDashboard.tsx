@@ -5,6 +5,7 @@ import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import TeamAssignment from './TeamAssignment';
 import UnitCreation from './UnitCreation';
+import UnitCreationModal from './UnitCreationModal';
 import HazardCreationModal from './HazardCreationModal';
 import PoiCreation from './PoiCreation';
 import ReservesPanel from './ReservesPanel';
@@ -202,18 +203,11 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     await supabase.from(poisTable).update({ x_coord: x, y_coord: y }).eq('id', poiId);
   };
 
+  const [spawnModalData, setSpawnModalData] = useState<{ templateType: string, x: number, y: number } | null>(null);
+
   const handleSpawnUnitAt = async (templateType: string, x: number, y: number) => {
     if (activeView === 'view_published') return;
-    const newUnit = {
-      name: `New ${templateType.toUpperCase()}`,
-      owner: 'Player A',
-      unit_type: templateType,
-      health: 100,
-      in_reserve: false,
-      x_coord: x,
-      y_coord: y
-    };
-    await supabase.from(unitsTable).insert([newUnit]);
+    setSpawnModalData({ templateType, x, y });
   };
 
   const handlePublish = async () => {
@@ -471,6 +465,16 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           )}
         </div>
       </main>
+      
+      {spawnModalData && (
+        <UnitCreationModal 
+          table={unitsTable} 
+          isModerator={activeView === 'edit_map'}
+          initialCoordinates={{ x: spawnModalData.x, y: spawnModalData.y }}
+          initialType={spawnModalData.templateType}
+          onClose={() => setSpawnModalData(null)}
+        />
+      )}
     </div>
   );
 }

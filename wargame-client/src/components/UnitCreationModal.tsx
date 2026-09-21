@@ -19,6 +19,7 @@ interface UnitCreationModalProps {
   onClose: () => void;
   isModerator?: boolean;
   initialCoordinates?: { x: number, y: number } | null;
+  initialType?: string;
 }
 
 export default function UnitCreationModal({ 
@@ -26,15 +27,16 @@ export default function UnitCreationModal({
   fixedOwner,
   onClose,
   isModerator = true,
-  initialCoordinates
+  initialCoordinates,
+  initialType
 }: UnitCreationModalProps) {
   const [name, setName] = useState('');
-  const [health, setHealth] = useState(95);
+  const [health, setHealth] = useState(100);
   const [ammo, setAmmo] = useState(100);
   const [owner, setOwner] = useState<'Player A' | 'Player B' | 'Unknown' | 'Neutral'>((fixedOwner as 'Player A' | 'Player B') || 'Player A');
-  const [type, setType] = useState<UnitTypeKey>('surfaceCombatant');
+  const [type, setType] = useState<UnitTypeKey>((initialType as UnitTypeKey) || 'infantry');
   
-  const [visibility, setVisibility] = useState<'visible' | 'hidden'>('visible');
+  const [visibility, setVisibility] = useState<'visible' | 'hidden'>('hidden');
   const [allocation, setAllocation] = useState<'reserve' | 'map'>(initialCoordinates ? 'map' : 'reserve');
   const [notes, setNotes] = useState('');
 
