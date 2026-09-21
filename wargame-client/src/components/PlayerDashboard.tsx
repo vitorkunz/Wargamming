@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit, MapPOI, BattleHazard } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
@@ -71,10 +71,109 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
 
   const [clipboard, setClipboard] = useState<{ type: 'unit' | 'poi' | 'hazard', data: any } | null>(null);
 
+  const currentUnits = activeTab === 'planning' ? planningUnits : battleUnits;
+  const currentUnitsRef = useRef(currentUnits);
+  useEffect(() => {
+    currentUnitsRef.current = currentUnits;
+  }, [currentUnits]);
+
+  const isDuplicatingRef = useRef(false);
+
+  const handleDuplicateUnit = async (unitToDuplicate: Unit) => {
+    if (isDuplicatingRef.current) return;
+    
+    // In battle mode, player can only duplicate their own units
+    if (activeTab === 'battle' && unitToDuplicate.owner !== role) {
+      return;
+    }
+
+    isDuplicatingRef.current = true;
+    try {
+      if (activeTab === 'planning') {
+        const duplicatePayload = {
+          name: unitToDuplicate.name || null,
+          type: unitToDuplicate.type,
+          owner: unitToDuplicate.owner,
+          draft_owner: role,
+          health: unitToDuplicate.health ?? 100,
+          ammo: unitToDuplicate.ammo ?? 100,
+          x_coord: 0,
+          y_coord: 0,
+          in_reserve: true,
+        };
+
+        const { data, error } = await supabase
+          .from('Planning_Units')
+          .insert(duplicatePayload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to duplicate planning unit:", error);
+          alert("Failed to duplicate unit: " + error.message);
+        } else if (data) {
+          setPlanningUnits(prev => prev.some(u => u.id === data.id) ? prev : [...prev, data as Unit]);
+        }
+      } else {
+        const duplicatePayload = {
+          name: unitToDuplicate.name || null,
+          type: unitToDuplicate.type,
+          owner: role,
+          health: unitToDuplicate.health ?? 100,
+          ammo: unitToDuplicate.ammo ?? 100,
+          x_coord: 0,
+          y_coord: 0,
+          in_reserve: true,
+          is_visible_to_enemy: false,
+        };
+
+        const { data, error } = await supabase
+          .from('Battle_Units')
+          .insert(duplicatePayload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to duplicate battle unit:", error);
+          alert("Failed to duplicate unit: " + error.message);
+        } else if (data) {
+          setBattleUnits(prev => prev.some(u => u.id === data.id) ? prev : [...prev, data as Unit]);
+        }
+      }
+    } finally {
+      isDuplicatingRef.current = false;
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) return;
+
+      // Duplicate unit on Ctrl+C / Cmd+C
+      const isCopy = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC');
+      if (isCopy) {
+        if (e.repeat) return;
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+          return;
+        }
+
+        if (selectedUnitId) {
+          const unitToDuplicate = currentUnitsRef.current.find(u => u.id === selectedUnitId);
+          if (unitToDuplicate) {
+            e.preventDefault();
+            await handleDuplicateUnit(unitToDuplicate);
+          }
+        }
+        return;
+      }
+
       if (activeTab !== 'planning') return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedUnitId) {
@@ -98,7 +197,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, selectedUnitId, selectedPoi, selectedHazard, planningUnits]);
+  }, [activeTab, selectedUnitId, selectedPoi, selectedHazard, role]);
 
   const handleSyncDraft = async () => {
     if (!confirm("Are you sure you want to sync your planning map from the live battle map? This will overwrite your current planned units!")) return;
@@ -150,7 +249,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
 
     const planChannel = supabase.channel('player-planning')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Planning_Units', filter: `draft_owner=eq.${role}` }, (payload) => {
-        if (payload.eventType === 'INSERT') setPlanningUnits(p => [...p, payload.new as Unit]);
+        if (payload.eventType === 'INSERT') setPlanningUnits(p => p.some(u => u.id === payload.new.id) ? p : [...p, payload.new as Unit]);
         if (payload.eventType === 'UPDATE') setPlanningUnits(p => p.map(u => u.id === payload.new.id ? payload.new as Unit : u));
         if (payload.eventType === 'DELETE') {
           setPlanningUnits(p => p.filter(u => u.id !== payload.old.id));
@@ -229,7 +328,6 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   };
 
   const unitsTable = activeTab === 'planning' ? 'Planning_Units' : 'Battle_Units';
-  const currentUnits = activeTab === 'planning' ? planningUnits : battleUnits;
   const activeUnits = currentUnits.filter(u => !u.in_reserve);
   const reserveUnits = currentUnits.filter(u => u.in_reserve && (activeTab === 'planning' || u.owner === role));
   const selectedUnit = currentUnits.find(u => u.id === selectedUnitId) || null;
@@ -364,6 +462,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 units={reserveUnits} 
                 isDraggable={checkIsDraggable} 
                 onUnitClick={handleUnitClick}
+                selectedUnitId={selectedUnitId}
               />
             </div>
           </div>
@@ -399,6 +498,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 isModerator={false}
                 role={role}
                 activeTab={activeTab}
+                onDuplicateUnit={handleDuplicateUnit}
               />
             )}
 

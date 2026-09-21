@@ -15,6 +15,7 @@ interface UnitPanelProps {
   role?: string;
   activeTab?: 'planning' | 'battle';
   targetTable?: string;
+  onDuplicateUnit?: (unit: Unit) => void;
 }
 
 export default function UnitPanel({
@@ -25,7 +26,8 @@ export default function UnitPanel({
   isModerator,
   role,
   activeTab = 'battle',
-  targetTable
+  targetTable,
+  onDuplicateUnit
 }: UnitPanelProps) {
   const [activePanelTab, setActivePanelTab] = useState<'roster' | 'details'>(
     selectedUnit ? 'details' : 'roster'
@@ -669,6 +671,19 @@ export default function UnitPanel({
                   <span className="material-symbols-outlined text-[13px]">archive</span>
                   <span>Mover de Volta às Reservas</span>
                 </button>
+
+                {/* Duplicate Unit to Reserves */}
+                {onDuplicateUnit && (
+                  <button 
+                    onClick={() => onDuplicateUnit(selectedUnit)} 
+                    className="w-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-border-parchment font-bold" 
+                    type="button"
+                    title="Duplicar ficha para a reserva (Ctrl+C)"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                    <span>Duplicar para a Reserva (Ctrl+C)</span>
+                  </button>
+                )}
 
                 {/* Status Selector Buttons */}
                 <div className="grid grid-cols-3 gap-1 pt-0.5">

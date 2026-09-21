@@ -7,14 +7,24 @@ interface ReservesPanelProps {
   units: Unit[];
   isDraggable: (unit: Unit) => boolean;
   onUnitClick?: (unit: Unit) => void;
+  selectedUnitId?: string | null;
 }
 
-export default function ReservesPanel({ units, isDraggable, onUnitClick }: ReservesPanelProps) {
+export default function ReservesPanel({ units, isDraggable, onUnitClick, selectedUnitId }: ReservesPanelProps) {
   
   const handleDragStart = (e: React.DragEvent, unit: Unit) => {
     e.dataTransfer.setData('text/plain', unit.id);
     e.dataTransfer.effectAllowed = 'move';
   };
+
+  const uniqueUnits = React.useMemo(() => {
+    const seen = new Set<string>();
+    return units.filter((unit) => {
+      if (seen.has(unit.id)) return false;
+      seen.add(unit.id);
+      return true;
+    });
+  }, [units]);
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -22,22 +32,23 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
         <div className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-primary text-[13px]">inventory_2</span>
           <span className="font-headline-sm text-[8.5px] font-bold text-primary uppercase tracking-wider">Reserve Tray / Staging Area</span>
-          <span className="bg-primary/90 text-text-on-dark text-[8px] font-tag-overline px-1.5 py-0.5 rounded-full font-bold shadow-sm">{units.length} Unidades Disponíveis</span>
+          <span className="bg-primary/90 text-text-on-dark text-[8px] font-tag-overline px-1.5 py-0.5 rounded-full font-bold shadow-sm">{uniqueUnits.length} Unidades Disponíveis</span>
         </div>
         <span className="font-tag-overline text-[8px] text-on-surface-variant italic hidden sm:inline">Arrastar fichas diretamente para o mapa ou clicar em 'Deploy'</span>
       </div>
       
       <div className="flex-1 flex gap-2 overflow-x-auto custom-scrollbar items-center pb-1">
-        {units.length === 0 && (
+        {uniqueUnits.length === 0 && (
           <div className="text-on-surface-variant font-body-ui text-[9px] italic w-full text-center">Nenhuma unidade na reserva</div>
         )}
 
-        {units.map((unit) => {
+        {uniqueUnits.map((unit) => {
           const canDrag = isDraggable(unit);
           const isFriendly = unit.owner === 'Player A';
           const isHostile = unit.owner === 'Player B';
           const isUnknown = unit.owner === 'Unknown';
           const isNeutral = unit.owner === 'Neutral';
+          const isSelected = selectedUnitId === unit.id;
 
           return (
             <div
@@ -45,7 +56,11 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
               draggable={canDrag}
               onDragStart={(e) => handleDragStart(e, unit)}
               onClick={() => onUnitClick && onUnitClick(unit)}
-              className={`bg-white/95 border border-[#e3dfd1] rounded-lg p-1.5 shadow-xs hover:shadow-md transition-all flex items-center justify-between min-w-[150px] flex-shrink-0 cursor-grab active:cursor-grabbing border-l-4 ${
+              className={`border rounded-lg p-1.5 transition-all flex items-center justify-between min-w-[150px] flex-shrink-0 cursor-grab active:cursor-grabbing border-l-4 ${
+                isSelected 
+                  ? 'bg-amber-50/90 border-primary ring-2 ring-[#d4a017] ring-offset-1 shadow-md scale-[1.02]' 
+                  : 'bg-white/95 border-[#e3dfd1] shadow-xs hover:shadow-md'
+              } ${
                 isFriendly ? 'border-l-[#2d7d74]' : isHostile ? 'border-l-[#4e1a3d]' : isUnknown ? 'border-l-[#d4a017]' : 'border-l-[#26265b]'
               }`}
             >

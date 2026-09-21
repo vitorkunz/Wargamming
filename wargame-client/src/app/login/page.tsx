@@ -7,7 +7,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [profile, setProfile] = useState<'timeA' | 'timeB' | 'judge' | 'observer'>('timeA');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +36,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-heading font-bold text-sm tracking-wider uppercase">UFSMUN KRIEGSPIEL</span>
+              <span className="font-heading font-bold text-sm tracking-wider uppercase">UFSMUN GABINETE</span>
             </div>
             <p className="text-[11px] text-[#f7f4eb]/70 tracking-tight font-karla">MESA DE OPERAÇÕES • SIMULAÇÃO DE CRISE TÁTICA</p>
           </div>
@@ -91,11 +90,6 @@ export default function LoginPage() {
                 <p className="text-[11px] text-[#f7f4eb]/80 font-karla">Acesso do Delegado &amp; Moderador</p>
               </div>
             </div>
-
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono bg-[#003831] text-emerald-300 border border-white/10">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              RODADA 03
-            </span>
           </div>
 
           {/* Card Body Content */}
@@ -107,56 +101,6 @@ export default function LoginPage() {
               <p className="text-xs text-[#4a4a4a] mt-1 font-karla leading-relaxed">
                 Insira suas credenciais institucionais para carregar a cartografia, posicionamento de forças e diretrizes operacionais do seu comitê.
               </p>
-            </div>
-
-            {/* Role / Team Quick Toggle Indicator */}
-            <div>
-              <label className="block text-[11px] font-heading font-bold uppercase tracking-wider text-[#4a4a4a] mb-2">
-                Perfil de Acesso
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {/* Time A */}
-                <button 
-                  type="button" 
-                  onClick={() => setProfile('timeA')}
-                  className={`flex items-center justify-center gap-2 p-2 rounded text-xs font-heading font-semibold transition ${profile === 'timeA' ? 'border-2 border-[#2d7d74] bg-[#2d7d74]/10 text-[#004b41]' : 'border border-[#C9C3AE] bg-white text-[#4a4a4a] hover:border-[#2d7d74] hover:text-[#2d7d74]'}`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#2d7d74]"></span>
-                  <span>Time A (Aliados)</span>
-                </button>
-                
-                {/* Time B */}
-                <button 
-                  type="button" 
-                  onClick={() => setProfile('timeB')}
-                  className={`flex items-center justify-center gap-2 p-2 rounded text-xs font-heading font-semibold transition ${profile === 'timeB' ? 'border-2 border-[#4e1a3d] bg-[#4e1a3d]/10 text-[#4e1a3d]' : 'border border-[#C9C3AE] bg-white text-[#4a4a4a] hover:border-[#4e1a3d] hover:text-[#4e1a3d]'}`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#4e1a3d]"></span>
-                  <span>Time B (Oposição)</span>
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {/* Moderador / Juiz */}
-                <button 
-                  type="button" 
-                  onClick={() => setProfile('judge')}
-                  className={`flex items-center justify-center gap-2 p-2 rounded text-xs font-heading font-semibold transition ${profile === 'judge' ? 'border-2 border-[#004b41] bg-[#004b41]/10 text-[#004b41]' : 'border border-[#C9C3AE] bg-white text-[#4a4a4a] hover:border-[#004b41] hover:text-[#004b41]'}`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#004b41]"></span>
-                  <span>Juiz / Moderador</span>
-                </button>
-
-                {/* Observador / Imprensa */}
-                <button 
-                  type="button" 
-                  onClick={() => setProfile('observer')}
-                  className={`flex items-center justify-center gap-2 p-2 rounded text-xs font-heading font-semibold transition ${profile === 'observer' ? 'border-2 border-[#26265b] bg-[#26265b]/10 text-[#26265b]' : 'border border-[#C9C3AE] bg-white text-[#4a4a4a] hover:border-[#26265b] hover:text-[#26265b]'}`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#26265b]"></span>
-                  <span>Observador Civil</span>
-                </button>
-              </div>
             </div>
 
             {/* Login Form */}
@@ -189,7 +133,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label htmlFor="password" className="text-xs font-heading font-semibold text-[#1a1a1a]">
-                    Chave de Acesso Criptográfica
+                    Chave de Acesso / Senha
                   </label>
                   <a href="#" className="text-[11px] font-karla text-[#004b41] hover:text-[#2d7d74] hover:underline">
                     Esqueceu a chave?
@@ -265,7 +209,7 @@ export default function LoginPage() {
       <footer className="w-full bg-[#181d1a] border-t border-white/5 py-3 px-6 text-center text-xs text-[#f7f4eb]/50 font-karla shrink-0">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-heading font-semibold text-[#f7f4eb]/80">UFSMUN Kriegspiel</span>
+            <span className="font-heading font-semibold text-[#f7f4eb]/80">UFSMUN Gabinete</span>
             <span className="hidden sm:inline">•</span>
             <span>Simulação de Crise Tática</span>
           </div>

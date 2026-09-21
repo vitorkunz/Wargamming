@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
@@ -81,12 +81,75 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   const poisTable = activeView === 'edit_map' ? 'Moderator_POIs' : 'Map_POIs';
   const hazardsTable = activeView === 'edit_map' ? 'Moderator_Hazards' : 'Battle_Hazards';
 
+  const unitsRef = useRef(units);
+  useEffect(() => {
+    unitsRef.current = units;
+  }, [units]);
+
+  const isDuplicatingRef = useRef(false);
+
+  const handleDuplicateUnit = async (unitToDuplicate: Unit) => {
+    if (activeView !== 'edit_map' || isDuplicatingRef.current) return;
+    isDuplicatingRef.current = true;
+    try {
+      const duplicatePayload = {
+        name: unitToDuplicate.name || null,
+        type: unitToDuplicate.type,
+        owner: unitToDuplicate.owner,
+        health: unitToDuplicate.health ?? 100,
+        ammo: unitToDuplicate.ammo ?? 100,
+        x_coord: 0,
+        y_coord: 0,
+        in_reserve: true,
+        is_visible_to_enemy: unitToDuplicate.is_visible_to_enemy ?? false,
+      };
+
+      const { data, error } = await supabase
+        .from(unitsTable)
+        .insert(duplicatePayload)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Failed to duplicate unit to reserve:", error);
+        alert("Failed to duplicate unit: " + error.message);
+      } else if (data) {
+        setUnits(prev => prev.some(u => u.id === data.id) ? prev : [...prev, data as Unit]);
+      }
+    } finally {
+      isDuplicatingRef.current = false;
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (activeView !== 'edit_map') return;
       
-      // Ignore if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Ignore if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) return;
+
+      // Duplicate unit on Ctrl+C / Cmd+C
+      const isCopy = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC');
+      if (isCopy) {
+        if (e.repeat) return;
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+          return;
+        }
+
+        if (selectedUnitId) {
+          const unitToDuplicate = unitsRef.current.find(u => u.id === selectedUnitId);
+          if (unitToDuplicate) {
+            e.preventDefault();
+            await handleDuplicateUnit(unitToDuplicate);
+          }
+        }
+        return;
+      }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedUnitId) {
@@ -162,7 +225,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
       .channel(`mod-units-${unitsTable}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: unitsTable }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setUnits((prev) => [...prev, payload.new as Unit]);
+          setUnits((prev) => prev.some(u => u.id === payload.new.id) ? prev : [...prev, payload.new as Unit]);
         } else if (payload.eventType === 'UPDATE') {
           setUnits((prev) => prev.map(u => (u.id === payload.new.id ? (payload.new as Unit) : u)));
         } else if (payload.eventType === 'DELETE') {
@@ -176,7 +239,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
       .channel(`mod-hazards-${hazardsTable}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: hazardsTable }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setHazards((prev) => [...prev, payload.new as BattleHazard]);
+          setHazards((prev) => prev.some(h => h.id === payload.new.id) ? prev : [...prev, payload.new as BattleHazard]);
         } else if (payload.eventType === 'UPDATE') {
           setHazards((prev) => prev.map(h => (h.id === payload.new.id ? (payload.new as BattleHazard) : h)));
         } else if (payload.eventType === 'DELETE') {
@@ -403,6 +466,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                       units={reserveUnits} 
                       isDraggable={() => true} 
                       onUnitClick={handleUnitClick}
+                      selectedUnitId={selectedUnitId}
                     />
                   </div>
                 )}
@@ -441,6 +505,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                   onSelectUnit={setSelectedUnitId}
                   onClose={() => { setIsRightPanelOpen(false); setActiveBottomPanel(null); }} 
                   targetTable={unitsTable}
+                  onDuplicateUnit={handleDuplicateUnit}
                 />
               )}
 
