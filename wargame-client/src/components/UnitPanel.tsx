@@ -310,17 +310,19 @@ export default function UnitPanel({
 
               {/* Advanced Filters */}
               <div className="grid grid-cols-3 gap-1 pt-1">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Visibilidade</span>
-                  <div className="relative">
-                    <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
-                      <option value="all">Todas</option>
-                      <option value="visible">Visível</option>
-                      <option value="hidden">Oculto</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
+                {isModerator && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Visibilidade</span>
+                    <div className="relative">
+                      <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
+                        <option value="all">Todas</option>
+                        <option value="visible">Visível</option>
+                        <option value="hidden">Oculto</option>
+                      </select>
+                      <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Condição</span>
                   <div className="relative">

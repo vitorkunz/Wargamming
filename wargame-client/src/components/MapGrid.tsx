@@ -1034,7 +1034,7 @@ export default function MapGrid({
                         transform: 'scale(var(--unit-inverse-scale, 1))',
                         zIndex: isSelected ? 9999 : undefined
                       }}
-                      title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy ? '- Visible to Enemy' : ''}`}
+                      title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && isModerator ? '- Visible to Enemy' : ''}`}
                       onClick={(e) => {
                          if (isDragMode) return;
                          // Prevent triggering grid click when clicking a unit
@@ -1053,7 +1053,7 @@ export default function MapGrid({
                       </div>
 
                       {/* Left indicator: Eye icon when visible to enemy */}
-                      {unit.is_visible_to_enemy && (
+                      {unit.is_visible_to_enemy && isModerator && (
                         <span 
                           className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70"
                           title="Visível ao adversário"

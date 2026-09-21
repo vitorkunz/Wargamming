@@ -65,6 +65,7 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
     { value: 'smoke_screen', label: 'Smoke Screen' },
     { value: 'dmz', label: 'DMZ' },
     { value: 'trenches', label: 'Trenches' },
+    { value: 'influence_zone', label: 'Zona de Influência' },
   ];
 
   return (
@@ -73,7 +74,7 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
       <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
         <h2 className="font-headline-sm text-[9.5px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[14px]">warning</span>
-          Hazard Details
+          Zonas Operacionais
         </h2>
         <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
           <span className="material-symbols-outlined text-[14px]">keyboard_double_arrow_right</span>
@@ -142,9 +143,9 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                     value={currentHazard.status}
                     onChange={(e) => handleUpdate('status', e.target.value)}
                   >
-                    <option value="active">Active</option>
-                    <option value="cleared">Cleared / Inactive</option>
-                    <option value="breached">Breached / Partial</option>
+                    <option value="active">Ativo</option>
+                    <option value="cleared">Limpo / Inativo</option>
+                    <option value="breached">Violado / Parcial</option>
                   </select>
                 </div>
               </div>

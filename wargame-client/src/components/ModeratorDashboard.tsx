@@ -341,19 +341,19 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
             className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'manage_players' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveView('manage_players')}
           >
-            Manage Players
+            Gerir Usuários
           </button>
           <button 
             className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'edit_map' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveView('edit_map')}
           >
-            Edit Map
+            Editar Mapa
           </button>
           <button 
             className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'view_published' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveView('view_published')}
           >
-            View Published Map
+            Ver Mapa Publicado
           </button>
         </nav>
       </TopBar>
@@ -422,7 +422,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
 
             {activeView === 'manage_players' ? (
               <div className="p-8 w-full h-full overflow-y-auto bg-surface-parchment text-on-surface">
-                <h1 className="text-3xl font-bold text-primary mb-6 font-display-lg">Manage Players</h1>
+                <h1 className="text-3xl font-bold text-primary mb-6 font-display-lg">Gerir Usuários</h1>
                 <TeamAssignment />
               </div>
             ) : (

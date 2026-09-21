@@ -457,7 +457,7 @@ function UnitListItem({ unit, selected, onClick, canSeeHealth }: { unit: Unit, s
             {unit.name ? unit.name : getHumanReadableFromSidc(unit.type)}
           </div>
           <div className="font-tag-overline text-[9px] text-on-surface-variant font-bold truncate">
-            {unit.name ? `${getHumanReadableFromSidc(unit.type)} • ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(Visível)' : ''}
+            {unit.name ? `${getHumanReadableFromSidc(unit.type)} • ` : ''}{unit.owner} {unit.is_visible_to_enemy && isModerator ? '(Visível)' : ''}
           </div>
         </div>
       </div>

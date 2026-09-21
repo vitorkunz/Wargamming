@@ -96,7 +96,8 @@ export default function HazardCreationModal({
                 { id: 'trenches', name: 'Trincheiras', desc: 'Defesa Estática', color: 'border-amber-700', icon: 'horizontal_rule' },
                 { id: 'artillery_barrage', name: 'Barragem de Artilharia', desc: 'Fogo Indireto', color: 'border-red-600', icon: 'explosion' },
                 { id: 'chemical_zone', name: 'Gás / Área Química', desc: 'Contaminação NRBQ', color: 'border-green-600', icon: 'science' },
-                { id: 'smoke_screen', name: 'Cortina de Fumaça', desc: 'Bloqueio Visual', color: 'border-gray-400', icon: 'cloud' }
+                { id: 'smoke_screen', name: 'Cortina de Fumaça', desc: 'Bloqueio Visual', color: 'border-gray-400', icon: 'cloud' },
+                { id: 'influence_zone', name: 'Zona de Influência', desc: 'Controle Estratégico', color: 'border-blue-400', icon: 'radar' }
               ].map(type => (
                 <label key={type.id} className={`cursor-pointer rounded-lg p-3 border-2 transition-all flex flex-col bg-white ${hazardType === type.id ? `border-[#2d7d74] shadow-sm` : 'border-border-parchment hover:border-gray-300'}`}>
                   <input type="radio" name="hazardType" className="hidden" checked={hazardType === type.id} onChange={() => setHazardType(type.id)} />

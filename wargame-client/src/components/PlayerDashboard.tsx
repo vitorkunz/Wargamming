@@ -371,13 +371,13 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeTab === 'planning' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveTab('planning')}
           >
-            Planning Map
+            Mapa Rascunho
           </button>
           <button 
             className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeTab === 'battle' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
             onClick={() => setActiveTab('battle')}
           >
-            Battle Map
+            Mapa de Batalha
           </button>
         </nav>
       </TopBar>
