@@ -400,12 +400,13 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                       <div className="space-y-1.5">
                         {sorted.map(u => (
                           <UnitListItem 
-                            key={u.id} 
-                            unit={u} 
-                            selected={u.id === selectedUnit?.id} 
-                            onClick={() => onSelectUnit(u.id)} 
-                            canSeeHealth={isModerator || u.owner === role || u.is_health_visible_to_enemy !== false}
-                          />
+                              key={u.id} 
+                              unit={u} 
+                              selected={u.id === selectedUnit?.id} 
+                              onClick={() => onSelectUnit(u.id)} 
+                              canSeeHealth={isModerator || u.owner === role || u.is_health_visible_to_enemy !== false}
+                              isModerator={isModerator}
+                            />
                         ))}
                       </div>
                     </div>
@@ -438,7 +439,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
   );
 }
 
-function UnitListItem({ unit, selected, onClick, canSeeHealth }: { unit: Unit, selected: boolean, onClick: () => void, canSeeHealth: boolean }) {
+function UnitListItem({ unit, selected, onClick, canSeeHealth, isModerator }: { unit: Unit, selected: boolean, onClick: () => void, canSeeHealth: boolean, isModerator: boolean }) {
   const factionBorderClass = unit.owner === 'Player A' ? 'border-l-faction-friendly' : unit.owner === 'Player B' ? 'border-l-faction-hostile' : unit.owner === 'Unknown' ? 'border-l-faction-unknown' : 'border-l-faction-neutral';
   
   return (
