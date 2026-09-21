@@ -242,7 +242,7 @@ export default function UnitPanel({
                     className={`bg-white rounded-lg px-2 py-1.5 shadow-sm hover:shadow transition-all cursor-pointer relative border ${
                       isSelected ? 'border-2 border-[#D4AF37]' : 'border-border-parchment'
                     } ${
-                      isTeamA ? 'border-l-[4px] border-l-[#2d7d74]' : isTeamB ? 'border-l-[4px] border-l-[#c03a6b]' : isUnknown ? 'border-l-[4px] border-l-[#414575]' : 'border-l-[4px] border-l-gray-400'
+                      isTeamA ? 'border-l-[4px] border-l-[#2d7d74]' : isTeamB ? 'border-l-[4px] border-l-[#c03a6b]' : isUnknown ? 'border-l-[4px] border-l-[#d4a017]' : 'border-l-[4px] border-l-gray-400'
                     }`}
                   >
                     {/* Top Row: Icon, Title, Buttons */}
@@ -398,6 +398,7 @@ export default function UnitPanel({
                     className={`font-label-md text-[9px] px-2 py-0.5 rounded-full font-bold border cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary ${
                       selectedUnit.owner === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' : 
                       selectedUnit.owner === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' : 
+                      selectedUnit.owner === 'Unknown' ? 'bg-faction-unknown/15 text-faction-unknown border-faction-unknown/20' : 
                       'bg-gray-100 text-gray-700 border-gray-300'
                     }`}
                   >
@@ -410,9 +411,10 @@ export default function UnitPanel({
                   <span className={`font-label-md text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
                     selectedUnit.owner === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' : 
                     selectedUnit.owner === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' : 
+                    selectedUnit.owner === 'Unknown' ? 'bg-faction-unknown/15 text-faction-unknown border-faction-unknown/20' : 
                     'bg-gray-100 text-gray-700 border-gray-300'
                   }`}>
-                    <span className={`w-1 h-1 rounded-full ${selectedUnit.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit.owner === 'Player B' ? 'bg-faction-hostile' : 'bg-gray-500'}`}></span>
+                    <span className={`w-1 h-1 rounded-full ${selectedUnit.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit.owner === 'Player B' ? 'bg-faction-hostile' : selectedUnit.owner === 'Unknown' ? 'bg-faction-unknown' : 'bg-gray-500'}`}></span>
                     {selectedUnit.owner === 'Player A' ? 'Time A' : selectedUnit.owner === 'Player B' ? 'Time B' : selectedUnit.owner}
                   </span>
                 )}

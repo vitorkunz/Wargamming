@@ -917,7 +917,7 @@ export default function MapGrid({
                         isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
                       }`}>
                         <div className={`font-mono text-[10px] font-bold leading-tight ${
-                          isSelected ? 'text-[#d4a017]' : unit.owner === 'Player A' ? 'text-[#a4f1e5]' : unit.owner === 'Player B' ? 'text-[#f26a4b]' : 'text-white'
+                          isSelected ? 'text-[#d4a017]' : unit.owner === 'Player A' ? 'text-[#a4f1e5]' : unit.owner === 'Player B' ? 'text-[#f26a4b]' : unit.owner === 'Unknown' ? 'text-[#d4a017]' : 'text-white'
                         }`}>
                           {unit.name || getHumanReadableFromSidc(unit.type)}
                         </div>

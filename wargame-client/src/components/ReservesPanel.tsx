@@ -46,7 +46,7 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
               onDragStart={(e) => handleDragStart(e, unit)}
               onClick={() => onUnitClick && onUnitClick(unit)}
               className={`bg-white/95 border border-[#e3dfd1] rounded-lg p-1.5 shadow-xs hover:shadow-md transition-all flex items-center justify-between min-w-[150px] flex-shrink-0 cursor-grab active:cursor-grabbing border-l-4 ${
-                isFriendly ? 'border-l-[#2d7d74]' : isHostile ? 'border-l-[#4e1a3d]' : isUnknown ? 'border-l-[#414575]' : 'border-l-[#26265b]'
+                isFriendly ? 'border-l-[#2d7d74]' : isHostile ? 'border-l-[#4e1a3d]' : isUnknown ? 'border-l-[#d4a017]' : 'border-l-[#26265b]'
               }`}
             >
               <div className="flex items-center gap-1.5 min-w-0">
@@ -57,7 +57,7 @@ export default function ReservesPanel({ units, isDraggable, onUnitClick }: Reser
                   <div className="font-heading text-[8.5px] font-bold text-[#1c1b1b] truncate leading-tight">
                     {unit.name || getHumanReadableFromSidc(unit.type)}
                   </div>
-                  <div className={`font-heading text-[7.5px] font-bold ${isFriendly ? 'text-[#2d7d74]' : isHostile ? 'text-[#c03a6b]' : 'text-gray-600'} uppercase`}>
+                  <div className={`font-heading text-[7.5px] font-bold ${isFriendly ? 'text-[#2d7d74]' : isHostile ? 'text-[#c03a6b]' : isUnknown ? 'text-[#d4a017]' : 'text-gray-600'} uppercase`}>
                     {unit.owner} • {getHumanReadableFromSidc(unit.type)}
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState } from 'react';
 import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
@@ -153,8 +153,9 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
   const canSeeHealth = selectedUnit && (isModerator || selectedUnit.owner === role || selectedUnit.is_health_visible_to_enemy !== false);
   const factionColor = selectedUnit?.owner === 'Player A' ? 'text-faction-friendly bg-faction-friendly/15 border-faction-friendly/20' : 
                        selectedUnit?.owner === 'Player B' ? 'text-faction-hostile bg-faction-hostile/15 border-faction-hostile/20' : 
+                       selectedUnit?.owner === 'Unknown' ? 'text-faction-unknown bg-faction-unknown/15 border-faction-unknown/20' :
                        'text-faction-neutral bg-faction-neutral/15 border-faction-neutral/20';
-  const factionDotColor = selectedUnit?.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit?.owner === 'Player B' ? 'bg-faction-hostile' : 'bg-faction-neutral';
+  const factionDotColor = selectedUnit?.owner === 'Player A' ? 'bg-faction-friendly' : selectedUnit?.owner === 'Player B' ? 'bg-faction-hostile' : selectedUnit?.owner === 'Unknown' ? 'bg-faction-unknown' : 'bg-faction-neutral';
 
   return (
     <div className="flex flex-col h-full bg-surface-parchment/95 text-on-surface">
@@ -436,7 +437,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
 }
 
 function UnitListItem({ unit, selected, onClick, canSeeHealth }: { unit: Unit, selected: boolean, onClick: () => void, canSeeHealth: boolean }) {
-  const factionBorderClass = unit.owner === 'Player A' ? 'border-l-faction-friendly' : unit.owner === 'Player B' ? 'border-l-faction-hostile' : 'border-l-faction-neutral';
+  const factionBorderClass = unit.owner === 'Player A' ? 'border-l-faction-friendly' : unit.owner === 'Player B' ? 'border-l-faction-hostile' : unit.owner === 'Unknown' ? 'border-l-faction-unknown' : 'border-l-faction-neutral';
   
   return (
     <div 

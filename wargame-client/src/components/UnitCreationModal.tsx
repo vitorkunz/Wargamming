@@ -143,11 +143,11 @@ export default function UnitCreationModal({
                 <span className="text-[10px] text-on-surface-variant">Força Opositora</span>
               </label>
 
-              <label className={`cursor-pointer rounded-lg p-3 border-2 transition-all flex flex-col bg-white ${owner === 'Unknown' ? 'border-[#414575] shadow-sm' : 'border-border-parchment hover:border-gray-300'}`}>
+              <label className={`cursor-pointer rounded-lg p-3 border-2 transition-all flex flex-col bg-white ${owner === 'Unknown' ? 'border-[#d4a017] shadow-sm' : 'border-border-parchment hover:border-gray-300'}`}>
                 <input type="radio" name="faction" className="hidden" checked={owner === 'Unknown'} onChange={() => setOwner('Unknown')} disabled={!!fixedOwner} />
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`w-3 h-3 rounded-full ${owner === 'Unknown' ? 'bg-[#414575]' : 'bg-gray-200'}`}></span>
-                  <span className="text-[9px] font-bold text-[#414575] uppercase">Incógnita</span>
+                  <span className={`w-3 h-3 rounded-full ${owner === 'Unknown' ? 'bg-[#d4a017]' : 'bg-gray-200'}`}></span>
+                  <span className="text-[9px] font-bold text-[#d4a017] uppercase">Incógnita</span>
                 </div>
                 <span className="font-headline-sm font-bold text-[14px] text-on-surface">Não Confirmado</span>
                 <span className="text-[10px] text-on-surface-variant">Ping / Névoa</span>
