@@ -33,7 +33,7 @@ export default function LoginPage() {
       <header className="w-full bg-[#004b41] text-[#f7f4eb] h-16 px-6 flex items-center justify-between border-b border-[#003831] shadow-md shrink-0 z-20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded bg-[#f7f4eb]/10 p-1 flex items-center justify-center border border-white/10">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLXZWAZoFMAPB2UCzp-9RYzeoNUWJQHdxisGKLER10XmtW8ac2s3ggsVXsP8pA9gUPGIh-4T5mBBEkydNWG7PsFpuk89K24j2QuFTTRE4chPpt2V8dkx0GKwKqoIKRoXQrqdSMQzwbu1akS_dmsRM5aORhz1ZgvVjUdQkb4Z8va0Nwbe5_rMaJ8z9jfM4W5fIA9dsQjIFJM9qI0tW-5T1ffHYDtdTwbVXgA-8FnceNbEiavd1nRI5SUf5JHzm3c67EB6c" alt="UFSMUN Logo" className="w-full h-full object-contain filter drop-shadow" />
+            <img src="/ufsmun-logo.png" alt="UFSMUN Logo" className="w-full h-full object-contain filter drop-shadow" />
           </div>
           <div>
             <div className="flex items-center gap-2">

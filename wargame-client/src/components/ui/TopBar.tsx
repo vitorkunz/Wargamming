@@ -14,8 +14,8 @@ export default function TopBar({ userEmail, role, onSignOut, children }: TopBarP
         
         {/* Logo / Brand Area (Left) */}
         <div className="flex items-center gap-space-md lg:min-w-[280px]">
-          <div className="flex items-center justify-center w-8 h-8 rounded bg-surface-canvas-void text-primary-fixed-dim border border-primary-fixed-dim/30 shadow">
-            <span className="material-symbols-outlined text-[20px]">public</span>
+          <div className="flex items-center justify-center w-8 h-8 rounded bg-surface-canvas-void text-primary-fixed-dim border border-primary-fixed-dim/30 shadow p-0.5 overflow-hidden">
+            <img src="/ufsmun-logo.png" alt="UFSMUN" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="font-label-md text-label-md tracking-wider text-text-on-dark uppercase leading-tight">Mapa UFSMUN</span>

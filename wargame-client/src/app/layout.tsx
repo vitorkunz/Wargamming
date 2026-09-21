@@ -13,7 +13,7 @@ const karla = Karla({
 });
 
 export const metadata: Metadata = {
-  title: "UFSMUN Kriegspiel",
+  title: "UFSMUN Gabinete",
   description: "Digital War Cabinet Tactical Map Table",
 };
 
