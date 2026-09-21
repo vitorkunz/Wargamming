@@ -345,6 +345,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 unitsTable={unitsTable}
                 isModerator={false}
                 fixedOwner={role === 'Player A' || role === 'Player B' ? role : undefined}
+                role={role}
                 hideEditingTools={activeTab === 'battle'}
                 layerOpacities={layerOpacities}
                 onOpacityChange={handleOpacityChange}

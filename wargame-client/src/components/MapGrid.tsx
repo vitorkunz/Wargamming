@@ -73,6 +73,7 @@ interface MapGridProps {
   unitsTable?: string;
   isModerator?: boolean;
   fixedOwner?: 'Player A' | 'Player B';
+  role?: string;
   layerOpacities?: Record<string, number>;
   onOpacityChange?: (layerId: string, opacity: number) => void;
 }
@@ -380,6 +381,7 @@ export default function MapGrid({
   unitsTable = 'Battle_Units',
   isModerator = true,
   fixedOwner,
+  role,
   layerOpacities,
   onOpacityChange
 }: MapGridProps) {
@@ -486,11 +488,27 @@ export default function MapGrid({
       if (data) setDynamicLayers(data as MapLayer[]);
     };
     const fetchPOIs = async () => {
-      const { data } = await supabase.from(poisTable).select('*');
+      let query = supabase.from(poisTable).select('*');
+      if (!isModerator) {
+        if (role) {
+          query = query.or(`owner.eq.${role},is_visible_to_enemy.eq.true`);
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // Return none
+        }
+      }
+      const { data } = await query;
       if (data) setPois(data as MapPOI[]);
     };
     const fetchHazards = async () => {
-      const { data } = await supabase.from(hazardsTable).select('*');
+      let query = supabase.from(hazardsTable).select('*');
+      if (!isModerator) {
+        if (role) {
+          query = query.contains('visible_to_teams', [role]);
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // Return none
+        }
+      }
+      const { data } = await query;
       if (data) setHazards(data as BattleHazard[]);
     };
 
