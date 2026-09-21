@@ -4,15 +4,12 @@ import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
 import TeamAssignment from './TeamAssignment';
-import UnitCreation from './UnitCreation';
 import UnitCreationModal from './UnitCreationModal';
 import HazardCreationModal from './HazardCreationModal';
-import PoiCreation from './PoiCreation';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
 import PoiPanel from './PoiPanel';
 import HazardPanel from './HazardPanel';
-import OperationalSectorsList from './OperationalSectorsList';
 import { MapPOI, BattleHazard } from './MapGrid';
 import TopBar from './ui/TopBar';
 import Panel from './ui/Panel';
@@ -438,20 +435,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                   targetTable={unitsTable}
                 />
               )}
-              
-              {activeView === 'edit_map' && !selectedHazard && !selectedPoi && !selectedUnitId && (
-                <div className="flex-1 overflow-y-auto p-4 border-t border-border-parchment mt-4 space-y-4">
-                  <h3 className="font-headline-sm text-primary uppercase text-[10px] font-bold tracking-wider">Quick Actions</h3>
-                  <UnitCreation table={unitsTable} />
-                  <PoiCreation table={poisTable} />
-                  <OperationalSectorsList 
-                    hazards={hazards}
-                    onHazardClick={handleHazardClick}
-                    isDrawingHazard={isDrawingHazard}
-                    setIsDrawingHazard={setIsDrawingHazard}
-                  />
-                </div>
-              )}
+
               
               {pendingHazardPoints && (
                 <HazardCreationModal 

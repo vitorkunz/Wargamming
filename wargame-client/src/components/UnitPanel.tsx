@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
 import { getSidcForUnit, getHumanReadableFromSidc, parseSidc } from '@/lib/milsymbol/utils';
@@ -32,7 +32,10 @@ export default function UnitPanel({
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [factionFilter, setFactionFilter] = useState<string>('all');
-  const [groupBy, setGroupBy] = useState<'faction' | 'type' | 'status'>('faction');
+  const [groupBy, setGroupBy] = useState<'faction' | 'type' | 'status' | 'sector'>('faction');
+  const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
+  const [conditionFilter, setConditionFilter] = useState<string>('all');
+  const [forceTypeFilter, setForceTypeFilter] = useState<string>('all');
 
   const [healthInput, setHealthInput] = useState(selectedUnit?.health?.toString() || '');
   const [nameInput, setNameInput] = useState(selectedUnit?.name || '');
@@ -109,6 +112,21 @@ export default function UnitPanel({
 
   const filteredUnits = activeUnits.filter((unit) => {
     if (factionFilter !== 'all' && unit.owner !== factionFilter) return false;
+    
+    if (visibilityFilter === 'visible' && !unit.is_visible_to_enemy) return false;
+    if (visibilityFilter === 'hidden' && unit.is_visible_to_enemy) return false;
+    
+    if (conditionFilter === 'normal' && unit.health < 70) return false;
+    if (conditionFilter === 'degraded' && (unit.health >= 70 || unit.health < 30)) return false;
+    if (conditionFilter === 'critical' && unit.health >= 30) return false;
+
+    if (forceTypeFilter !== 'all') {
+      const dim = unit.type && unit.type.length === 15 ? unit.type[2] : 'G';
+      if (forceTypeFilter === 'ground' && dim !== 'G') return false;
+      if (forceTypeFilter === 'air' && dim !== 'A') return false;
+      if (forceTypeFilter === 'sea' && dim !== 'S' && dim !== 'U') return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const readable = getHumanReadableFromSidc(unit.type).toLowerCase();
@@ -118,6 +136,15 @@ export default function UnitPanel({
       );
     }
     return true;
+  }).sort((a, b) => {
+    if (groupBy === 'faction') return a.owner.localeCompare(b.owner);
+    if (groupBy === 'type') {
+      const typeA = getHumanReadableFromSidc(a.type);
+      const typeB = getHumanReadableFromSidc(b.type);
+      return typeA.localeCompare(typeB);
+    }
+    if (groupBy === 'status') return b.health - a.health;
+    return 0;
   });
 
   const getStatusText = (health: number) => {
@@ -125,6 +152,31 @@ export default function UnitPanel({
     if (health >= 30) return 'CAPACIDADE DEGRADADA';
     return 'EM COMBATE / CRÍTICO';
   };
+
+  const groupedUnits = useMemo(() => {
+    const groups: Record<string, Unit[]> = {};
+    filteredUnits.forEach(unit => {
+      let key = 'Outros';
+      if (groupBy === 'faction') {
+        if (unit.owner === 'Player A') key = 'Time A';
+        else if (unit.owner === 'Player B') key = 'Time B';
+        else if (unit.owner === 'Unknown') key = 'Incógnito';
+        else if (unit.owner === 'Neutral') key = 'Neutro';
+        else key = unit.owner || 'Desconhecido';
+      } else if (groupBy === 'type') {
+        key = getHumanReadableFromSidc(unit.type) || 'Desconhecido';
+      } else if (groupBy === 'status') {
+        if (unit.health >= 70) key = 'Prontidão Normal';
+        else if (unit.health >= 30) key = 'Capacidade Degradada';
+        else key = 'Crítico';
+      } else if (groupBy === 'sector') {
+        key = 'Setor Principal'; // To be implemented or updated later if sectors exist
+      }
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(unit);
+    });
+    return groups;
+  }, [filteredUnits, groupBy]);
 
   return (
     <div className="w-full h-full flex flex-col select-none">
@@ -168,27 +220,28 @@ export default function UnitPanel({
         {activePanelTab === 'roster' && (
           <div className="space-y-1.5">
             {/* Search & Filter Header Box */}
-            <div className="bg-white/95 p-1 rounded-lg border border-border-parchment shadow-sm space-y-1">
-              <div className="relative flex items-center">
-                <span className="material-symbols-outlined absolute left-1.5 text-outline text-[11px]">search</span>
+            <div className="bg-white/95 p-1.5 rounded-lg border border-border-parchment shadow-sm space-y-1.5">
+              {/* Search */}
+              <div className="relative flex items-center bg-surface-parchment-dim/80 rounded border border-border-parchment shadow-inner">
+                <span className="material-symbols-outlined absolute left-1.5 text-outline text-[12px] pointer-events-none">search</span>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filtrar por indicativo ou classe..."
-                  className="w-full pl-5 pr-1.5 py-0.5 rounded text-[8px] font-body-base bg-surface-parchment-dim/80 text-on-surface border border-border-parchment focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                  className="w-full pl-5 pr-1.5 py-1 text-[9px] font-body-base bg-transparent text-on-surface focus:outline-none"
                 />
               </div>
 
               {/* Category Filter Pills */}
-              <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5 text-[7.5px] font-bold custom-scrollbar">
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[8.5px] font-bold custom-scrollbar">
                 <button
                   type="button"
                   onClick={() => setFactionFilter('all')}
-                  className={`px-1 py-0.5 rounded-full whitespace-nowrap transition-colors ${
+                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
                     factionFilter === 'all'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                      ? 'bg-[#0a352a] text-white border-[#0a352a] shadow-sm'
+                      : 'bg-transparent text-[#0a352a] border-[#0a352a]/20 hover:bg-[#0a352a]/10'
                   }`}
                 >
                   Todos ({activeUnits.length})
@@ -196,10 +249,10 @@ export default function UnitPanel({
                 <button
                   type="button"
                   onClick={() => setFactionFilter('Player A')}
-                  className={`px-1 py-0.5 rounded-full whitespace-nowrap transition-colors ${
+                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
                     factionFilter === 'Player A'
-                      ? 'bg-faction-friendly text-white shadow-sm'
-                      : 'bg-faction-friendly/15 text-faction-friendly border border-faction-friendly/20 hover:bg-faction-friendly/25'
+                      ? 'bg-[#2d7d74] text-white border-[#2d7d74] shadow-sm'
+                      : 'bg-[#e2f1ec] text-[#2d7d74] border-[#2d7d74]/20 hover:bg-[#2d7d74]/20'
                   }`}
                 >
                   Time A ({activeUnits.filter((u) => u.owner === 'Player A').length})
@@ -207,29 +260,105 @@ export default function UnitPanel({
                 <button
                   type="button"
                   onClick={() => setFactionFilter('Player B')}
-                  className={`px-1 py-0.5 rounded-full whitespace-nowrap transition-colors ${
+                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
                     factionFilter === 'Player B'
-                      ? 'bg-faction-hostile text-white shadow-sm'
-                      : 'bg-faction-hostile/15 text-faction-hostile border border-status-critical/30 hover:bg-faction-hostile/25'
+                      ? 'bg-[#c03a6b] text-white border-[#c03a6b] shadow-sm'
+                      : 'bg-[#f3e6ea] text-[#c03a6b] border-[#c03a6b]/20 hover:bg-[#c03a6b]/20'
                   }`}
                 >
                   Time B ({activeUnits.filter((u) => u.owner === 'Player B').length})
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setFactionFilter('Unknown')}
+                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
+                    factionFilter === 'Unknown'
+                      ? 'bg-[#5c5c7d] text-white border-[#5c5c7d] shadow-sm'
+                      : 'bg-[#e9e9f0] text-[#5c5c7d] border-[#5c5c7d]/20 hover:bg-[#5c5c7d]/20'
+                  }`}
+                >
+                  Incógnito ({activeUnits.filter((u) => u.owner === 'Unknown').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFactionFilter('Neutral')}
+                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
+                    factionFilter === 'Neutral'
+                      ? 'bg-gray-500 text-white border-gray-500 shadow-sm'
+                      : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  Neutro ({activeUnits.filter((u) => u.owner === 'Neutral').length})
+                </button>
               </div>
 
               {/* Group By Selector */}
-              <div className="pt-1 border-t border-border-parchment/60 flex items-center justify-between gap-1 text-[7.5px]">
-                <span className="text-primary font-bold uppercase tracking-wider">Agrupar por:</span>
-                <div className="flex items-center bg-surface-parchment-dim rounded p-0.5 border border-border-parchment">
-                  <button onClick={() => setGroupBy('faction')} className={`px-1 py-0.5 rounded-sm font-bold ${groupBy === 'faction' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Facção</button>
-                  <button onClick={() => setGroupBy('type')} className={`px-1 py-0.5 rounded-sm font-bold ${groupBy === 'type' ? 'bg-primary text-white' : 'text-on-surface-variant'}`}>Tipo</button>
+              <div className="pt-1 border-t border-border-parchment/60 flex items-center justify-between gap-1 text-[8.5px]">
+                <div className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px] text-outline">account_tree</span>
+                  <span className="text-[#0a352a] font-bold uppercase tracking-wider">Agrupar por:</span>
+                </div>
+                <div className="flex items-center bg-[#eae4d9] rounded p-0.5 border border-[#d9ceb9]">
+                  <button onClick={() => setGroupBy('faction')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'faction' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Facção</button>
+                  <button onClick={() => setGroupBy('type')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'type' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Tipo</button>
+                  <button onClick={() => setGroupBy('status')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'status' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Status</button>
+                  <button onClick={() => setGroupBy('sector')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'sector' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Setor</button>
+                </div>
+              </div>
+
+              {/* Advanced Filters */}
+              <div className="grid grid-cols-3 gap-1 pt-1">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Visibilidade</span>
+                  <div className="relative">
+                    <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
+                      <option value="all">Todas</option>
+                      <option value="visible">Visível</option>
+                      <option value="hidden">Oculto</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Condição</span>
+                  <div className="relative">
+                    <select value={conditionFilter} onChange={(e) => setConditionFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
+                      <option value="all">Todas</option>
+                      <option value="normal">Prontidão Normal</option>
+                      <option value="degraded">Degradada</option>
+                      <option value="critical">Crítico</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Tipo de Força</span>
+                  <div className="relative">
+                    <select value={forceTypeFilter} onChange={(e) => setForceTypeFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
+                      <option value="all">Todos</option>
+                      <option value="ground">Terrestre</option>
+                      <option value="air">Aérea</option>
+                      <option value="sea">Naval</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Units List Cards */}
-            <div className="space-y-1.5">
-              {filteredUnits.map((unit) => {
+            <div className="space-y-2">
+              {Object.entries(groupedUnits).map(([groupName, groupUnits]) => (
+                <details key={groupName} className="group" open>
+                  <summary className="flex items-center justify-between p-1 cursor-pointer bg-[#eae4d9] rounded border border-[#d9ceb9] shadow-sm select-none list-none [&::-webkit-details-marker]:hidden outline-none hover:bg-[#e4dbcd] transition-colors">
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-primary transition-transform group-open:rotate-90">chevron_right</span>
+                      <span className="text-[9.5px] font-bold text-[#0a352a] uppercase tracking-wider">{groupName}</span>
+                    </div>
+                    <span className="text-[8.5px] font-bold text-[#0a352a] bg-white/60 px-1.5 py-0.5 rounded-sm border border-[#d9ceb9]/50">{groupUnits.length}</span>
+                  </summary>
+                  <div className="pt-1.5 space-y-1.5 px-0.5">
+                    {groupUnits.map((unit) => {
                 const isSelected = selectedUnit?.id === unit.id;
                 const isTeamA = unit.owner === 'Player A';
                 const isTeamB = unit.owner === 'Player B';
@@ -301,8 +430,8 @@ export default function UnitPanel({
                     {/* Middle Row: Pills and Toggles */}
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1">
-                        <span className={`px-1.5 py-0.5 rounded font-bold text-[9.5px] leading-tight ${isTeamA ? 'bg-[#d1fae5] text-[#047857]' : isTeamB ? 'bg-[#fce7f3] text-[#be185d]' : 'bg-gray-200 text-gray-700'}`}>
-                          {isTeamA ? 'Time A' : isTeamB ? 'Time B' : 'Neutro'}
+                        <span className={`px-1.5 py-0.5 rounded font-bold text-[9.5px] leading-tight ${isTeamA ? 'bg-[#d1fae5] text-[#047857]' : isTeamB ? 'bg-[#fce7f3] text-[#be185d]' : isUnknown ? 'bg-[#e9e9f0] text-[#5c5c7d]' : 'bg-gray-200 text-gray-700'}`}>
+                          {isTeamA ? 'Time A' : isTeamB ? 'Time B' : isUnknown ? 'Incógnito' : 'Neutro'}
                         </span>
                         
                         {unit.health < 70 && (
@@ -344,6 +473,9 @@ export default function UnitPanel({
                   </div>
                 );
               })}
+                  </div>
+                </details>
+              ))}
             </div>
           </div>
         )}

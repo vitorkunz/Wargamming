@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit, MapPOI, BattleHazard } from './MapGrid';
 import Sidebar, { LayerVisibility } from './Sidebar';
-import UnitCreation from './UnitCreation';
 import UnitCreationModal from './UnitCreationModal';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
@@ -396,15 +395,6 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
               />
             )}
 
-            {activeTab === 'planning' && !selectedHazard && !selectedPoi && !selectedUnitId && (
-              <div className="flex-1 overflow-y-auto p-4 border-t border-border-parchment mt-4 space-y-4">
-                <UnitCreation 
-                  table="Planning_Units" 
-                  title="Plan New Unit"
-                  draftOwner={role}
-                />
-              </div>
-            )}
             </div>
           </aside>
         </div>
