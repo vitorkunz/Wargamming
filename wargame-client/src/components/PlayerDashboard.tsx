@@ -192,22 +192,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     setIsRightPanelOpen(true);
   };
 
-  const handleGridClick = async (x: number, y: number) => {
-    if (activeTab !== 'planning') return;
 
-    const { error } = await supabase.from('Planning_Units').insert({
-      type: 'Infantry',
-      owner: role,
-      x_coord: x,
-      y_coord: y,
-      health: 100,
-      in_reserve: false
-    });
-
-    if (error) {
-      alert("Failed to create unit: " + error.message);
-    }
-  };
 
   const handleUnitDrop = async (unitId: string, x: number, y: number) => {
     if (activeTab === 'planning') {
@@ -293,6 +278,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             unconfirmedCount={unconfirmedCount}
             layerOpacities={layerOpacities}
             onOpacityChange={handleOpacityChange}
+            activeTab={activeTab}
           />
 
           {/* Center Canvas */}
@@ -349,7 +335,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 hiddenHazards={hiddenHazards}
                 units={activeUnits} 
                 selectedUnitId={selectedUnitId}
-                onGridClick={activeTab === 'planning' ? handleGridClick : undefined}
+
                 isDraggable={checkIsDraggable}
                 onUnitDrop={handleUnitDrop}
                 onUnitClick={handleUnitClick}

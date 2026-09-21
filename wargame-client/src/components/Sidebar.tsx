@@ -43,6 +43,7 @@ interface SidebarProps {
   unitsTable?: string;
   layerOpacities?: Record<string, number>;
   onOpacityChange?: (layerId: string, opacity: number) => void;
+  activeTab?: 'planning' | 'battle';
 }
 
 export default function Sidebar({ 
@@ -60,7 +61,8 @@ export default function Sidebar({
   hazardsTable = 'Battle_Hazards',
   unitsTable,
   layerOpacities,
-  onOpacityChange
+  onOpacityChange,
+  activeTab
 }: SidebarProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(true);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -468,7 +470,7 @@ export default function Sidebar({
       </div>
 
       {/* Bottom: Quick Unit & Counter Staging Palette */}
-      {isOpen && (
+      {isOpen && (isModerator || activeTab === 'planning') && (
         <div className="p-3 bg-surface-parchment-dim/90 border-t border-border-parchment shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">NATO Counter Palette</span>
