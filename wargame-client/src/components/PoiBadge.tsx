@@ -46,9 +46,11 @@ export function PoiBadge({ type, owner, status = 'operational', size = 24, class
 
   const getOwnerColors = () => {
     switch (owner) {
-      case 'Player A': return 'bg-red-700 border-red-400 text-red-100';
-      case 'Player B': return 'bg-blue-600 border-blue-400 text-blue-100';
-      default: return 'bg-slate-600 border-slate-400 text-slate-100'; // Neutral or undefined
+      case 'Player A': return 'bg-[#2d7d74] border-[#a4f1e5] text-white';
+      case 'Player B': return 'bg-[#4e1a3d] border-[#c03a6b] text-white';
+      case 'Unknown': return 'bg-[#d4a017] border-[#ffdfa0] text-white';
+      case 'Neutral': return 'bg-[#26265b] border-[#a4f1e5] text-white';
+      default: return 'bg-[#26265b] border-[#a4f1e5] text-white'; // Neutral or undefined
     }
   };
 

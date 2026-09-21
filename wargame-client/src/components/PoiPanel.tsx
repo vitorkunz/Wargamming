@@ -171,54 +171,89 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                     <option value="Neutral">Neutral</option>
                     <option value="Player A">Player A</option>
                     <option value="Player B">Player B</option>
+                    <option value="Unknown">Não Confirmado</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Config & Notes */}
-            {isModerator && (
+            {/* Config & Actions */}
+            {(isModerator || canEdit) && (
               <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Moderator Settings</span>
-                  <span className="material-symbols-outlined text-primary text-[14px]">admin_panel_settings</span>
+                  <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">
+                    {isModerator ? 'Painel de Ações do Comando' : 'Ações do POI'}
+                  </span>
+                  <span className="material-symbols-outlined text-primary text-[14px]">
+                    {isModerator ? 'admin_panel_settings' : 'tune'}
+                  </span>
                 </div>
                 
-                <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
-                  <label className="flex items-center justify-between cursor-pointer group">
-                    <span className="font-label-md text-[11px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Enemy</span>
-                    <div className={`relative inline-block w-6 rounded-full h-3 transition-colors border ${currentPoi.is_visible_to_enemy ? 'bg-primary border-transparent' : 'bg-surface-dim border-outline-variant'}`}>
-                      <input 
-                        type="checkbox" 
-                        className="opacity-0 w-0 h-0" 
-                        checked={currentPoi.is_visible_to_enemy} 
-                        onChange={() => handleUpdate('is_visible_to_enemy', !currentPoi.is_visible_to_enemy)} 
-                      />
-                      <span className={`absolute top-0.5 w-2 h-2 rounded-full transition-transform ${currentPoi.is_visible_to_enemy ? 'right-0.5 bg-white' : 'left-0.5 bg-on-surface-variant'}`}></span>
+                <div className="bg-surface-parchment-dim/80 rounded-lg p-1.5 border border-border-parchment space-y-1" id="enemy-visibility-control">
+                  <div className="flex items-center justify-between">
+                    <span className="font-tag-overline text-[8px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px] text-secondary">radar</span>
+                      Visibilidade Inimiga
+                    </span>
+                    <span className={`font-tag-overline text-[8px] px-1.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                      currentPoi.is_visible_to_enemy ? 'bg-status-alert/15 text-status-alert border-status-alert/30' : 'bg-gray-100 text-gray-500 border-gray-300'
+                    }`}>
+                      <span className={`w-1 h-1 rounded-full ${currentPoi.is_visible_to_enemy ? 'bg-status-alert' : 'bg-gray-400'}`}></span>
+                      {currentPoi.is_visible_to_enemy ? 'Visível' : 'Oculto'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-surface-container rounded-lg border border-border-parchment/60">
+                    <button 
+                      onClick={() => handleUpdate('is_visible_to_enemy', true)} 
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
+                        currentPoi.is_visible_to_enemy 
+                          ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
+                          : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
+                      }`} 
+                      type="button"
+                    >
+                      <span className={`material-symbols-outlined text-[13px] ${currentPoi.is_visible_to_enemy ? 'text-status-alert' : ''}`}>visibility</span>
+                      <span>Visível</span>
+                    </button>
+                    <button 
+                      onClick={() => handleUpdate('is_visible_to_enemy', false)} 
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
+                        !currentPoi.is_visible_to_enemy 
+                          ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
+                          : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
+                      }`} 
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">visibility_off</span>
+                      <span>Ocultar</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {isModerator && (
+                  <>
+                    <div className="pt-1">
+                       <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Notes (Private)</label>
+                       <textarea 
+                         className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-1.5 text-[11px] h-20 outline-none focus:border-primary shadow-inner custom-scrollbar"
+                         key={currentPoi.id + (currentPoi.notes || '')}
+                         defaultValue={currentPoi.notes || ''}
+                         placeholder="Add private moderator notes..."
+                         onBlur={(e) => handleUpdate('notes', e.target.value)}
+                       />
                     </div>
-                  </label>
-                </div>
-                
-                <div className="pt-1">
-                   <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Notes (Private)</label>
-                   <textarea 
-                     className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-1.5 text-[11px] h-20 outline-none focus:border-primary shadow-inner custom-scrollbar"
-                     key={currentPoi.id + (currentPoi.notes || '')}
-                     defaultValue={currentPoi.notes || ''}
-                     placeholder="Add private moderator notes..."
-                     onBlur={(e) => handleUpdate('notes', e.target.value)}
-                   />
-                </div>
 
-                <div className="pt-1">
-                  <button 
-                    onClick={handleDelete}
-                    className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
-                  >
-                    <span className="material-symbols-outlined text-[13px]">delete_forever</span>
-                    <span>Delete POI</span>
-                  </button>
-                </div>
+                    <div className="pt-1">
+                      <button 
+                        onClick={handleDelete}
+                        className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">delete_forever</span>
+                        <span>Delete POI</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </>

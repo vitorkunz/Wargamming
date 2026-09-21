@@ -395,10 +395,11 @@ export default function MapGrid({
   const [creationCoords, setCreationCoords] = useState<{ x: number, y: number } | null>(null);
   const [creationPoiCoords, setCreationPoiCoords] = useState<{ x: number, y: number } | null>(null);
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
+  const [isMiddleMouseDown, setIsMiddleMouseDown] = useState<boolean>(false);
   const [gridSnapping, setGridSnapping] = useState<boolean>(true);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const isDragMode = selectedTool === 'drag' || isSpacePressed;
+  const isDragMode = selectedTool === 'drag' || isSpacePressed || isMiddleMouseDown;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -421,17 +422,56 @@ export default function MapGrid({
       }
     };
 
+    const handleMouseDownCapture = (e: MouseEvent) => {
+      if (e.button === 1) {
+        // Prevent browser autoscroll icon when pressing the mouse wheel
+        e.preventDefault();
+        setIsMiddleMouseDown(true);
+
+        // If starting over a draggable unit/poi, temporarily remove attributes
+        // so react-zoom-pan-pinch allows panning from anywhere on the map
+        const target = e.target as HTMLElement | null;
+        const draggableEl = target?.closest?.('[draggable="true"]');
+        const unitEl = target?.closest?.('.draggable-unit');
+
+        if (draggableEl) {
+          draggableEl.removeAttribute('draggable');
+          requestAnimationFrame(() => {
+            draggableEl.setAttribute('draggable', 'true');
+          });
+        }
+
+        if (unitEl) {
+          unitEl.classList.remove('draggable-unit');
+          requestAnimationFrame(() => {
+            unitEl.classList.add('draggable-unit');
+          });
+        }
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (e.button === 1 || (e.buttons !== undefined && (e.buttons & 4) === 0)) {
+        setIsMiddleMouseDown(false);
+      }
+    };
+
     const handleBlur = () => {
       setIsSpacePressed(false);
+      setIsMiddleMouseDown(false);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mousedown', handleMouseDownCapture, true);
+    window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('blur', handleBlur);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mousedown', handleMouseDownCapture, true);
+      window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('blur', handleBlur);
     };
   }, []);
@@ -633,7 +673,7 @@ export default function MapGrid({
   const activeDrawingMode = isDrawingMode || selectedTool === 'polygon';
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!activeDrawingMode) return;
+    if (!activeDrawingMode || e.button !== 0) return;
     setIsCapturing(true);
     setCurrentPath([getEventCoordinates(e)]);
   };
@@ -673,7 +713,12 @@ export default function MapGrid({
         minScale={0.1}
         maxScale={3}
         centerOnInit={true}
-        panning={{ disabled: isDrawingMode || !isDragMode, excluded: isDragMode ? [] : ['draggable-unit'] }}
+        panning={{
+          disabled: isDrawingMode,
+          allowLeftClickPan: isDragMode,
+          allowMiddleClickPan: true,
+          excluded: isDragMode ? [] : ['draggable-unit'],
+        }}
       >
         <ScaleUpdater />
         <MapControls 
@@ -700,6 +745,8 @@ export default function MapGrid({
             className={`relative bg-surface-canvas-void border-2 border-primary ${
               isDrawingMode || selectedTool === 'polygon' || selectedTool === 'place' || selectedTool === 'target'
                 ? 'cursor-crosshair' 
+                : isMiddleMouseDown
+                ? 'cursor-grabbing'
                 : isDragMode 
                 ? 'cursor-grab active:cursor-grabbing' 
                 : onGridClick 
@@ -714,6 +761,11 @@ export default function MapGrid({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onAuxClick={(e) => {
+              if (e.button === 1) {
+                e.preventDefault();
+              }
+            }}
           >
             
             {/* Dynamic Map Layers */}
@@ -788,7 +840,7 @@ export default function MapGrid({
                       strokeLinejoin="round"
                       className="pointer-events-auto cursor-pointer transition-opacity hover:opacity-80"
                       onClick={(e) => {
-                        if (isDrawingMode) return;
+                        if (isDrawingMode || isDragMode) return;
                         e.stopPropagation();
                         if (onHazardClick) onHazardClick(hazard);
                       }}
@@ -847,7 +899,9 @@ export default function MapGrid({
                       size={22} 
                       className="group-hover:scale-110 transition-transform" 
                     />
-                    <span className="absolute -bottom-4 text-[9px] font-bold text-white bg-black bg-opacity-70 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    <span className={`absolute -bottom-4 text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-[#313030]/90 border border-white/15 ${
+                      poi.owner === 'Player A' ? 'text-[#a4f1e5]' : poi.owner === 'Player B' ? 'text-[#f26a4b]' : poi.owner === 'Unknown' ? 'text-[#d4a017]' : 'text-white'
+                    }`}>
                       {poi.name}
                     </span>
                   </div>
