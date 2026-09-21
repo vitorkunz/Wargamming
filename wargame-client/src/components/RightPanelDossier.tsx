@@ -231,7 +231,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
               
               <div className="bg-surface-parchment/50 p-2.5 rounded-lg border border-border-parchment/70">
                 <div className="flex justify-between items-center text-label-sm font-semibold mb-1.5">
-                  <span className="text-on-surface">Combat Strength / ProntidÃ£o</span>
+                  <span className="text-on-surface">Combat Strength / Prontidão</span>
                   <span className="font-bold text-primary text-[13px] bg-white px-2 py-0.5 rounded border border-border-parchment shadow-xs">
                     {canSeeHealth ? `${healthInput}%` : '?'}
                   </span>
@@ -257,13 +257,13 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
             {isModerator && (
               <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">ConfiguraÃ§Ã£o TÃ¡tica</span>
+                  <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">Configuração Tática</span>
                   <span className="material-symbols-outlined text-primary text-[16px]">settings</span>
                 </div>
                 
                 <div className="space-y-2 text-label-sm mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-on-surface">Type</span>
+                    <span className="font-medium text-on-surface">Tipo</span>
                     <select 
                       value={parseSidc(getSidcForUnit(selectedUnit)).typeKey}
                       onChange={(e) => updateSidcPart('type', e.target.value)}
@@ -279,14 +279,16 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                     </select>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-on-surface">Owner</span>
+                    <span className="font-medium text-on-surface">Força / Dono</span>
                     <select 
                       value={selectedUnit.owner}
                       onChange={(e) => updateOwner(e.target.value)}
                       className="p-1 text-xs border border-border-parchment rounded bg-surface-card text-on-surface max-w-[120px]"
                     >
-                      <option value="Player A">Player A</option>
-                      <option value="Player B">Player B</option>
+                      <option value="Player A">Time A</option>
+                      <option value="Player B">Time B</option>
+                      <option value="Unknown">Incógnito</option>
+                      <option value="Neutral">Neutro</option>
                     </select>
                   </div>
                 </div>
@@ -296,7 +298,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
             {/* CARD 5: Command Action Panel */}
             {(isModerator || canEditOrDelete) && (
               <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm space-y-2.5">
-                <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider block">Painel de AÃ§Ãµes do Comando</span>
+                <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider block">Painel de Ações do Comando</span>
                 
                 {isModerator && (
                   <div className="bg-surface-parchment-dim/80 rounded-lg p-2 border border-border-parchment space-y-1.5">
@@ -307,7 +309,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                       </span>
                       {selectedUnit.is_visible_to_enemy && (
                         <span className="bg-status-alert/15 text-status-alert font-tag-overline text-[9px] px-2 py-0.5 rounded-full font-bold border border-status-alert/30 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-status-alert"></span>VisÃ­vel
+                          <span className="w-1.5 h-1.5 rounded-full bg-status-alert"></span>Visível
                         </span>
                       )}
                     </div>
@@ -318,7 +320,7 @@ export default function UnitPanel({ units, selectedUnit, onClose, onSelectUnit, 
                         className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md font-label-md text-[11px] transition-all ${selectedUnit.is_visible_to_enemy ? 'font-bold bg-surface-card text-primary shadow-sm border border-border-parchment' : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'}`}
                       >
                         <span className={`material-symbols-outlined text-[15px] ${selectedUnit.is_visible_to_enemy ? 'text-status-alert' : ''}`}>visibility</span>
-                        <span>VisÃ­vel</span>
+                        <span>Visível</span>
                       </button>
                       <button 
                         type="button" 
@@ -455,7 +457,7 @@ function UnitListItem({ unit, selected, onClick, canSeeHealth }: { unit: Unit, s
             {unit.name ? unit.name : getHumanReadableFromSidc(unit.type)}
           </div>
           <div className="font-tag-overline text-[9px] text-on-surface-variant font-bold truncate">
-            {unit.name ? `${getHumanReadableFromSidc(unit.type)} â€¢ ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(VisÃ­vel)' : ''}
+            {unit.name ? `${getHumanReadableFromSidc(unit.type)} • ` : ''}{unit.owner} {unit.is_visible_to_enemy ? '(Visível)' : ''}
           </div>
         </div>
       </div>

@@ -6,6 +6,9 @@ import {
   AFFILIATIONS, 
   UNIT_TYPES, 
   ECHELONS,
+  UNIT_CATEGORIES,
+  AFFILIATION_LABELS,
+  ECHELON_LABELS,
   AffiliationKey,
   UnitTypeKey,
   EchelonKey
@@ -13,16 +16,16 @@ import {
 
 export function UnitCreator() {
   const [affiliation, setAffiliation] = useState<AffiliationKey>('friendly');
-  const [type, setType] = useState<UnitTypeKey>('infantry');
+  const [type, setType] = useState<UnitTypeKey>('infantaria');
   const [echelon, setEchelon] = useState<EchelonKey>('company');
 
   // Compute the 15-character SIDC string
-  // Format: S + [Affiliation] + G + P + [Type (6)] + [Modifier 11 (-)] + [Echelon] + ---
+  // Format: S + [Affiliation] + [Dimension] + P + [Code (6)] + [Modifier 11 (-)] + [Echelon] + ---
   const affiliationCode = AFFILIATIONS[affiliation];
-  const typeCode = UNIT_TYPES[type];
+  const typeDef = UNIT_TYPES[type];
   const echelonCode = ECHELONS[echelon];
   
-  const sidc = `S${affiliationCode}GP${typeCode}-${echelonCode}---`;
+  const sidc = `S${affiliationCode}${typeDef.dimension}P${typeDef.code}-${echelonCode}---`;
 
   return (
     <div className="flex flex-col md:flex-row gap-8 p-6 border rounded-lg bg-white shadow-sm w-full max-w-2xl text-black">
@@ -35,10 +38,10 @@ export function UnitCreator() {
 
       {/* Controls */}
       <div className="flex flex-col gap-5 flex-grow">
-        <h3 className="text-lg font-semibold border-b pb-2">Unit Creator</h3>
+        <h3 className="text-lg font-semibold border-b pb-2">Criador de Unidade</h3>
         
         <label className="flex flex-col text-sm font-medium text-gray-700">
-          Affiliation
+          Afiliação / Força
           <select 
             className="mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500"
             value={affiliation} 
@@ -46,29 +49,33 @@ export function UnitCreator() {
           >
             {Object.keys(AFFILIATIONS).map((key) => (
               <option key={key} value={key}>
-                {key.charAt(0).toUpperCase() + key.slice(1)}
+                {AFFILIATION_LABELS[key as AffiliationKey] || key}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col text-sm font-medium text-gray-700">
-          Unit Type
+          Tipo de Unidade
           <select 
             className="mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500"
             value={type} 
             onChange={(e) => setType(e.target.value as UnitTypeKey)}
           >
-            {Object.keys(UNIT_TYPES).map((key) => (
-              <option key={key} value={key}>
-                {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
-              </option>
+            {UNIT_CATEGORIES.map((category) => (
+              <optgroup key={category} label={category}>
+                {Object.entries(UNIT_TYPES)
+                  .filter(([, def]) => def.category === category)
+                  .map(([key, def]) => (
+                    <option key={key} value={key}>{def.label}</option>
+                  ))}
+              </optgroup>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col text-sm font-medium text-gray-700">
-          Echelon
+          Escalão
           <select 
             className="mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-blue-500"
             value={echelon} 
@@ -76,7 +83,7 @@ export function UnitCreator() {
           >
             {Object.keys(ECHELONS).map((key) => (
               <option key={key} value={key}>
-                {key.charAt(0).toUpperCase() + key.slice(1)}
+                {ECHELON_LABELS[key as EchelonKey] || key}
               </option>
             ))}
           </select>

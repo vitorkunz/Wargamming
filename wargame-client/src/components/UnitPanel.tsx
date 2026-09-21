@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Unit } from './MapGrid';
 import { supabase } from '@/lib/supabaseClient';
 import { getSidcForUnit, getHumanReadableFromSidc, parseSidc } from '@/lib/milsymbol/utils';
-import { UNIT_TYPES, UnitTypeKey } from '@/lib/milsymbol/constants';
+import { UNIT_TYPES, UNIT_CATEGORIES, UnitTypeKey } from '@/lib/milsymbol/constants';
 import { NatoSymbol } from './NatoSymbol';
 
 interface UnitPanelProps {
@@ -510,8 +510,14 @@ export default function UnitPanel({
                       onChange={(e) => updateType(e.target.value)}
                       className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5 bg-surface-container rounded px-1 py-0.5 border-none focus:outline-none focus:ring-1 focus:ring-primary w-fit uppercase font-bold"
                     >
-                      {Object.entries(UNIT_TYPES).map(([key, def]) => (
-                        <option key={key} value={key}>{def.label}</option>
+                      {UNIT_CATEGORIES.map((cat) => (
+                        <optgroup key={cat} label={cat}>
+                          {Object.entries(UNIT_TYPES)
+                            .filter(([, def]) => def.category === cat)
+                            .map(([key, def]) => (
+                              <option key={key} value={key}>{def.label}</option>
+                            ))}
+                        </optgroup>
                       ))}
                     </select>
                   ) : (

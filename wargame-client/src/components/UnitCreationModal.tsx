@@ -8,6 +8,7 @@ import {
   UNIT_TYPES, 
   ECHELONS,
   UNIT_CATEGORIES,
+  LEGACY_TYPE_MAP,
   AffiliationKey,
   UnitTypeKey,
   EchelonKey
@@ -36,7 +37,11 @@ export default function UnitCreationModal({
   const [health, setHealth] = useState(100);
   const [ammo, setAmmo] = useState(100);
   const [owner, setOwner] = useState<'Player A' | 'Player B' | 'Unknown' | 'Neutral'>((fixedOwner as 'Player A' | 'Player B') || 'Player A');
-  const [type, setType] = useState<UnitTypeKey>((initialType as UnitTypeKey) || 'infantry');
+  
+  const resolvedInitialType: UnitTypeKey = initialType 
+    ? ((LEGACY_TYPE_MAP[initialType] || initialType) as UnitTypeKey)
+    : 'infantaria';
+  const [type, setType] = useState<UnitTypeKey>(resolvedInitialType);
   
   const [visibility, setVisibility] = useState<'visible' | 'hidden'>('hidden');
   const [allocation, setAllocation] = useState<'reserve' | 'map'>(initialCoordinates ? 'map' : 'reserve');
@@ -49,7 +54,7 @@ export default function UnitCreationModal({
     owner === 'Unknown' ? 'unknown' : 'neutral';
 
   const affiliationCode = AFFILIATIONS[affiliation];
-  const typeDef = UNIT_TYPES[type] || UNIT_TYPES['infantry'];
+  const typeDef = UNIT_TYPES[type] || UNIT_TYPES['infantaria'];
   const echelonCode = ECHELONS['none'];
   const sidc = `S${affiliationCode}${typeDef.dimension}P${typeDef.code}-${echelonCode}---`;
 
@@ -184,8 +189,14 @@ export default function UnitCreationModal({
                     <NatoSymbol sidc={sidc} size={30} className="drop-shadow-sm" />
                   </div>
                   <select value={type} onChange={(e) => setType(e.target.value as UnitTypeKey)} className="w-full pl-12 pr-3 py-2.5 bg-white border border-border-parchment rounded-lg text-[13px] font-headline-sm font-bold text-on-surface appearance-none focus:outline-none focus:border-primary">
-                    {Object.entries(UNIT_TYPES).map(([key, def]) => (
-                      <option key={key} value={key}>{def.label}</option>
+                    {UNIT_CATEGORIES.map((cat) => (
+                      <optgroup key={cat} label={cat}>
+                        {Object.entries(UNIT_TYPES)
+                          .filter(([, def]) => def.category === cat)
+                          .map(([key, def]) => (
+                            <option key={key} value={key}>{def.label}</option>
+                          ))}
+                      </optgroup>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">

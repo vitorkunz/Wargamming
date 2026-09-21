@@ -33,69 +33,71 @@ export function getSidcForUnit(unit: { type: string, owner?: string }): string {
 
   // Legacy mapping
   const affiliation = unit.owner === 'Player A' ? 'F' : (unit.owner === 'Player B' ? 'H' : (unit.owner === 'Unknown' ? 'U' : 'N'));
-  let selectedDef: UnitTypeDefinition = UNIT_TYPES.infantry;
+  let selectedDef: UnitTypeDefinition = UNIT_TYPES.infantaria;
   
   const lowerType = (unit.type || '').toLowerCase();
 
   // Air
-  if (lowerType.includes('fighter') || lowerType.includes('jet') || lowerType.includes('aircraft') || lowerType.includes('plane')) {
-    selectedDef = UNIT_TYPES.fighter;
-  } else if (lowerType.includes('heli') || lowerType.includes('rotary')) {
-    selectedDef = UNIT_TYPES.helicopter;
-  } else if (lowerType.includes('drone') || lowerType.includes('uav')) {
-    selectedDef = UNIT_TYPES.uav;
-  } else if (lowerType.includes('air transport') || lowerType.includes('cargo plane')) {
-    selectedDef = UNIT_TYPES.airTransport;
+  if (lowerType.includes('fighter') || lowerType.includes('jet') || lowerType.includes('aircraft') || lowerType.includes('plane') || lowerType.includes('caça') || lowerType.includes('caca') || lowerType.includes('asa fixa')) {
+    selectedDef = UNIT_TYPES.caca;
+  } else if (lowerType.includes('heli') || lowerType.includes('rotary') || lowerType.includes('helicóptero') || lowerType.includes('helicoptero') || lowerType.includes('asa rotativa')) {
+    selectedDef = UNIT_TYPES.helicoptero;
+  } else if (lowerType.includes('drone') || lowerType.includes('uav') || lowerType.includes('vant')) {
+    selectedDef = UNIT_TYPES.drone;
+  } else if (lowerType.includes('air transport') || lowerType.includes('cargo plane') || lowerType.includes('transporte aéreo') || lowerType.includes('transporte aereo')) {
+    selectedDef = UNIT_TYPES.transporteAereo;
   }
   // Maritime
-  else if (lowerType.includes('submarine') || lowerType.includes('sub')) {
-    selectedDef = UNIT_TYPES.submarine;
-  } else if (lowerType.includes('patrol craft') || lowerType.includes('patrol boat')) {
-    selectedDef = UNIT_TYPES.patrolCraft;
-  } else if (lowerType.includes('amphibious')) {
-    selectedDef = UNIT_TYPES.amphibious;
-  } else if (lowerType.includes('ship') || lowerType.includes('naval') || lowerType.includes('surface combatant') || lowerType.includes('destroyer') || lowerType.includes('frigate')) {
-    selectedDef = UNIT_TYPES.surfaceCombatant;
+  else if (lowerType.includes('submarine') || lowerType.includes('sub') || lowerType.includes('submarino')) {
+    selectedDef = UNIT_TYPES.submarino;
+  } else if (lowerType.includes('patrol craft') || lowerType.includes('patrol boat') || lowerType.includes('patrulha') || lowerType.includes('lancha')) {
+    selectedDef = UNIT_TYPES.patrulha;
+  } else if (lowerType.includes('amphibious') || lowerType.includes('anfíbio') || lowerType.includes('anfibio') || lowerType.includes('desembarque')) {
+    selectedDef = UNIT_TYPES.anfibio;
+  } else if (lowerType.includes('ship') || lowerType.includes('naval') || lowerType.includes('surface combatant') || lowerType.includes('destroyer') || lowerType.includes('frigate') || lowerType.includes('fragata') || lowerType.includes('corveta') || lowerType.includes('escolta') || lowerType.includes('navio')) {
+    selectedDef = UNIT_TYPES.combatenteSuperficie;
   }
   // Special & Irregular
-  else if (lowerType.includes('special force') || lowerType.includes('sof') || lowerType.includes('commando')) {
-    selectedDef = UNIT_TYPES.specialForces;
-  } else if (lowerType.includes('intel') || lowerType.includes('intelligence')) {
-    selectedDef = UNIT_TYPES.intel;
-  } else if (lowerType.includes('electronic warfare') || lowerType.includes('ew')) {
-    selectedDef = UNIT_TYPES.electronicWarfare;
-  } else if (lowerType.includes('militia') || lowerType.includes('irregular') || lowerType.includes('partisan') || lowerType.includes('guerrilla')) {
-    selectedDef = UNIT_TYPES.militia;
+  else if (lowerType.includes('special force') || lowerType.includes('sof') || lowerType.includes('commando') || lowerType.includes('comandos') || lowerType.includes('forças especiais') || lowerType.includes('forcas especiais')) {
+    selectedDef = UNIT_TYPES.forcasEspeciais;
+  } else if (lowerType.includes('intel') || lowerType.includes('intelligence') || lowerType.includes('inteligência') || lowerType.includes('inteligencia')) {
+    selectedDef = UNIT_TYPES.inteligencia;
+  } else if (lowerType.includes('electronic warfare') || lowerType.includes('ew') || lowerType.includes('guerra eletrônica') || lowerType.includes('guerra eletronica')) {
+    selectedDef = UNIT_TYPES.guerraEletronica;
+  } else if (lowerType.includes('militia') || lowerType.includes('irregular') || lowerType.includes('partisan') || lowerType.includes('guerrilla') || lowerType.includes('guerrilha') || lowerType.includes('milícia') || lowerType.includes('milicia')) {
+    selectedDef = UNIT_TYPES.milicia;
   }
   // Combat Support
-  else if (lowerType.includes('police') || lowerType.includes('mp')) {
-    selectedDef = UNIT_TYPES.militaryPolice;
-  } else if (lowerType.includes('signal') || lowerType.includes('comms') || lowerType.includes('communication')) {
-    selectedDef = UNIT_TYPES.signal;
-  } else if (lowerType.includes('transport')) {
-    selectedDef = UNIT_TYPES.transportation;
-  } else if (lowerType.includes('maintenance') || lowerType.includes('repair')) {
-    selectedDef = UNIT_TYPES.maintenance;
-  } else if (lowerType.includes('supply') || lowerType.includes('logistics')) {
-    selectedDef = UNIT_TYPES.supply;
-  } else if (lowerType.includes('medical') || lowerType.includes('medic') || lowerType.includes('hospital')) {
-    selectedDef = UNIT_TYPES.medical;
+  else if (lowerType.includes('police') || lowerType.includes('mp') || lowerType.includes('polícia') || lowerType.includes('policia') || lowerType.includes('pe')) {
+    selectedDef = UNIT_TYPES.policiaExercito;
+  } else if (lowerType.includes('signal') || lowerType.includes('comms') || lowerType.includes('communication') || lowerType.includes('comunicações') || lowerType.includes('comunicacoes')) {
+    selectedDef = UNIT_TYPES.comunicacoes;
+  } else if (lowerType.includes('transport') || lowerType.includes('transporte')) {
+    selectedDef = UNIT_TYPES.transporte;
+  } else if (lowerType.includes('maintenance') || lowerType.includes('repair') || lowerType.includes('manutenção') || lowerType.includes('manutencao')) {
+    selectedDef = UNIT_TYPES.manutencao;
+  } else if (lowerType.includes('supply') || lowerType.includes('logistics') || lowerType.includes('suprimento') || lowerType.includes('logística') || lowerType.includes('logistica')) {
+    selectedDef = UNIT_TYPES.suprimento;
+  } else if (lowerType.includes('medical') || lowerType.includes('medic') || lowerType.includes('hospital') || lowerType.includes('saúde') || lowerType.includes('saude')) {
+    selectedDef = UNIT_TYPES.saude;
   }
   // Ground Combat
-  else if (lowerType.includes('anti-tank') || lowerType.includes('anti tank') || lowerType.includes('anti-armor') || lowerType.includes('anti armor') || lowerType.includes('atgm')) {
-    selectedDef = UNIT_TYPES.antiTank;
-  } else if (lowerType.includes('tank') || lowerType.includes('armor')) {
-    selectedDef = UNIT_TYPES.armor;
-  } else if (lowerType.includes('mech')) {
-    selectedDef = UNIT_TYPES.mechanized;
-  } else if (lowerType.includes('artillery')) {
-    selectedDef = UNIT_TYPES.artillery;
-  } else if (lowerType.includes('recon')) {
-    selectedDef = UNIT_TYPES.recon;
-  } else if (lowerType.includes('air defense') || lowerType.includes('anti air') || lowerType.includes('antiair')) {
-    selectedDef = UNIT_TYPES.antiAir;
-  } else if (lowerType.includes('engineer')) {
-    selectedDef = UNIT_TYPES.engineer;
+  else if (lowerType.includes('anti-tank') || lowerType.includes('anti tank') || lowerType.includes('anti-armor') || lowerType.includes('anti armor') || lowerType.includes('atgm') || lowerType.includes('anticarro') || lowerType.includes('antitanque')) {
+    selectedDef = UNIT_TYPES.anticarro;
+  } else if (lowerType.includes('tank') || lowerType.includes('armor') || lowerType.includes('blindado') || lowerType.includes('carro de combate') || lowerType.includes('cbt')) {
+    selectedDef = UNIT_TYPES.blindados;
+  } else if (lowerType.includes('mech') || lowerType.includes('mecanizada')) {
+    selectedDef = UNIT_TYPES.mecanizada;
+  } else if (lowerType.includes('artillery') || lowerType.includes('artilharia')) {
+    selectedDef = UNIT_TYPES.artilharia;
+  } else if (lowerType.includes('recon') || lowerType.includes('reconhecimento')) {
+    selectedDef = UNIT_TYPES.reconhecimento;
+  } else if (lowerType.includes('air defense') || lowerType.includes('anti air') || lowerType.includes('antiair') || lowerType.includes('antiaérea') || lowerType.includes('antiaerea')) {
+    selectedDef = UNIT_TYPES.defesaAntiaerea;
+  } else if (lowerType.includes('engineer') || lowerType.includes('engenharia')) {
+    selectedDef = UNIT_TYPES.engenharia;
+  } else if (lowerType.includes('infantry') || lowerType.includes('infantaria')) {
+    selectedDef = UNIT_TYPES.infantaria;
   }
 
   return `S${affiliation}${selectedDef.dimension}P${selectedDef.code}-----`;
@@ -105,11 +107,11 @@ export function getSidcForUnit(unit: { type: string, owner?: string }): string {
  * Parses an SIDC code back to a human-readable string if needed.
  */
 export function getHumanReadableFromSidc(sidc: string): string {
-  if (!sidc || sidc.length !== 15) return sidc || 'Unknown';
+  if (!sidc || sidc.length !== 15) return sidc || 'Não identificado';
   
   const dim = sidc[2];
   const typeCode = sidc.substring(4, 10);
-  if (typeCode === 'UAM---') return 'Medical';
+  if (typeCode === 'UAM---') return 'Saúde';
 
   // Try exact match with dimension + function code
   for (const [, val] of Object.entries(UNIT_TYPES)) {
@@ -125,13 +127,13 @@ export function getHumanReadableFromSidc(sidc: string): string {
     }
   }
 
-  return 'Unknown Unit';
+  return 'Unidade Desconhecida';
 }
 
 export function parseSidc(sidc: string) {
   const result = {
     affiliationKey: 'friendly' as keyof typeof AFFILIATIONS,
-    typeKey: 'infantry' as UnitTypeKey,
+    typeKey: 'infantaria' as UnitTypeKey,
     echelonKey: 'none' as keyof typeof ECHELONS,
   };
 
@@ -147,7 +149,7 @@ export function parseSidc(sidc: string) {
   }
   
   if (typeCode === 'UAM---') {
-    result.typeKey = 'medical';
+    result.typeKey = 'saude';
   } else {
     // Exact match with dimension and code first
     let matched = false;

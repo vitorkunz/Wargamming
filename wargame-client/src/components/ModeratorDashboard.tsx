@@ -344,6 +344,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               poisTable={poisTable}
               hazardsTable={hazardsTable}
               unitsTable={unitsTable}
+              role={role}
               onEditPoi={handlePOIClick}
               onEditHazard={handleHazardClick}
               isOpen={isLeftPanelOpen || activeBottomPanel === 'layers'}
@@ -442,6 +443,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     hazardsTable={hazardsTable}
                     unitsTable={unitsTable}
                     isModerator={activeView === 'edit_map'}
+                    role={role}
                     onUnitClick={handleUnitClick} 
                     onPOIClick={handlePOIClick}
                     onHazardClick={handleHazardClick}

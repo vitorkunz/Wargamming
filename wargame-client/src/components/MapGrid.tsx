@@ -603,7 +603,7 @@ export default function MapGrid({
     };
     const fetchPOIs = async () => {
       let query = supabase.from(poisTable).select('*');
-      if (!isModerator) {
+      if (!isModerator && role !== 'Moderator') {
         if (role) {
           query = query.or(`owner.eq.${role},is_visible_to_enemy.eq.true`);
         } else {
@@ -615,7 +615,7 @@ export default function MapGrid({
     };
     const fetchHazards = async () => {
       let query = supabase.from(hazardsTable).select('*');
-      if (!isModerator) {
+      if (!isModerator && role !== 'Moderator') {
         if (role) {
           query = query.contains('visible_to_teams', [role]);
         } else {

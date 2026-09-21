@@ -7,6 +7,8 @@ import {
   UNIT_TYPES, 
   ECHELONS,
   UNIT_CATEGORIES,
+  AFFILIATION_LABELS,
+  ECHELON_LABELS,
   AffiliationKey,
   UnitTypeKey,
   EchelonKey
@@ -30,7 +32,7 @@ export default function UnitCreation({
   
   // SIDC components
   const [affiliation, setAffiliation] = useState<AffiliationKey>('friendly');
-  const [type, setType] = useState<UnitTypeKey>('infantry');
+  const [type, setType] = useState<UnitTypeKey>('infantaria');
   const [echelon, setEchelon] = useState<EchelonKey>('company');
   const [owner, setOwner] = useState<'Player A' | 'Player B'>((fixedOwner as 'Player A' | 'Player B') || 'Player A');
 
@@ -130,10 +132,10 @@ export default function UnitCreation({
           
           <div className="border-t pt-3 border-border-parchment/60 mt-1 flex flex-col gap-3">
             <div>
-              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Affiliation (Fação)</label>
+              <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Affiliation (Facção)</label>
               <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={affiliation} onChange={(e) => setAffiliation(e.target.value as AffiliationKey)}>
                 {Object.keys(AFFILIATIONS).map((key) => (
-                  <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
+                  <option key={key} value={key}>{AFFILIATION_LABELS[key as AffiliationKey] || key}</option>
                 ))}
               </select>
             </div>
@@ -157,7 +159,7 @@ export default function UnitCreation({
               <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Echelon (Escalão)</label>
               <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={echelon} onChange={(e) => setEchelon(e.target.value as EchelonKey)}>
                 {Object.keys(ECHELONS).map((key) => (
-                  <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
+                  <option key={key} value={key}>{ECHELON_LABELS[key as EchelonKey] || key}</option>
                 ))}
               </select>
             </div>

@@ -7,83 +7,133 @@ export const AFFILIATIONS = {
 
 export type AffiliationKey = keyof typeof AFFILIATIONS;
 
+export const AFFILIATION_LABELS: Record<AffiliationKey, string> = {
+  friendly: 'Amigo / Aliado',
+  hostile: 'Hostil / Inimigo',
+  neutral: 'Neutro',
+  unknown: 'Incógnito / Não Confirmado'
+};
+
 export type UnitCategory = 
-  | 'Ground Combat'
-  | 'Combat Support'
-  | 'Special & Irregular'
-  | 'Air Units'
-  | 'Maritime Units';
+  | 'Combate Terrestre'
+  | 'Apoio ao Combate'
+  | 'Operações Especiais & Irregulares'
+  | 'Unidades Aéreas'
+  | 'Unidades Navais';
 
 export interface UnitTypeDefinition {
-  code: string;         // 6-character function ID
+  code: string;         // 6-character function ID (MIL-STD-2525)
   dimension: 'G' | 'A' | 'S' | 'U'; // Battle dimension (Ground, Air, Sea Surface, Subsurface)
   category: UnitCategory;
   label: string;
 }
 
 export const UNIT_TYPES = {
-  // Ground Combat
-  infantry: { code: 'UCI---', dimension: 'G', category: 'Ground Combat', label: 'Infantry' },
-  mechanized: { code: 'UCIZ--', dimension: 'G', category: 'Ground Combat', label: 'Mechanized Infantry' },
-  armor: { code: 'UCA---', dimension: 'G', category: 'Ground Combat', label: 'Armor / Tank' },
-  antiTank: { code: 'UCAA--', dimension: 'G', category: 'Ground Combat', label: 'Anti-Tank / Anti-Armor' },
-  recon: { code: 'UCR---', dimension: 'G', category: 'Ground Combat', label: 'Reconnaissance' },
-  artillery: { code: 'UCF---', dimension: 'G', category: 'Ground Combat', label: 'Field Artillery' },
-  antiAir: { code: 'UCD---', dimension: 'G', category: 'Ground Combat', label: 'Air Defense' },
-  engineer: { code: 'UCE---', dimension: 'G', category: 'Ground Combat', label: 'Engineer' },
+  // Combate Terrestre
+  infantaria: { code: 'UCI---', dimension: 'G', category: 'Combate Terrestre', label: 'Infantaria' },
+  mecanizada: { code: 'UCIZ--', dimension: 'G', category: 'Combate Terrestre', label: 'Infantaria Mecanizada' },
+  blindados: { code: 'UCA---', dimension: 'G', category: 'Combate Terrestre', label: 'Blindados / Carros de Combate' },
+  anticarro: { code: 'UCAA--', dimension: 'G', category: 'Combate Terrestre', label: 'Anticarro / Antitanque' },
+  reconhecimento: { code: 'UCR---', dimension: 'G', category: 'Combate Terrestre', label: 'Reconhecimento' },
+  artilharia: { code: 'UCF---', dimension: 'G', category: 'Combate Terrestre', label: 'Artilharia de Campanha' },
+  defesaAntiaerea: { code: 'UCD---', dimension: 'G', category: 'Combate Terrestre', label: 'Defesa Antiaérea' },
+  engenharia: { code: 'UCE---', dimension: 'G', category: 'Combate Terrestre', label: 'Engenharia' },
 
-  // Combat Support
-  medical: { code: 'USM---', dimension: 'G', category: 'Combat Support', label: 'Medical' },
-  supply: { code: 'USS---', dimension: 'G', category: 'Combat Support', label: 'Supply / Logistics' },
-  maintenance: { code: 'USX---', dimension: 'G', category: 'Combat Support', label: 'Maintenance' },
-  transportation: { code: 'UST---', dimension: 'G', category: 'Combat Support', label: 'Transportation' },
-  signal: { code: 'UUS---', dimension: 'G', category: 'Combat Support', label: 'Signal / Communications' },
-  militaryPolice: { code: 'UUL---', dimension: 'G', category: 'Combat Support', label: 'Military Police (MP)' },
+  // Apoio ao Combate
+  saude: { code: 'USM---', dimension: 'G', category: 'Apoio ao Combate', label: 'Saúde / Hospitalar' },
+  suprimento: { code: 'USS---', dimension: 'G', category: 'Apoio ao Combate', label: 'Suprimento / Logística' },
+  manutencao: { code: 'USX---', dimension: 'G', category: 'Apoio ao Combate', label: 'Manutenção' },
+  transporte: { code: 'UST---', dimension: 'G', category: 'Apoio ao Combate', label: 'Transporte' },
+  comunicacoes: { code: 'UUS---', dimension: 'G', category: 'Apoio ao Combate', label: 'Comunicações' },
+  policiaExercito: { code: 'UUL---', dimension: 'G', category: 'Apoio ao Combate', label: 'Polícia do Exército (PE)' },
 
-  // Special & Irregular
-  specialForces: { code: 'UCS---', dimension: 'G', category: 'Special & Irregular', label: 'Special Forces' },
-  intel: { code: 'UUM---', dimension: 'G', category: 'Special & Irregular', label: 'Military Intelligence' },
-  electronicWarfare: { code: 'UUE---', dimension: 'G', category: 'Special & Irregular', label: 'Electronic Warfare' },
-  militia: { code: 'UC----', dimension: 'G', category: 'Special & Irregular', label: 'Militia / Irregular' },
+  // Operações Especiais & Irregulares
+  forcasEspeciais: { code: 'UCS---', dimension: 'G', category: 'Operações Especiais & Irregulares', label: 'Forças Especiais' },
+  inteligencia: { code: 'UUM---', dimension: 'G', category: 'Operações Especiais & Irregulares', label: 'Inteligência Militar' },
+  guerraEletronica: { code: 'UUE---', dimension: 'G', category: 'Operações Especiais & Irregulares', label: 'Guerra Eletrônica' },
+  milicia: { code: 'UC----', dimension: 'G', category: 'Operações Especiais & Irregulares', label: 'Milícia / Forças Irregulares' },
 
-  // Air Units
-  fighter: { code: 'MF----', dimension: 'A', category: 'Air Units', label: 'Fighter / Fixed-Wing' },
-  helicopter: { code: 'MH----', dimension: 'A', category: 'Air Units', label: 'Attack Helicopter / Rotary' },
-  uav: { code: 'MFQ---', dimension: 'A', category: 'Air Units', label: 'Drone / UAV' },
-  airTransport: { code: 'MFC---', dimension: 'A', category: 'Air Units', label: 'Air Transport / Cargo' },
+  // Unidades Aéreas
+  caca: { code: 'MF----', dimension: 'A', category: 'Unidades Aéreas', label: 'Caça / Asa Fixa' },
+  helicoptero: { code: 'MH----', dimension: 'A', category: 'Unidades Aéreas', label: 'Helicóptero de Ataque / Asa Rotativa' },
+  drone: { code: 'MFQ---', dimension: 'A', category: 'Unidades Aéreas', label: 'Drone / VANT' },
+  transporteAereo: { code: 'MFC---', dimension: 'A', category: 'Unidades Aéreas', label: 'Transporte Aéreo / Carga' },
 
-  // Maritime Units
-  surfaceCombatant: { code: 'CL----', dimension: 'S', category: 'Maritime Units', label: 'Surface Combatant' },
-  patrolCraft: { code: 'CP----', dimension: 'S', category: 'Maritime Units', label: 'Patrol Craft' },
-  amphibious: { code: 'CA----', dimension: 'S', category: 'Maritime Units', label: 'Amphibious Warfare' },
-  submarine: { code: 'SL----', dimension: 'U', category: 'Maritime Units', label: 'Submarine' },
+  // Unidades Navais
+  combatenteSuperficie: { code: 'CL----', dimension: 'S', category: 'Unidades Navais', label: 'Combatente de Superfície' },
+  patrulha: { code: 'CP----', dimension: 'S', category: 'Unidades Navais', label: 'Navio-Patrulha' },
+  anfibio: { code: 'CA----', dimension: 'S', category: 'Unidades Navais', label: 'Força Anfíbia / Desembarque' },
+  submarino: { code: 'SL----', dimension: 'U', category: 'Unidades Navais', label: 'Submarino' },
 } as const;
 
 export type UnitTypeKey = keyof typeof UNIT_TYPES;
 
+// Mapeamento retroativo para garantir que referências ou dados legados em inglês continuem funcionando perfeitamente
+export const LEGACY_TYPE_MAP: Record<string, UnitTypeKey> = {
+  infantry: 'infantaria',
+  mechanized: 'mecanizada',
+  armor: 'blindados',
+  antiTank: 'anticarro',
+  recon: 'reconhecimento',
+  artillery: 'artilharia',
+  antiAir: 'defesaAntiaerea',
+  engineer: 'engenharia',
+  medical: 'saude',
+  supply: 'suprimento',
+  maintenance: 'manutencao',
+  transportation: 'transporte',
+  signal: 'comunicacoes',
+  militaryPolice: 'policiaExercito',
+  specialForces: 'forcasEspeciais',
+  intel: 'inteligencia',
+  electronicWarfare: 'guerraEletronica',
+  militia: 'milicia',
+  fighter: 'caca',
+  helicopter: 'helicoptero',
+  uav: 'drone',
+  airTransport: 'transporteAereo',
+  surfaceCombatant: 'combatenteSuperficie',
+  patrolCraft: 'patrulha',
+  amphibious: 'anfibio',
+  submarine: 'submarino',
+};
+
 export const UNIT_CATEGORIES: UnitCategory[] = [
-  'Ground Combat',
-  'Combat Support',
-  'Special & Irregular',
-  'Air Units',
-  'Maritime Units',
+  'Combate Terrestre',
+  'Apoio ao Combate',
+  'Operações Especiais & Irregulares',
+  'Unidades Aéreas',
+  'Unidades Navais',
 ];
 
-// Echelon sizes (character 12)
+// Echelon sizes (character 12 no SIDC)
 export const ECHELONS = {
-  none: '-',                  // No Echelon
-  team: 'A',                  // Team/Crew
-  squad: 'B',                 // Squad
-  section: 'C',               // Section
-  platoon: 'E',               // Platoon/Detachment
-  company: 'F',               // Company/Battery/Troop
-  battalion: 'G',             // Battalion/Squadron
-  regiment: 'H',              // Regiment/Group
-  brigade: 'I',               // Brigade
-  division: 'J',              // Division
+  none: '-',                  // Sem Escalão
+  team: 'A',                  // Equipe / Guarnição
+  squad: 'B',                 // Grupo de Combate (GC) / Esquadra
+  section: 'C',               // Seção
+  platoon: 'E',               // Pelotão / Destacamento
+  company: 'F',               // Companhia / Bateria / Esquadrão
+  battalion: 'G',             // Batalhão / Grupo
+  regiment: 'H',              // Regimento
+  brigade: 'I',               // Brigada
+  division: 'J',              // Divisão
 } as const;
 
 export type EchelonKey = keyof typeof ECHELONS;
+
+export const ECHELON_LABELS: Record<EchelonKey, string> = {
+  none: 'Sem Escalão',
+  team: 'Equipe / Guarnição',
+  squad: 'Grupo de Combate (GC)',
+  section: 'Seção',
+  platoon: 'Pelotão',
+  company: 'Companhia / Bateria',
+  battalion: 'Batalhão / Grupo',
+  regiment: 'Regimento',
+  brigade: 'Brigada',
+  division: 'Divisão'
+};
 // Custom Color palettes to integrate milsymbol with Wargame's CSS theme
 export const WARGAME_COLOR_MODE = {
   Friend: '#2d7d74',   // Player A: Teal green
