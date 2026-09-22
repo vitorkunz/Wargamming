@@ -421,10 +421,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
             )}
 
             {activeView === 'manage_players' ? (
-              <div className="p-8 w-full h-full overflow-y-auto bg-surface-parchment text-on-surface">
-                <h1 className="text-3xl font-bold text-primary mb-6 font-display-lg">Gerir Usuários</h1>
-                <TeamAssignment />
-              </div>
+              <TeamAssignment />
             ) : (
               <>
                 <div className="flex-1 relative cursor-crosshair overflow-hidden">
