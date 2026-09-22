@@ -85,22 +85,23 @@ export default function TeamAssignment() {
     <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
       {/* FLANK ESQUERDO: Equipes, Mesa Arbitral & Lobby */}
       <aside 
-        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out ${isLeftPanelOpen ? 'w-[280px] min-w-[280px]' : 'w-0 min-w-0 border-r-0 overflow-hidden'}`}
+        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out ${isLeftPanelOpen ? 'w-[320px] min-w-[320px]' : 'w-0 min-w-0 border-r-0 overflow-hidden'}`}
       >
-        <div className="bg-primary-container px-4 py-3 flex items-center justify-between shadow-sm border-b border-white/10 whitespace-nowrap">
+        <div className="bg-primary-container px-3 py-3 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary-fixed-dim text-[20px]">shield_person</span>
             <div className="flex flex-col">
-              <span className="font-headline-sm text-[13px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">Equipes & Estrutura</span>
-              <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none">Mesa Arbitral C2</span>
+              <span className="font-headline-sm text-[13px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">
+                Equipes &<br/>Estrutura
+              </span>
+              <span className="font-tag-overline text-[9px] text-primary-fixed-dim leading-none mt-1">Mesa Arbitral C2</span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button type="button" className="bg-primary hover:bg-chrome-hover px-2.5 py-1 rounded text-text-on-dark transition-colors flex items-center gap-1 shadow-sm text-label-sm font-semibold border border-primary-fixed-dim/20" onClick={() => setIsInviteModalOpen(true)} title="Convidar Novo Participante">
-              <span className="material-symbols-outlined text-[14px]">person_add</span>
-              <span className="text-[11px]">+ Convidar</span>
+          <div className="flex items-center gap-1">
+            <button type="button" className="bg-primary hover:bg-chrome-hover px-2 py-1 rounded text-text-on-dark transition-colors flex items-center shadow-sm text-[11px] font-bold border border-primary-fixed-dim/20" onClick={() => setIsInviteModalOpen(true)} title="Convidar Novo Participante">
+              + Convidar
             </button>
-            <button type="button" className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors" onClick={() => setIsLeftPanelOpen(false)} title="Recolher Painel Esquerdo">
+            <button type="button" className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors flex-shrink-0" onClick={() => setIsLeftPanelOpen(false)} title="Recolher Painel Esquerdo">
               <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
             </button>
           </div>
