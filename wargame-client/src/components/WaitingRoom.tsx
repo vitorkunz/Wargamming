@@ -64,18 +64,16 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
     <div className="bg-surface font-body-base text-body-base text-on-surface min-h-screen flex flex-col w-full">
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-primary-container text-text-on-dark shadow-[0_6px_16px_-4px_rgba(0,75,65,0.2)]">
         <div className="w-full h-full px-gutter-lg flex items-center justify-between relative">
-          <div className="flex items-center gap-space-md">
-            <img
-              alt="Logos e Cores.png"
-              className="h-8 w-auto object-contain"
-              src="https://lh3.googleusercontent.com/aida/AEtjO1XF99Rck-N0htNXMpzy0lkgW9og-KlBylG0vvB0nHpMvMbvWmkppUj9svs22G5iMxGZeB5RxP2Jeu-2weWPTKZzk7D_yRsW7vbHnJ26wmA7A8sC1dheMsdieSQX7edvV2gvvh-Zw8HoEFizoQw5cefdNx7mToA6mBzHTYx3JcjytNVO2_K4qtCd4v4P1FO6W-ZQFUQFWvHQgTnfqcoCKDNJuYLYKdMIHjB3YB79IZTM7yXFpiIKb0P9FVpqeoN9j1RZOVnSCd6joK8"
-            />
+          <div className="flex items-center gap-space-md lg:min-w-[280px]">
+            <div className="flex items-center justify-center w-8 h-8 rounded bg-surface-canvas-void text-primary-fixed-dim border border-primary-fixed-dim/30 shadow p-0.5 overflow-hidden">
+              <img alt="UFSMUN" className="w-full h-full object-contain" src="/ufsmun-logo.png" />
+            </div>
             <div className="flex flex-col">
-              <span className="font-label-md text-label-md text-text-on-dark uppercase tracking-wider">
-                UFSMUN KRIEGSPIEL
+              <span className="font-label-md text-label-md tracking-wider text-text-on-dark uppercase leading-tight">
+                Mapa UFSMUN
               </span>
-              <span className="font-tag-overline text-tag-overline text-on-primary-container tracking-widest">
-                SISTEMA C2 // GABINETE DE CRISE
+              <span className="font-tag-overline text-tag-overline text-primary-fixed-dim uppercase leading-none mt-0.5">
+                Gabinete de Guerra
               </span>
             </div>
           </div>
@@ -135,7 +133,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
             <span>CAMADA DE CRIPTOGRAFIA: SHA-512 MIL-SPEC</span>
           </div>
 
-          <div className="relative z-10 w-full max-w-2xl bg-surface-parchment rounded-xl shadow-xl p-space-lg sm:p-space-2xl flex flex-col gap-space-xl m-auto">
+          <div className="relative z-10 w-full max-w-xl bg-surface-parchment rounded-xl shadow-xl p-space-md sm:p-space-lg flex flex-col gap-space-md m-auto">
             <div className="flex flex-wrap items-center justify-between gap-space-sm pb-space-sm border-b-2 border-surface-parchment-dim">
               <div className="flex items-center gap-space-xs bg-surface-parchment-dim px-space-md py-space-xs rounded-full">
                 <span className="relative flex h-2.5 w-2.5">
@@ -151,8 +149,8 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-space-lg">
-              <div className="relative flex-shrink-0 w-20 h-20 rounded-full bg-primary-container flex items-center justify-center shadow-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-space-md">
+              <div className="relative flex-shrink-0 w-16 h-16 rounded-full bg-primary-container flex items-center justify-center shadow-md">
                 <svg className="absolute inset-0 w-full h-full p-1" viewBox="0 0 100 100">
                   <circle
                     className="opacity-40"
@@ -213,7 +211,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                     />
                   </line>
                 </svg>
-                <span className="material-symbols-outlined text-[#2d7d74] text-[32px] relative z-10">
+                <span className="material-symbols-outlined text-[#2d7d74] text-[26px] relative z-10">
                   radar
                 </span>
               </div>
@@ -222,23 +220,23 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                   <span className="material-symbols-outlined text-[14px]">hourglass_top</span>
                   <span>AGUARDANDO ALOCAÇÃO DE FORÇAS</span>
                 </div>
-                <h1 className="font-headline-lg text-headline-lg text-on-surface">
+                <h1 className="font-headline-md text-headline-md text-on-surface">
                   Aguardando Atribuição
                 </h1>
-                <p className="font-body-base text-body-base text-on-surface-variant mt-space-xs leading-relaxed">
+                <p className="font-body-base text-sm text-on-surface-variant mt-space-xs leading-relaxed">
                   A moderação ainda não alocou sua delegação a uma equipe. Por favor, aguarde a
                   liberação do acesso ao mapa tático.
                 </p>
               </div>
             </div>
 
-            <div className="w-full bg-surface-card rounded-lg p-space-lg shadow-sm flex flex-col gap-space-md">
+            <div className="w-full bg-surface-card rounded-lg p-space-md shadow-sm flex flex-col gap-space-sm">
               <div className="flex items-center justify-between pb-space-xs border-b border-surface-container-high">
                 <div className="flex items-center gap-space-xs">
-                  <span className="material-symbols-outlined text-secondary text-[18px]">
+                  <span className="material-symbols-outlined text-secondary text-[16px]">
                     terminal
                   </span>
-                  <span className="font-label-md text-label-md text-on-surface uppercase">
+                  <span className="font-label-md text-[13px] text-on-surface uppercase">
                     TELEMETRIA DA CONEXÃO
                   </span>
                 </div>
@@ -246,7 +244,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                   STANDBY ATIVO
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md pt-space-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm pt-space-xs">
                 <div className="flex flex-col">
                   <span className="font-tag-overline text-tag-overline text-on-surface-variant uppercase">
                     DELEGADO IDENTIFICADO
@@ -264,7 +262,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                   <span className="font-tag-overline text-tag-overline text-on-surface-variant uppercase">
                     PROTOCOLO DE ACESSO
                   </span>
-                  <span className="font-body-ui-bold text-body-ui-bold text-faction-friendly font-mono mt-0.5">
+                  <span className="font-body-ui-bold text-[13px] text-faction-friendly font-mono mt-0.5">
                     C2-NET-8842 // TOKEN VALIDADO
                   </span>
                 </div>
@@ -274,7 +272,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                   </span>
                   <div className="flex items-center gap-space-xs mt-0.5">
                     <span className="w-2 h-2 rounded-full bg-status-alert"></span>
-                    <span className="font-body-ui text-body-ui text-on-surface font-semibold">
+                    <span className="font-body-ui text-[13px] text-on-surface font-semibold">
                       Aguardando mesa
                     </span>
                   </div>
@@ -283,7 +281,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                   <span className="font-tag-overline text-tag-overline text-on-surface-variant uppercase">
                     DIAGNÓSTICO DE REDE
                   </span>
-                  <div className="flex items-center gap-space-xs mt-0.5 font-label-sm text-label-sm text-on-surface-variant font-mono">
+                  <div className="flex items-center gap-space-xs mt-0.5 font-label-sm text-[11px] text-on-surface-variant font-mono">
                     <span className="text-secondary font-bold">16ms</span>
                     <span>•</span>
                     <span>AES-256</span>
@@ -310,14 +308,14 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md pt-space-sm">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-sm pt-2">
               <button
-                className="inline-flex items-center justify-center gap-space-sm px-space-xl py-space-sm rounded-lg bg-primary-container text-text-on-dark font-label-md text-label-md uppercase tracking-wider hover:bg-chrome-hover transition-colors shadow-sm active:scale-95"
+                className="inline-flex items-center justify-center gap-space-xs px-space-lg py-2 rounded-lg bg-primary-container text-text-on-dark font-label-md text-[13px] uppercase tracking-wider hover:bg-chrome-hover transition-colors shadow-sm active:scale-95"
                 type="button"
                 onClick={handleManualRefresh}
               >
                 <span
-                  className={`material-symbols-outlined text-[18px] ${
+                  className={`material-symbols-outlined text-[16px] ${
                     isSyncing ? 'animate-spin' : ''
                   }`}
                 >
@@ -325,38 +323,38 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
                 </span>
                 <span>Atualizar Status</span>
               </button>
-              <div className="flex items-center justify-end gap-space-lg">
+              <div className="flex items-center justify-end gap-space-md">
                 <button
-                  className="inline-flex items-center gap-space-xs font-body-ui text-body-ui text-secondary hover:underline"
+                  className="inline-flex items-center gap-space-xs font-body-ui text-[13px] text-secondary hover:underline"
                   onClick={() =>
                     alert('Canal de comunicação com a Mesa Diretora aberto via rádio interno do Kriegspiel.')
                   }
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[18px]">support_agent</span>
+                  <span className="material-symbols-outlined text-[16px]">support_agent</span>
                   <span>Contatar Mesa Diretora</span>
                 </button>
                 <form action={onSignOut}>
                   <button
-                    className="inline-flex items-center gap-space-xs font-body-ui text-body-ui text-status-critical hover:underline"
+                    className="inline-flex items-center gap-space-xs font-body-ui text-[13px] text-status-critical hover:underline"
                     type="submit"
                   >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
+                    <span className="material-symbols-outlined text-[16px]">logout</span>
                     <span>Desconectar Estação</span>
                   </button>
                 </form>
               </div>
             </div>
 
-            <div className="bg-surface-parchment-dim rounded-lg p-space-md flex items-start gap-space-sm">
-              <span className="material-symbols-outlined text-status-objective text-[20px] mt-0.5 flex-shrink-0">
+            <div className="bg-surface-parchment-dim rounded-lg p-3 flex items-start gap-2">
+              <span className="material-symbols-outlined text-status-objective text-[18px] mt-0.5 flex-shrink-0">
                 info
               </span>
               <div className="flex flex-col">
-                <span className="font-tag-overline text-tag-overline text-tertiary tracking-wider uppercase">
+                <span className="font-tag-overline text-[10px] text-tertiary tracking-wider uppercase">
                   AVISO TÁTICO OPERACIONAL
                 </span>
-                <p className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                <p className="font-label-sm text-[11px] text-on-surface-variant mt-0.5">
                   Aviso: A página sincroniza automaticamente em tempo real assim que a moderação definir
                   sua delegação entre Time A ou Time B.
                 </p>
