@@ -7,6 +7,7 @@ import LayerManager from './LayerManager';
 import { MapPOI, BattleHazard } from './MapGrid';
 import UnitCreationModal from './UnitCreationModal';
 import { NatoSymbol } from './NatoSymbol';
+import { useResizablePanel } from '@/hooks/useResizablePanel';
 
 export interface LayerVisibility {
   baseMap: boolean;
@@ -83,6 +84,19 @@ export default function Sidebar({
   const [internalIsOpen, setInternalIsOpen] = useState(true);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const toggleIsOpen = onToggleOpen || (() => setInternalIsOpen(!internalIsOpen));
+
+  const {
+    width: sidebarWidth,
+    isDragging: isResizingSidebar,
+    handlePointerDown: handleResizeStart,
+  } = useResizablePanel({
+    initialWidth: 300,
+    minWidth: 240,
+    maxWidth: 550,
+    side: 'left',
+    storageKey: 'wargame_left_sidebar_width',
+  });
+
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
 
   const [pois, setPois] = useState<MapPOI[]>([]);
@@ -270,7 +284,35 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment transition-all duration-300 ease-in-out overflow-hidden absolute top-0 left-0 lg:relative ${isMobileOpen ? 'w-[300px] min-w-[300px] border-r shadow-[4px_0_20px_rgba(0,0,0,0.12)]' : 'w-0 min-w-0 border-r-0 shadow-none'} ${!isOpen ? 'lg:w-0 lg:min-w-0 lg:border-r-0 lg:shadow-none' : 'lg:w-[300px] lg:min-w-[300px] lg:border-r lg:shadow-[4px_0_20px_rgba(0,0,0,0.12)]'}`} id="left-panel">
+    <aside 
+      className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment ${
+        isResizingSidebar ? '' : 'transition-all duration-300 ease-in-out'
+      } overflow-hidden absolute top-0 left-0 lg:relative ${
+        isMobileOpen 
+          ? 'border-r shadow-[4px_0_20px_rgba(0,0,0,0.12)]' 
+          : 'border-r-0 shadow-none'
+      } ${
+        !isOpen 
+          ? 'lg:border-r-0 lg:shadow-none pointer-events-none' 
+          : 'lg:border-r lg:shadow-[4px_0_20px_rgba(0,0,0,0.12)] pointer-events-auto'
+      }`} 
+      style={{
+        width: isOpen ? `${sidebarWidth}px` : 0,
+        minWidth: isOpen ? `${sidebarWidth}px` : 0,
+        maxWidth: '85vw',
+      }}
+      id="left-panel"
+    >
+      {/* Resize Handle on Right Edge of Left Sidebar */}
+      {isOpen && (
+        <div
+          onPointerDown={handleResizeStart}
+          className="hidden lg:block absolute top-0 right-0 w-2.5 h-full cursor-col-resize z-50 group select-none hover:bg-primary/20 active:bg-primary/30 transition-colors"
+          title="Arraste para ajustar a largura do painel de camadas"
+        >
+          <div className="absolute top-0 right-0 w-[2px] h-full bg-border-parchment/80 group-hover:bg-primary group-active:bg-primary transition-colors" />
+        </div>
+      )}
       
       {/* Left Panel Section Header */}
       <div className="bg-primary-container px-3 py-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">

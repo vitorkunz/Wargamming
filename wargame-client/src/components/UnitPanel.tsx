@@ -488,10 +488,22 @@ export default function UnitPanel({
         {activePanelTab === 'details' && selectedUnit && (
           <div className="flex-1 overflow-y-auto p-3 space-y-2.5 text-on-surface">
             {/* CARD 1: Header Identification Card */}
-            <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col">
-                  <span className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider">{getHumanReadableFromSidc(selectedUnit.type)}</span>
+            <div className="@container bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div className="flex flex-col @[300px]:flex-row-reverse @[300px]:items-start @[300px]:justify-between gap-2.5">
+                {/* NATO Symbol: Positioned at top if card is narrow, or to the right if card has enough space */}
+                <div className="flex-shrink-0 flex items-center justify-center self-center @[300px]:self-start py-0.5">
+                  <NatoSymbol sidc={getSidcForUnit(selectedUnit)} size={48} className="drop-shadow-md" />
+                </div>
+
+                {/* Details / Name / Category */}
+                <div className="flex flex-col min-w-0 flex-1 w-full">
+                  <span 
+                    className="font-tag-overline text-[8.5px] text-primary uppercase font-bold tracking-wider truncate block"
+                    title={getHumanReadableFromSidc(selectedUnit.type)}
+                  >
+                    {getHumanReadableFromSidc(selectedUnit.type)}
+                  </span>
+
                   {canRename ? (
                     <input
                       type="text"
@@ -499,18 +511,23 @@ export default function UnitPanel({
                       onChange={(e) => setNameInput(e.target.value)}
                       onBlur={updateName}
                       onKeyDown={(e) => e.key === 'Enter' && updateName()}
-                      className="font-headline-md text-[10.5px] font-bold text-primary tracking-tight leading-tight mt-0.5 bg-surface-container rounded px-1 border-none focus:outline-none focus:ring-1 focus:ring-primary w-full"
+                      title={nameInput}
+                      className="font-headline-md text-[11px] font-bold text-primary tracking-tight leading-tight mt-0.5 bg-surface-container rounded px-1.5 py-1 border-none focus:outline-none focus:ring-1 focus:ring-primary w-full min-w-0 truncate text-ellipsis overflow-hidden block"
                     />
                   ) : (
-                    <h3 className="font-headline-md text-[10.5px] font-bold text-primary tracking-tight leading-tight mt-0.5">
+                    <h3 
+                      title={selectedUnit.name || getHumanReadableFromSidc(selectedUnit.type)}
+                      className="font-headline-md text-[11px] font-bold text-primary tracking-tight leading-tight mt-0.5 truncate block"
+                    >
                       {selectedUnit.name || getHumanReadableFromSidc(selectedUnit.type)}
                     </h3>
                   )}
+
                   {isModerator ? (
                     <select
                       value={parseSidc(selectedUnit.type).typeKey}
                       onChange={(e) => updateType(e.target.value)}
-                      className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5 bg-surface-container rounded px-1 py-0.5 border-none focus:outline-none focus:ring-1 focus:ring-primary w-fit uppercase font-bold"
+                      className="font-tag-overline text-[8.5px] text-on-surface-variant mt-1 bg-surface-container rounded px-1.5 py-0.5 border-none focus:outline-none focus:ring-1 focus:ring-primary w-full @[300px]:w-fit max-w-full truncate uppercase font-bold"
                     >
                       {UNIT_CATEGORIES.map((cat) => (
                         <optgroup key={cat} label={cat}>
@@ -523,16 +540,15 @@ export default function UnitPanel({
                       ))}
                     </select>
                   ) : (
-                    <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5">Tipo: {getHumanReadableFromSidc(selectedUnit.type)}</span>
+                    <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-0.5 truncate block">
+                      Tipo: {getHumanReadableFromSidc(selectedUnit.type)}
+                    </span>
                   )}
-                </div>
-                <div className="flex-shrink-0 flex items-center justify-center">
-                  <NatoSymbol sidc={getSidcForUnit(selectedUnit)} size={44} className="drop-shadow-md" />
                 </div>
               </div>
 
               {/* Status & Allegiance Badges */}
-              <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border-parchment/60">
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-border-parchment/60">
                 {isModerator ? (
                   <select 
                     value={selectedUnit.owner}

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useResizablePanel } from '@/hooks/useResizablePanel';
 
 interface Profile {
   id: string;
@@ -17,6 +18,30 @@ export default function TeamAssignment() {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'details' | 'logs'>('details');
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+
+  const {
+    width: leftPanelWidth,
+    isDragging: isResizingLeftPanel,
+    handlePointerDown: handleLeftResizeStart,
+  } = useResizablePanel({
+    initialWidth: 320,
+    minWidth: 260,
+    maxWidth: 550,
+    side: 'left',
+    storageKey: 'wargame_team_left_sidebar_width',
+  });
+
+  const {
+    width: rightPanelWidth,
+    isDragging: isResizingRightPanel,
+    handlePointerDown: handleRightResizeStart,
+  } = useResizablePanel({
+    initialWidth: 340,
+    minWidth: 280,
+    maxWidth: 600,
+    side: 'right',
+    storageKey: 'wargame_team_right_sidebar_width',
+  });
   
   const [searchQuery, setSearchQuery] = useState('');
   const [factionFilter, setFactionFilter] = useState<'all' | 'team-a' | 'team-b' | 'lobby'>('all');
@@ -121,8 +146,25 @@ export default function TeamAssignment() {
     <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
       {/* FLANK ESQUERDO: Equipes, Mesa Arbitral & Lobby */}
       <aside 
-        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out ${isLeftPanelOpen ? 'w-[320px] min-w-[320px]' : 'w-0 min-w-0 border-r-0 overflow-hidden'}`}
+        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-r border-border-parchment shadow-[4px_0_20px_rgba(0,0,0,0.12)] ${
+          isResizingLeftPanel ? '' : 'transition-all duration-300 ease-in-out'
+        } ${isLeftPanelOpen ? 'overflow-visible' : 'overflow-hidden border-r-0 pointer-events-none'}`}
+        style={{
+          width: isLeftPanelOpen ? `${leftPanelWidth}px` : 0,
+          minWidth: isLeftPanelOpen ? `${leftPanelWidth}px` : 0,
+          maxWidth: '85vw',
+        }}
       >
+        {/* Resize Handle on Right Edge of Left Aside */}
+        {isLeftPanelOpen && (
+          <div
+            onPointerDown={handleLeftResizeStart}
+            className="hidden lg:block absolute top-0 right-0 w-2.5 h-full cursor-col-resize z-50 group select-none hover:bg-primary/20 active:bg-primary/30 transition-colors"
+            title="Arraste para ajustar a largura do painel"
+          >
+            <div className="absolute top-0 right-0 w-[2px] h-full bg-border-parchment/80 group-hover:bg-primary group-active:bg-primary transition-colors" />
+          </div>
+        )}
         <div className="bg-primary-container px-3 py-3 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary-fixed-dim text-[20px]">shield_person</span>
@@ -431,8 +473,25 @@ export default function TeamAssignment() {
 
       {/* FLANK DIREITO: Dossiê */}
       <aside 
-        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] transition-all duration-300 ease-in-out ${isRightPanelOpen ? 'w-[340px] min-w-[340px]' : 'w-0 min-w-0 border-l-0 overflow-hidden'}`}
+        className={`relative h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-20 border-l border-border-parchment shadow-[-4px_0_20px_rgba(0,0,0,0.12)] ${
+          isResizingRightPanel ? '' : 'transition-all duration-300 ease-in-out'
+        } ${isRightPanelOpen ? 'overflow-visible' : 'overflow-hidden border-l-0 pointer-events-none'}`}
+        style={{
+          width: isRightPanelOpen ? `${rightPanelWidth}px` : 0,
+          minWidth: isRightPanelOpen ? `${rightPanelWidth}px` : 0,
+          maxWidth: '85vw',
+        }}
       >
+        {/* Resize Handle on Left Edge of Right Aside */}
+        {isRightPanelOpen && (
+          <div
+            onPointerDown={handleRightResizeStart}
+            className="hidden lg:block absolute top-0 left-0 w-2.5 h-full cursor-col-resize z-50 group select-none hover:bg-primary/20 active:bg-primary/30 transition-colors"
+            title="Arraste para ajustar a largura do dossiê"
+          >
+            <div className="absolute top-0 left-0 w-[2px] h-full bg-border-parchment/80 group-hover:bg-primary group-active:bg-primary transition-colors" />
+          </div>
+        )}
         <div className="bg-primary-container p-2 flex items-center gap-1.5 shadow-sm border-b border-white/10 whitespace-nowrap">
           <button type="button" onClick={() => setActiveRightTab('details')} className={`flex-1 py-1.5 px-2 text-center font-label-md text-[12px] rounded-lg shadow-sm flex items-center justify-center gap-1.5 ${activeRightTab === 'details' ? 'bg-surface-card text-primary font-bold' : 'text-text-on-dark/80 hover:bg-chrome-hover'}`}>
             <span className="material-symbols-outlined text-[15px]">badge</span>

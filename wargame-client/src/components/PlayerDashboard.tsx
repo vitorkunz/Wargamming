@@ -10,6 +10,7 @@ import PoiPanel from './PoiPanel';
 import HazardPanel from './HazardPanel';
 import TopBar from './ui/TopBar';
 import BottomNavbar, { BottomPanelType } from './BottomNavbar';
+import { useResizablePanel } from '@/hooks/useResizablePanel';
 
 interface PlayerDashboardProps {
   userEmail: string;
@@ -25,6 +26,18 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [activeBottomPanel, setActiveBottomPanel] = useState<BottomPanelType>(null);
+
+  const {
+    width: rightPanelWidth,
+    isDragging: isResizingRightPanel,
+    handlePointerDown: handleRightResizeStart,
+  } = useResizablePanel({
+    initialWidth: 300,
+    minWidth: 260,
+    maxWidth: 600,
+    side: 'right',
+    storageKey: 'wargame_right_sidebar_width',
+  });
   const [layers, setLayers] = useState<LayerVisibility>({
     baseMap: true,
     pois: true,
@@ -523,7 +536,34 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
           </div>
           
           {/* Right Panel */}
-          <aside className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment transition-all duration-300 ease-in-out overflow-hidden absolute top-0 right-0 lg:relative ${activeBottomPanel === 'dossier' ? 'w-[280px] min-w-[280px] border-l shadow-[-4px_0_20px_rgba(0,0,0,0.12)]' : 'w-0 min-w-0 border-l-0 shadow-none'} ${!isRightPanelOpen ? 'lg:w-0 lg:min-w-0 lg:border-l-0 lg:shadow-none' : 'lg:w-[280px] lg:min-w-[280px] lg:border-l lg:shadow-[-4px_0_20px_rgba(0,0,0,0.12)]'}`}>
+          <aside 
+            className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment ${
+              isResizingRightPanel ? '' : 'transition-all duration-300 ease-in-out'
+            } overflow-hidden absolute top-0 right-0 lg:relative ${
+              activeBottomPanel === 'dossier' 
+                ? 'border-l shadow-[-4px_0_20px_rgba(0,0,0,0.12)]' 
+                : 'border-l-0 shadow-none'
+            } ${
+              !isRightPanelOpen 
+                ? 'lg:border-l-0 lg:shadow-none pointer-events-none' 
+                : 'lg:border-l lg:shadow-[-4px_0_20px_rgba(0,0,0,0.12)] pointer-events-auto'
+            }`}
+            style={{
+              width: (isRightPanelOpen || activeBottomPanel === 'dossier') ? `${rightPanelWidth}px` : 0,
+              minWidth: (isRightPanelOpen || activeBottomPanel === 'dossier') ? `${rightPanelWidth}px` : 0,
+              maxWidth: '85vw',
+            }}
+          >
+            {/* Resize Handle on Left Edge of Right Panel */}
+            {(isRightPanelOpen || activeBottomPanel === 'dossier') && (
+              <div
+                onPointerDown={handleRightResizeStart}
+                className="hidden lg:block absolute top-0 left-0 w-2.5 h-full cursor-col-resize z-50 group select-none hover:bg-primary/20 active:bg-primary/30 transition-colors"
+                title="Arraste para ajustar a largura do painel lateral"
+              >
+                <div className="absolute top-0 left-0 w-[2px] h-full bg-border-parchment/80 group-hover:bg-primary group-active:bg-primary transition-colors" />
+              </div>
+            )}
 
             <div className={`flex-1 flex flex-col overflow-hidden relative z-0 ${(!isRightPanelOpen && activeBottomPanel !== 'dossier') ? 'hidden' : 'block'}`}>
               {selectedHazard ? (
