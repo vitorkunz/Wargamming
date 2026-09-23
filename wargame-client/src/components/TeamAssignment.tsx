@@ -24,6 +24,15 @@ export default function TeamAssignment() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isAddModModalOpen, setIsAddModModalOpen] = useState(false);
 
+  const [factionSettings, setFactionSettings] = useState({
+    team_a_name: 'Força Azul Marítima',
+    team_a_icon: 'directions_boat',
+    team_b_name: 'Força Vermelha Costeira',
+    team_b_icon: 'shield'
+  });
+  const [editingFaction, setEditingFaction] = useState<'team-a' | 'team-b' | null>(null);
+  const [editFactionForm, setEditFactionForm] = useState({ name: '', icon: '' });
+
   const fetchProfiles = async () => {
     const { data, error } = await supabase.from('Profiles').select('*');
     if (!error && data) {
@@ -32,18 +41,45 @@ export default function TeamAssignment() {
     setLoading(false);
   };
 
+  const fetchGameState = async () => {
+    const { data, error } = await supabase.from('Game_State').select('*').eq('id', 1).single();
+    if (!error && data) {
+      setFactionSettings({
+        team_a_name: data.team_a_name || 'Força Azul Marítima',
+        team_a_icon: data.team_a_icon || 'directions_boat',
+        team_b_name: data.team_b_name || 'Força Vermelha Costeira',
+        team_b_icon: data.team_b_icon || 'shield'
+      });
+    }
+  };
+
   useEffect(() => {
     fetchProfiles();
+    fetchGameState();
     
     const channel = supabase
       .channel('profiles-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Profiles' }, () => {
         fetchProfiles();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Game_State' }, () => {
+        fetchGameState();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const saveFactionSettings = async () => {
+    if (!editingFaction) return;
+    const updates = editingFaction === 'team-a' 
+      ? { team_a_name: editFactionForm.name, team_a_icon: editFactionForm.icon }
+      : { team_b_name: editFactionForm.name, team_b_icon: editFactionForm.icon };
+    
+    await supabase.from('Game_State').update(updates).eq('id', 1);
+    setEditingFaction(null);
+    fetchGameState();
+  };
 
   const updateRole = async (id: string, newRole: string) => {
     await supabase.from('Profiles').update({ role: newRole }).eq('id', id);
@@ -248,11 +284,21 @@ export default function TeamAssignment() {
                 <div className="bg-surface-card/95 rounded-xl p-3 border-l-4 border-l-faction-friendly border border-border-parchment shadow-md flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-lg bg-faction-friendly text-text-on-dark flex items-center justify-center shadow-sm">
-                      <span className="material-symbols-outlined text-[20px]">directions_boat</span>
+                      <span className="material-symbols-outlined text-[20px]">{factionSettings.team_a_icon}</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-tag-overline text-[10px] text-faction-friendly font-bold uppercase tracking-wider">Força Azul Marítima</span>
+                        <span className="font-tag-overline text-[10px] text-faction-friendly font-bold uppercase tracking-wider">{factionSettings.team_a_name}</span>
+                        <button 
+                          onClick={() => { 
+                            setEditingFaction('team-a'); 
+                            setEditFactionForm({ name: factionSettings.team_a_name, icon: factionSettings.team_a_icon }); 
+                          }} 
+                          className="text-faction-friendly/60 hover:text-faction-friendly flex items-center"
+                          title="Editar Facção"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">edit</span>
+                        </button>
                       </div>
                       <h3 className="font-headline-sm text-[14px] font-bold text-primary">Time A</h3>
                     </div>
@@ -312,11 +358,21 @@ export default function TeamAssignment() {
                 <div className="bg-surface-card/95 rounded-xl p-3 border-l-4 border-l-faction-hostile border border-border-parchment shadow-md flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-lg bg-faction-hostile text-text-on-dark flex items-center justify-center shadow-sm">
-                      <span className="material-symbols-outlined text-[20px]">shield</span>
+                      <span className="material-symbols-outlined text-[20px]">{factionSettings.team_b_icon}</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-tag-overline text-[10px] text-faction-hostile font-bold uppercase tracking-wider">Força Vermelha Costeira</span>
+                        <span className="font-tag-overline text-[10px] text-faction-hostile font-bold uppercase tracking-wider">{factionSettings.team_b_name}</span>
+                        <button 
+                          onClick={() => { 
+                            setEditingFaction('team-b'); 
+                            setEditFactionForm({ name: factionSettings.team_b_name, icon: factionSettings.team_b_icon }); 
+                          }} 
+                          className="text-faction-hostile/60 hover:text-faction-hostile flex items-center"
+                          title="Editar Facção"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">edit</span>
+                        </button>
                       </div>
                       <h3 className="font-headline-sm text-[14px] font-bold text-primary">Time B</h3>
                     </div>
@@ -507,6 +563,52 @@ export default function TeamAssignment() {
             <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-border-parchment">
               <button type="button" className="px-4 py-2 text-primary font-label-md text-[13px] hover:bg-surface-parchment rounded-lg" onClick={() => setIsAddModModalOpen(false)}>Cancelar</button>
               <button type="button" className="px-5 py-2 bg-primary-container hover:bg-chrome-hover text-text-on-dark font-label-md text-[13px] rounded-lg shadow font-semibold transition-all" onClick={() => setIsAddModModalOpen(false)}>Conceder Credencial</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingFaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/60 backdrop-blur-sm p-4">
+          <div className="bg-surface-card rounded-xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 border border-border-parchment">
+            <div className="flex items-center justify-between border-b border-border-parchment pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[22px]">edit</span>
+                <h3 className="font-headline-sm text-[18px] text-primary">
+                  Editar {editingFaction === 'team-a' ? 'Time A' : 'Time B'}
+                </h3>
+              </div>
+              <button type="button" className="text-outline hover:text-primary" onClick={() => setEditingFaction(null)}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-label-md text-on-surface-variant mb-1 uppercase tracking-wider font-bold">Nome da Facção</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-surface-canvas-void border border-border-parchment rounded p-2 text-sm text-on-surface focus:outline-none focus:border-primary-fixed-dim" 
+                  value={editFactionForm.name} 
+                  onChange={e => setEditFactionForm({...editFactionForm, name: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-label-md text-on-surface-variant mb-1 uppercase tracking-wider font-bold">Ícone (Material Symbols)</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">{editFactionForm.icon || 'star'}</span>
+                  <input 
+                    type="text" 
+                    className="w-full bg-surface-canvas-void border border-border-parchment rounded p-2 pl-10 text-sm text-on-surface focus:outline-none focus:border-primary-fixed-dim" 
+                    value={editFactionForm.icon} 
+                    onChange={e => setEditFactionForm({...editFactionForm, icon: e.target.value})} 
+                  />
+                </div>
+                <p className="text-[11px] text-on-surface-variant mt-1.5 font-body-ui">Ex: directions_boat, shield, security, warning</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-2 pt-3 border-t border-border-parchment">
+              <button type="button" className="px-4 py-2 text-primary font-label-md text-[13px] hover:bg-surface-parchment rounded-lg" onClick={() => setEditingFaction(null)}>Cancelar</button>
+              <button type="button" className="px-5 py-2 bg-primary-container hover:bg-chrome-hover text-text-on-dark font-label-md text-[13px] rounded-lg shadow font-semibold transition-all" onClick={saveFactionSettings}>Salvar</button>
             </div>
           </div>
         </div>

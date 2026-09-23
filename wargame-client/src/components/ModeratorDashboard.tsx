@@ -36,17 +36,18 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     tacticalGrid: true
   });
 
-  const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('wargame_layer_opacities');
-        if (saved) return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error loading layer opacities from localStorage', e);
+  const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>({ baseMap: 1, tacticalGrid: 0.45 });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('wargame_layer_opacities');
+      if (saved) {
+        setLayerOpacities(JSON.parse(saved));
       }
+    } catch (e) {
+      console.error('Error loading layer opacities from localStorage', e);
     }
-    return { baseMap: 1, tacticalGrid: 0.45 };
-  });
+  }, []);
 
   const handleOpacityChange = (layerId: string, opacity: number) => {
     const clamped = Math.max(0, Math.min(1, Math.round(opacity * 100) / 100));
