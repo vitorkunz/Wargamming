@@ -107,10 +107,12 @@ export default function TeamAssignment() {
   };
 
   const updateRole = async (id: string, newRole: string) => {
-    await supabase.from('Profiles').update({ role: newRole }).eq('id', id);
+    setProfiles(prev => prev.map(p => p.id === id ? { ...p, role: newRole } : p));
     if (selectedProfile?.id === id) {
       setSelectedProfile(prev => prev ? { ...prev, role: newRole } : null);
     }
+    await supabase.from('Profiles').update({ role: newRole }).eq('id', id);
+    fetchProfiles();
   };
 
   const removeUser = async (id: string) => {
@@ -198,16 +200,16 @@ export default function TeamAssignment() {
             
             {moderators.map(mod => (
               <div key={mod.id} className="bg-surface-card rounded-lg p-2.5 border border-border-parchment border-l-4 border-l-primary-container shadow-xs space-y-1.5 hover:bg-surface-parchment-dim transition-colors group cursor-pointer" onClick={() => handleSelectPlayer(mod)}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-headline-sm text-[12px] font-bold text-primary truncate max-w-[120px]">{mod.email.split('@')[0]}</span>
-                    <span className="px-1 py-0.5 rounded bg-surface-parchment-dim text-secondary text-[8px] font-tag-overline font-bold">L4</span>
+                <div className="flex items-center justify-between gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-headline-sm text-[12px] font-bold text-primary truncate flex-1 min-w-0" title={mod.email.split('@')[0]}>{mod.email.split('@')[0]}</span>
+                    <span className="px-1 py-0.5 rounded bg-surface-parchment-dim text-secondary text-[8px] font-tag-overline font-bold shrink-0">L4</span>
                   </div>
                 </div>
                 <div className="text-[10px] font-tag-overline text-primary-container font-bold flex items-center justify-between">
                   <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">verified_user</span>Moderador</span>
                 </div>
-                <p className="text-[10px] font-body-ui text-on-surface-variant truncate">{mod.email}</p>
+                <p className="text-[10px] font-body-ui text-on-surface-variant truncate" title={mod.email}>{mod.email}</p>
                 <div className="pt-1.5 border-t border-border-parchment/60 flex items-center justify-between gap-1">
                   <span className="text-[9px] font-tag-overline text-outline uppercase font-bold">Gestão:</span>
                   <div className="flex items-center gap-1">
@@ -241,12 +243,15 @@ export default function TeamAssignment() {
                     <div className="text-[9px] font-tag-overline text-outline truncate">{user.email}</div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1 pt-1">
-                  <button type="button" className="py-1 px-1.5 bg-faction-friendly/15 hover:bg-faction-friendly/25 text-faction-friendly text-[9px] font-tag-overline font-bold rounded transition-colors" onClick={(e) => { e.stopPropagation(); updateRole(user.id, 'Player A'); }}>
+                <div className="grid grid-cols-3 gap-1 pt-1">
+                  <button type="button" className="py-1 px-1 bg-faction-friendly/15 hover:bg-faction-friendly/25 text-faction-friendly text-[8.5px] font-tag-overline font-bold rounded transition-colors text-center truncate" onClick={(e) => { e.stopPropagation(); updateRole(user.id, 'Player A'); }} title={`Alocar para ${factionSettings.team_a_name}`}>
                     + Time A
                   </button>
-                  <button type="button" className="py-1 px-1.5 bg-faction-hostile/15 hover:bg-faction-hostile/25 text-faction-hostile text-[9px] font-tag-overline font-bold rounded transition-colors" onClick={(e) => { e.stopPropagation(); updateRole(user.id, 'Player B'); }}>
+                  <button type="button" className="py-1 px-1 bg-faction-hostile/15 hover:bg-faction-hostile/25 text-faction-hostile text-[8.5px] font-tag-overline font-bold rounded transition-colors text-center truncate" onClick={(e) => { e.stopPropagation(); updateRole(user.id, 'Player B'); }} title={`Alocar para ${factionSettings.team_b_name}`}>
                     + Time B
+                  </button>
+                  <button type="button" className="py-1 px-1 bg-primary/15 hover:bg-primary/25 text-primary text-[8.5px] font-tag-overline font-bold rounded transition-colors text-center truncate" onClick={(e) => { e.stopPropagation(); updateRole(user.id, 'Moderator'); }} title="Alocar para Mesa Arbitral">
+                    + Mod
                   </button>
                 </div>
               </div>
@@ -357,18 +362,18 @@ export default function TeamAssignment() {
                       className={`cursor-pointer bg-surface-card/95 hover:bg-white rounded-xl p-3 border-l-4 shadow-sm transition-all ${selectedProfile?.id === player.id ? 'border-status-objective border-2 border-l-faction-friendly' : 'border border-border-parchment border-l-faction-friendly'}`}
                       onClick={() => handleSelectPlayer(player)}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-lg bg-faction-friendly text-text-on-dark flex items-center justify-center font-bold text-[13px] font-headline-sm shadow-xs uppercase">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-lg bg-faction-friendly text-text-on-dark flex items-center justify-center font-bold text-[13px] font-headline-sm shadow-xs uppercase shrink-0">
                             {player.email.substring(0, 2)}
                           </div>
-                          <div className="max-w-[200px]">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-headline-sm text-[13px] font-bold text-primary leading-tight truncate">{player.email.split('@')[0]}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-headline-sm text-[13px] font-bold text-primary leading-tight truncate flex-1 min-w-0" title={player.email.split('@')[0]}>{player.email.split('@')[0]}</span>
                               <span className="px-1.5 py-0.5 rounded bg-faction-friendly/20 text-faction-friendly text-[8px] font-tag-overline font-bold shrink-0">PLAYER A</span>
                             </div>
                             <div className="font-headline-sm text-[12px] text-faction-friendly font-semibold truncate">Oficial Tático</div>
-                            <div className="font-body-ui text-[11px] text-on-surface-variant truncate">{player.email}</div>
+                            <div className="font-body-ui text-[11px] text-on-surface-variant truncate" title={player.email}>{player.email}</div>
                           </div>
                         </div>
                       </div>
@@ -431,18 +436,18 @@ export default function TeamAssignment() {
                       className={`cursor-pointer bg-surface-card/95 hover:bg-white rounded-xl p-3 border-l-4 shadow-sm transition-all ${selectedProfile?.id === player.id ? 'border-status-objective border-2 border-l-faction-hostile' : 'border border-border-parchment border-l-faction-hostile'}`}
                       onClick={() => handleSelectPlayer(player)}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-lg bg-faction-hostile text-text-on-dark flex items-center justify-center font-bold text-[13px] font-headline-sm shadow-xs uppercase">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-lg bg-faction-hostile text-text-on-dark flex items-center justify-center font-bold text-[13px] font-headline-sm shadow-xs uppercase shrink-0">
                             {player.email.substring(0, 2)}
                           </div>
-                          <div className="max-w-[200px]">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-headline-sm text-[13px] font-bold text-primary leading-tight truncate">{player.email.split('@')[0]}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-headline-sm text-[13px] font-bold text-primary leading-tight truncate flex-1 min-w-0" title={player.email.split('@')[0]}>{player.email.split('@')[0]}</span>
                               <span className="px-1.5 py-0.5 rounded bg-faction-hostile/20 text-faction-hostile text-[8px] font-tag-overline font-bold shrink-0">PLAYER B</span>
                             </div>
                             <div className="font-headline-sm text-[12px] text-faction-hostile font-semibold truncate">Oficial Tático</div>
-                            <div className="font-body-ui text-[11px] text-on-surface-variant truncate">{player.email}</div>
+                            <div className="font-body-ui text-[11px] text-on-surface-variant truncate" title={player.email}>{player.email}</div>
                           </div>
                         </div>
                       </div>
@@ -464,6 +469,113 @@ export default function TeamAssignment() {
                     </div>
                   ))}
                   {teamB.length === 0 && <div className="text-center p-4 text-on-surface-variant text-xs uppercase font-bold tracking-wider opacity-60">Nenhum operador</div>}
+                </div>
+              </div>
+            )}
+
+            {/* LOBBY / NÃO DESIGNADOS */}
+            {(factionFilter === 'lobby' || (factionFilter === 'all' && unassigned.length > 0)) && (
+              <div className="col-span-full flex flex-col gap-3 mt-1">
+                <div className="bg-surface-card/95 rounded-xl p-3 border-l-4 border-l-status-degraded border border-border-parchment shadow-md flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-status-degraded/20 text-status-degraded flex items-center justify-center shadow-sm">
+                      <span className="material-symbols-outlined text-[20px]">hourglass_top</span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-tag-overline text-[10px] text-status-degraded font-bold uppercase tracking-wider">Lobby de Espera</span>
+                        <span className="bg-status-degraded/20 text-status-degraded text-[8.5px] font-tag-overline px-1.5 py-0.2 rounded-full font-bold">Pendente</span>
+                      </div>
+                      <div className="font-headline-sm text-[13px] font-bold text-primary">Operadores Aguardando Designação de Função</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-status-degraded/20 text-status-degraded text-[10px] font-tag-overline px-2.5 py-1 rounded-full font-bold">
+                      {unassigned.length} {unassigned.length === 1 ? 'operador pendente' : 'operadores pendentes'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {unassigned.map(player => (
+                    <div 
+                      key={player.id} 
+                      onClick={() => handleSelectPlayer(player)}
+                      className={`bg-surface-card/95 rounded-xl p-3.5 border transition-all cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between ${
+                        selectedProfile?.id === player.id 
+                          ? 'border-status-degraded ring-2 ring-status-degraded/20 bg-status-degraded/5' 
+                          : 'border-border-parchment hover:border-status-degraded/50'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-10 h-10 rounded-lg bg-status-degraded/15 text-status-degraded flex items-center justify-center font-bold font-headline-sm text-sm shrink-0 border border-status-degraded/30">
+                              {player.email ? player.email[0].toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-headline-sm text-[13px] font-bold text-primary leading-tight truncate flex-1 min-w-0" title={player.email.split('@')[0]}>
+                                  {player.email.split('@')[0]}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded bg-status-degraded/20 text-status-degraded text-[8px] font-tag-overline font-bold shrink-0">
+                                  LOBBY
+                                </span>
+                              </div>
+                              <div className="font-headline-sm text-[12px] text-status-degraded font-semibold truncate">Aguardando Alocação</div>
+                              <div className="font-body-ui text-[11px] text-on-surface-variant truncate" title={player.email}>{player.email}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-1.5 mt-3 pt-2.5 border-t border-border-parchment/60">
+                        <span className="font-tag-overline text-[9px] text-outline uppercase font-bold shrink-0">Designar:</span>
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          <button 
+                            type="button" 
+                            className="px-2 py-1 bg-faction-friendly/15 hover:bg-faction-friendly/25 text-faction-friendly rounded text-[9.5px] font-tag-overline font-bold flex items-center gap-0.5 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); updateRole(player.id, 'Player A'); }}
+                            title={`Alocar para Time A (${factionSettings.team_a_name})`}
+                          >
+                            <span className="material-symbols-outlined text-[12px]">add</span>
+                            Time A
+                          </button>
+                          <button 
+                            type="button" 
+                            className="px-2 py-1 bg-faction-hostile/15 hover:bg-faction-hostile/25 text-faction-hostile rounded text-[9.5px] font-tag-overline font-bold flex items-center gap-0.5 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); updateRole(player.id, 'Player B'); }}
+                            title={`Alocar para Time B (${factionSettings.team_b_name})`}
+                          >
+                            <span className="material-symbols-outlined text-[12px]">add</span>
+                            Time B
+                          </button>
+                          <button 
+                            type="button" 
+                            className="px-2 py-1 bg-primary/15 hover:bg-primary/25 text-primary rounded text-[9.5px] font-tag-overline font-bold flex items-center gap-0.5 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); updateRole(player.id, 'Moderator'); }}
+                            title="Alocar para Mesa de Arbitragem"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">gavel</span>
+                            Juiz
+                          </button>
+                          <button 
+                            type="button" 
+                            className="p-1 hover:bg-status-critical/10 text-outline hover:text-status-critical rounded transition-colors ml-0.5"
+                            onClick={(e) => { e.stopPropagation(); removeUser(player.id); }}
+                            title="Remover / Revogar"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {unassigned.length === 0 && (
+                    <div className="col-span-full text-center p-8 bg-surface-card/60 rounded-xl border border-dashed border-border-parchment text-on-surface-variant text-xs uppercase font-bold tracking-wider opacity-60">
+                      Nenhum operador pendente no lobby
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -511,28 +623,70 @@ export default function TeamAssignment() {
             {activeRightTab === 'details' && (
               <div className="p-4 space-y-3.5">
                 <div className="bg-surface-card/95 p-4 rounded-xl border border-border-parchment shadow-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-col">
-                      <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">{selectedProfile.role}</span>
-                      <h3 className="font-headline-md text-[17px] font-bold text-primary tracking-tight leading-tight mt-0.5 truncate max-w-[200px]">{selectedProfile.email.split('@')[0]}</h3>
-                      <span className="font-tag-overline text-[11px] text-outline font-bold mt-1">Patente Desconhecida</span>
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-tag-overline text-[10px] text-primary uppercase font-bold tracking-wider">
+                        {selectedProfile.role === 'Player A' ? factionSettings.team_a_name :
+                         selectedProfile.role === 'Player B' ? factionSettings.team_b_name :
+                         selectedProfile.role === 'Moderator' ? 'Mesa Arbitral' : 'Lobby de Espera'}
+                      </span>
+                      <h3 className="font-headline-md text-[17px] font-bold text-primary tracking-tight leading-tight mt-0.5 truncate w-full" title={selectedProfile.email.split('@')[0]}>
+                        {selectedProfile.email.split('@')[0]}
+                      </h3>
+                      <span className="font-tag-overline text-[11px] text-outline font-bold mt-1">
+                        {selectedProfile.role === 'Player A' ? 'Oficial Tático - Time A' :
+                         selectedProfile.role === 'Player B' ? 'Oficial Tático - Time B' :
+                         selectedProfile.role === 'Moderator' ? 'Juiz / Moderador C2' : 'Operador Não Designado'}
+                      </span>
                     </div>
                     <div className={`w-10 h-10 rounded-lg text-text-on-dark flex items-center justify-center shadow-md flex-shrink-0 ${
                       selectedProfile.role === 'Player A' ? 'bg-faction-friendly' :
                       selectedProfile.role === 'Player B' ? 'bg-faction-hostile' :
-                      selectedProfile.role === 'Moderator' ? 'bg-primary' : 'bg-surface-dim text-on-surface-variant'
+                      selectedProfile.role === 'Moderator' ? 'bg-primary' : 'bg-status-degraded/80'
                     }`}>
-                      <span className="material-symbols-outlined text-[24px]">military_tech</span>
+                      <span className="material-symbols-outlined text-[24px]">
+                        {selectedProfile.role === 'Player A' ? factionSettings.team_a_icon :
+                         selectedProfile.role === 'Player B' ? factionSettings.team_b_icon :
+                         selectedProfile.role === 'Moderator' ? 'military_tech' : 'hourglass_top'}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-border-parchment/60">
-                    <span className={`font-label-md text-[11px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border ${
-                      selectedProfile.role === 'Player A' ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/20' :
-                      selectedProfile.role === 'Player B' ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/20' :
-                      'bg-surface-dim text-on-surface-variant border-border-parchment'
-                    }`}>
-                      {selectedProfile.role}
-                    </span>
+                  <div className="flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-border-parchment/60">
+                    <label className="font-tag-overline text-[9.5px] text-outline uppercase font-bold flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">badge</span>
+                      Designação / Função:
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedProfile.role}
+                        onChange={(e) => updateRole(selectedProfile.id, e.target.value)}
+                        className={`w-full font-label-md text-[11.5px] px-3 py-1.5 rounded-lg font-bold border transition-colors cursor-pointer appearance-none pr-8 focus:outline-none focus:ring-1 ${
+                          selectedProfile.role === 'Player A'
+                            ? 'bg-faction-friendly/15 text-faction-friendly border-faction-friendly/35 focus:ring-faction-friendly'
+                            : selectedProfile.role === 'Player B'
+                            ? 'bg-faction-hostile/15 text-faction-hostile border-faction-hostile/35 focus:ring-faction-hostile'
+                            : selectedProfile.role === 'Moderator'
+                            ? 'bg-primary/15 text-primary border-primary/35 focus:ring-primary'
+                            : 'bg-status-degraded/15 text-status-degraded border-status-degraded/35 focus:ring-status-degraded'
+                        }`}
+                      >
+                        <option value="Player A" className="bg-surface-card text-faction-friendly font-bold">
+                          Time A ({factionSettings.team_a_name})
+                        </option>
+                        <option value="Player B" className="bg-surface-card text-faction-hostile font-bold">
+                          Time B ({factionSettings.team_b_name})
+                        </option>
+                        <option value="Moderator" className="bg-surface-card text-primary font-bold">
+                          Moderador (Mesa Arbitral)
+                        </option>
+                        <option value="Unassigned" className="bg-surface-card text-status-degraded font-bold">
+                          Lobby (Aguardando Designação)
+                        </option>
+                      </select>
+                      <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] pointer-events-none text-current opacity-70">
+                        arrow_drop_down
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -544,9 +698,9 @@ export default function TeamAssignment() {
                   <p className="text-[12px] font-body-ui text-on-surface-variant bg-surface-parchment-dim/80 p-2.5 rounded-lg border border-border-parchment/70 leading-relaxed italic">
                     Dados de histórico não disponíveis nesta etapa da simulação.
                   </p>
-                  <div className="flex items-center justify-between text-[11px] font-body-ui text-on-surface-variant pt-1">
-                    <span>E-mail institucional:</span>
-                    <span className="font-bold text-primary truncate max-w-[120px]" title={selectedProfile.email}>{selectedProfile.email}</span>
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-body-ui text-on-surface-variant pt-1 min-w-0">
+                    <span className="shrink-0">E-mail institucional:</span>
+                    <span className="font-bold text-primary truncate text-right flex-1 min-w-0" title={selectedProfile.email}>{selectedProfile.email}</span>
                   </div>
                 </div>
 

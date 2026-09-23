@@ -113,6 +113,25 @@ export default function Sidebar({
   const [draggedLayerKey, setDraggedLayerKey] = useState<string | null>(null);
   const [dragOverLayerKey, setDragOverLayerKey] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(null);
+  const [draggableLayerKey, setDraggableLayerKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setDraggableLayerKey(null);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
+  const getDragHandleProps = (key: string) => ({
+    onMouseDown: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setDraggableLayerKey(key);
+    },
+    onMouseUp: () => setDraggableLayerKey(null),
+    onTouchStart: () => setDraggableLayerKey(key),
+    onTouchEnd: () => setDraggableLayerKey(null),
+    className: "material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none",
+    title: "Arrastar para reordenar camada"
+  });
 
   const effectiveLayerOrder = React.useMemo(() => {
     const baseKeys = DEFAULT_LAYER_ORDER;
@@ -143,6 +162,10 @@ export default function Sidebar({
   }, [currentOrder, dynamicLayers]);
 
   const handleLayerDragStart = (e: React.DragEvent, key: string) => {
+    if (draggableLayerKey !== key) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', `wargame-layer:${key}`);
     e.dataTransfer.effectAllowed = 'move';
     setDraggedLayerKey(key);
@@ -173,6 +196,7 @@ export default function Sidebar({
       setDraggedLayerKey(null);
       setDragOverLayerKey(null);
       setDropPosition(null);
+      setDraggableLayerKey(null);
       return;
     }
 
@@ -194,12 +218,14 @@ export default function Sidebar({
     setDraggedLayerKey(null);
     setDragOverLayerKey(null);
     setDropPosition(null);
+    setDraggableLayerKey(null);
   };
 
   const handleLayerDragEnd = () => {
     setDraggedLayerKey(null);
     setDragOverLayerKey(null);
     setDropPosition(null);
+    setDraggableLayerKey(null);
   };
 
   useEffect(() => {
@@ -356,7 +382,7 @@ export default function Sidebar({
 
           const cardWrapperProps = {
             key,
-            draggable: true,
+            draggable: draggableLayerKey === key,
             onDragStart: (e: React.DragEvent) => handleLayerDragStart(e, key),
             onDragOver: (e: React.DragEvent) => handleLayerDragOver(e, key),
             onDragLeave: handleLayerDragLeave,
@@ -377,7 +403,7 @@ export default function Sidebar({
                 <div className={`group rounded-lg p-2.5 border transition-all ${layers.baseMap ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/40 shadow-sm hover:bg-surface-parchment-dim' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('baseMap')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('baseMap')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -427,7 +453,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border shadow-sm ${layers.pois ? 'bg-surface-card/90 border-border-parchment' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setIsPoiExpanded(!isPoiExpanded)}>
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" onClick={(e)=>e.stopPropagation()} title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('pois')}>drag_indicator</span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleLayer('pois'); }}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -479,7 +505,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamA ? 'bg-surface-card/90 border-border-parchment hover:border-faction-friendly/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('teamA')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('teamA')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -507,7 +533,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamB ? 'bg-surface-card/90 border-border-parchment hover:border-faction-hostile/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('teamB')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('teamB')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -535,7 +561,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.unconfirmed ? 'bg-surface-card/90 border-border-parchment hover:border-faction-unknown/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('unconfirmed')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('unconfirmed')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -563,7 +589,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.hazards ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('hazards')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('hazards')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -591,7 +617,7 @@ export default function Sidebar({
                 <div className={`rounded-lg p-2.5 border transition-all ${layers.tacticalGrid ? 'bg-surface-card/90 border-border-parchment shadow-sm hover:border-secondary/30' : 'bg-surface-card/60 border-border-parchment/60 opacity-60'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <span {...getDragHandleProps('tacticalGrid')}>drag_indicator</span>
                       <button 
                         onClick={() => toggleLayer('tacticalGrid')}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -648,7 +674,7 @@ export default function Sidebar({
               <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${isVisible ? 'bg-surface-card/90 border-border-parchment hover:border-primary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                    <span {...getDragHandleProps(layer.id)}>drag_indicator</span>
                     <button 
                       onClick={() => toggleDynamic(layer.id)}
                       onMouseDown={(e) => e.stopPropagation()}
