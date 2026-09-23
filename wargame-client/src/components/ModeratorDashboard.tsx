@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit } from './MapGrid';
-import Sidebar, { LayerVisibility } from './Sidebar';
+import Sidebar, { LayerVisibility, DEFAULT_LAYER_ORDER } from './Sidebar';
 import TeamAssignment from './TeamAssignment';
 import UnitCreationModal from './UnitCreationModal';
 import HazardCreationModal from './HazardCreationModal';
@@ -37,6 +37,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
   });
 
   const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>({ baseMap: 1, tacticalGrid: 0.45 });
+  const [layerOrder, setLayerOrder] = useState<string[]>(DEFAULT_LAYER_ORDER);
 
   useEffect(() => {
     try {
@@ -46,6 +47,18 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
       }
     } catch (e) {
       console.error('Error loading layer opacities from localStorage', e);
+    }
+
+    try {
+      const savedOrder = localStorage.getItem('wargame_layer_order');
+      if (savedOrder) {
+        const parsed = JSON.parse(savedOrder);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLayerOrder(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading layer order from localStorage', e);
     }
   }, []);
 
@@ -62,6 +75,17 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
       }
       return next;
     });
+  };
+
+  const handleReorderLayers = (newOrder: string[]) => {
+    setLayerOrder(newOrder);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('wargame_layer_order', JSON.stringify(newOrder));
+      } catch (e) {
+        console.error('Error saving layer order to localStorage', e);
+      }
+    }
   };
 
   const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
@@ -390,6 +414,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               unconfirmedCount={unconfirmedCount}
               layerOpacities={layerOpacities}
               onOpacityChange={handleOpacityChange}
+              layerOrder={layerOrder}
+              onReorderLayers={handleReorderLayers}
             />
           )}
 
@@ -486,6 +512,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                     hideEditingTools={activeView === 'view_published'}
                     layerOpacities={layerOpacities}
                     onOpacityChange={handleOpacityChange}
+                    layerOrder={layerOrder}
                   />
                 </div>
 

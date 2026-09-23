@@ -76,6 +76,7 @@ interface MapGridProps {
   role?: string;
   layerOpacities?: Record<string, number>;
   onOpacityChange?: (layerId: string, opacity: number) => void;
+  layerOrder?: string[];
 }
 
 const CELL_SIZE = 40;
@@ -408,8 +409,16 @@ export default function MapGrid({
   fixedOwner,
   role,
   layerOpacities,
-  onOpacityChange
+  onOpacityChange,
+  layerOrder
 }: MapGridProps) {
+  const getLayerZIndex = (layerId: string, fallback: number) => {
+    if (!layerOrder || layerOrder.length === 0) return fallback;
+    const idx = layerOrder.indexOf(layerId);
+    if (idx === -1) return fallback;
+    return 1000 + (layerOrder.length - idx) * 100;
+  };
+
   const [dynamicLayers, setDynamicLayers] = useState<MapLayer[]>([]);
   const [pois, setPois] = useState<MapPOI[]>([]);
   const [hazards, setHazards] = useState<BattleHazard[]>([]);
@@ -867,6 +876,7 @@ export default function MapGrid({
             {layers.baseMap && visibleDynamicLayers.map(layer => {
               const baseOpacity = layerOpacities?.['baseMap'] !== undefined ? layerOpacities['baseMap'] : 1;
               const layerOpacity = (layerOpacities?.[layer.id] !== undefined ? layerOpacities[layer.id] : 1) * baseOpacity;
+              const layerZ = getLayerZIndex(layer.id, getLayerZIndex('baseMap', 1050) + (layer.z_index || 0));
 
               return (
                 <div 
@@ -874,41 +884,58 @@ export default function MapGrid({
                   className="absolute inset-0 pointer-events-none bg-contain bg-no-repeat bg-center transition-opacity duration-75"
                   style={{ 
                     backgroundImage: `url(${layer.image_url})`, 
-                    zIndex: layer.z_index,
+                    zIndex: layerZ,
                     opacity: layerOpacity
                   }}
                 />
               );
             })}
 
-            {/* Bathymetric SVG & Coastline Contours */}
-            <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9000, width: boardWidth, height: boardHeight }}>
-              <defs>
-                <pattern id="tacticalGridPattern" width="60" height="60" patternUnits="userSpaceOnUse">
-                  <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#2d7d74" strokeDasharray="3 3" strokeWidth="0.35" />
-                  <circle cx="0" cy="0" r="1.5" fill="#2d7d74" opacity="0.6" />
-                </pattern>
-                
-                {/* Hazard Patterns */}
-                <pattern id="pattern-minefield" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 0,10 L 10,0 M -1,1 L 1,-1 M 9,11 L 11,9" stroke="#ef4444" strokeWidth="2" opacity="0.6"/>
-                </pattern>
-                <pattern id="pattern-blockade" width="12" height="12" patternUnits="userSpaceOnUse">
-                  <path d="M 0,0 L 0,12" stroke="#a855f7" strokeWidth="4" opacity="0.5"/>
-                </pattern>
-              </defs>
+            {/* Tactical Grid SVG Layer */}
+            {layers.tacticalGrid && (
+              <svg 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ 
+                  zIndex: getLayerZIndex('tacticalGrid', 1400), 
+                  width: boardWidth, 
+                  height: boardHeight 
+                }}
+              >
+                <defs>
+                  <pattern id="tacticalGridPattern" width="60" height="60" patternUnits="userSpaceOnUse">
+                    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#2d7d74" strokeDasharray="3 3" strokeWidth="0.35" />
+                    <circle cx="0" cy="0" r="1.5" fill="#2d7d74" opacity="0.6" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#tacticalGridPattern)" opacity={layerOpacities?.tacticalGrid ?? 0.45} />
+              </svg>
+            )}
 
-              {/* Grid pattern layer */}
-              {layers.tacticalGrid && <rect width="100%" height="100%" fill="url(#tacticalGridPattern)" opacity={layerOpacities?.tacticalGrid ?? 0.45} />}
+            {/* Hazards SVG Layer */}
+            {layers.hazards && (
+              <svg 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ 
+                  zIndex: getLayerZIndex('hazards', 1300), 
+                  width: boardWidth, 
+                  height: boardHeight 
+                }}
+              >
+                <defs>
+                  <pattern id="pattern-minefield" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 0,10 L 10,0 M -1,1 L 1,-1 M 9,11 L 11,9" stroke="#ef4444" strokeWidth="2" opacity="0.6"/>
+                  </pattern>
+                  <pattern id="pattern-blockade" width="12" height="12" patternUnits="userSpaceOnUse">
+                    <path d="M 0,0 L 0,12" stroke="#a855f7" strokeWidth="4" opacity="0.5"/>
+                  </pattern>
+                </defs>
 
-              {layers.hazards && hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
+                {hazards.filter(h => !hiddenHazards.includes(h.id)).map(hazard => {
                   const points = Array.isArray(hazard.coordinates) ? hazard.coordinates : [];
                   if (points.length < 3) return null;
                   
-                  // Handle legacy grid coords vs new pixel coords.
                   const isLegacy = points.every(p => p.x <= mapConfig.gridSize.width && p.y <= mapConfig.gridSize.height);
                   const scaledPoints = points.map(p => isLegacy ? { x: p.x * CELL_SIZE, y: p.y * CELL_SIZE } : p);
-                  
                   const pointsString = scaledPoints.map(p => `${p.x},${p.y}`).join(' ');
                   
                   let fill = "rgba(0,0,0,0.2)";
@@ -945,10 +972,11 @@ export default function MapGrid({
                   );
                 })}
               </svg>
+            )}
 
             {/* Live Drawing Path (Always visible when drawing) */}
             {activeDrawingMode && currentPath.length > 0 && (
-              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 9005, width: boardWidth, height: boardHeight }}>
+              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 19999, width: boardWidth, height: boardHeight }}>
                 <polygon 
                   points={currentPath.map(p => `${p.x},${p.y}`).join(' ')}
                   fill="rgba(234, 88, 12, 0.3)"
@@ -959,143 +987,244 @@ export default function MapGrid({
               </svg>
             )}
 
-              {/* POIs */}
-              {layers.pois && (
-                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9002 }}>
-                  {pois.filter(poi => !hiddenPois.includes(poi.id)).map(poi => {
-                    const canDrag = !isDragMode && isPoiDraggable ? isPoiDraggable(poi) : false;
+            {/* POIs */}
+            {layers.pois && (
+              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: getLayerZIndex('pois', 1500) }}>
+                {pois.filter(poi => !hiddenPois.includes(poi.id)).map(poi => {
+                  const canDrag = !isDragMode && isPoiDraggable ? isPoiDraggable(poi) : false;
                   return (
-                  <div
-                    key={poi.id}
-                    draggable={canDrag}
-                    onDragStart={(e) => handlePoiDragStart(e, poi)}
-                    onDragEnd={handleDragEnd}
-                    className={`absolute flex flex-col items-center justify-center group ${
-                      isDragMode ? 'pointer-events-none select-none' : 'pointer-events-auto'
-                    } ${canDrag ? 'cursor-grab active:cursor-grabbing draggable-unit' : 'cursor-pointer'}`}
-                    style={{
-                      left: poi.x_coord,
-                      top: poi.y_coord,
-                      width: CELL_SIZE,
-                      height: CELL_SIZE,
-                      transform: 'scale(var(--unit-inverse-scale, 1))'
-                    }}
-                    onClick={(e) => {
-                      if (isDragMode) return;
-                      e.stopPropagation();
-                      if (onPOIClick) onPOIClick(poi);
-                    }}
-                    title={`${poi.name} (${poi.status})`}
-                  >
-                    <PoiBadge 
-                      type={poi.type} 
-                      owner={poi.owner} 
-                      status={poi.status} 
-                      size={22} 
-                      className="group-hover:scale-110 transition-transform" 
-                    />
-                    <span className={`absolute -bottom-4 text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-[#313030]/90 border border-white/15 ${
-                      poi.owner === 'Player A' ? 'text-[#a4f1e5]' : poi.owner === 'Player B' ? 'text-[#f26a4b]' : poi.owner === 'Unknown' ? 'text-[#d4a017]' : 'text-white'
-                    }`}>
-                      {poi.name}
-                    </span>
-                  </div>
-                  )
+                    <div
+                      key={poi.id}
+                      draggable={canDrag}
+                      onDragStart={(e) => handlePoiDragStart(e, poi)}
+                      onDragEnd={handleDragEnd}
+                      className={`absolute flex flex-col items-center justify-center group ${
+                        isDragMode ? 'pointer-events-none select-none' : 'pointer-events-auto'
+                      } ${canDrag ? 'cursor-grab active:cursor-grabbing draggable-unit' : 'cursor-pointer'}`}
+                      style={{
+                        left: poi.x_coord,
+                        top: poi.y_coord,
+                        width: CELL_SIZE,
+                        height: CELL_SIZE,
+                        transform: 'scale(var(--unit-inverse-scale, 1))'
+                      }}
+                      onClick={(e) => {
+                        if (isDragMode) return;
+                        e.stopPropagation();
+                        if (onPOIClick) onPOIClick(poi);
+                      }}
+                      title={`${poi.name} (${poi.status})`}
+                    >
+                      <PoiBadge 
+                        type={poi.type} 
+                        owner={poi.owner} 
+                        status={poi.status} 
+                        size={22} 
+                        className="group-hover:scale-110 transition-transform" 
+                      />
+                      <span className={`absolute -bottom-4 text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-[#313030]/90 border border-white/15 ${
+                        poi.owner === 'Player A' ? 'text-[#a4f1e5]' : poi.owner === 'Player B' ? 'text-[#f26a4b]' : poi.owner === 'Unknown' ? 'text-[#d4a017]' : 'text-white'
+                      }`}>
+                        {poi.name}
+                      </span>
+                    </div>
+                  );
                 })}
               </div>
             )}
 
             {/* Units */}
             {layers.units && (
-              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 9003 }}>
-                {units.filter(unit => {
-                   if (unit.owner === 'Player A' && !layers.teamA) return false;
-                   if (unit.owner === 'Player B' && !layers.teamB) return false;
-                   if (unit.owner === 'Unknown' && !layers.unconfirmed) return false;
-                   return true;
-                }).map((unit) => {
-                  const canDrag = !isDragMode && isDraggable ? isDraggable(unit) : false;
-                  const isSelected = selectedUnitId === unit.id;
-                  
-                  return (
-                    <div 
-                      key={unit.id}
-                      draggable={canDrag}
-                      onDragStart={(e) => handleDragStart(e, unit)}
-                      onDragEnd={handleDragEnd}
-                      className={`absolute flex flex-col items-center justify-center opacity-100 group ${
-                        isDragMode ? 'pointer-events-none select-none' : 'draggable-unit pointer-events-auto'
-                      } ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}`}
-                      style={{ 
-                        left: unit.x_coord, 
-                        top: unit.y_coord, 
-                        width: CELL_SIZE, 
-                        height: CELL_SIZE,
-                        transform: 'scale(var(--unit-inverse-scale, 1))',
-                        zIndex: isSelected ? 9999 : undefined
-                      }}
-                      title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
-                      onClick={(e) => {
-                         if (isDragMode) return;
-                         // Prevent triggering grid click when clicking a unit
-                         e.stopPropagation();
-                         if (onUnitClick) onUnitClick(unit);
-                      }}
-                    >
-                      {isSelected && (
-                        <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
-                      )}
-
-                      <div
-                        className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}
-                      >
-                        <NatoSymbol sidc={getSidcForUnit(unit)} size={30.6} className="drop-shadow-xl" />
-                      </div>
-
-                      {/* Left indicator: Eye icon when visible to enemy */}
-                      {unit.is_visible_to_enemy && role === 'Moderator' && (
-                        <span 
-                          className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70"
-                          title="Visível ao adversário"
+              <>
+                {/* Team A Units */}
+                {layers.teamA && (
+                  <div className="absolute inset-0 pointer-events-none" style={{ zIndex: getLayerZIndex('teamA', 1800) }}>
+                    {units.filter(unit => unit.owner === 'Player A').map((unit) => {
+                      const canDrag = !isDragMode && isDraggable ? isDraggable(unit) : false;
+                      const isSelected = selectedUnitId === unit.id;
+                      return (
+                        <div 
+                          key={unit.id}
+                          draggable={canDrag}
+                          onDragStart={(e) => handleDragStart(e, unit)}
+                          onDragEnd={handleDragEnd}
+                          className={`absolute flex flex-col items-center justify-center opacity-100 group ${
+                            isDragMode ? 'pointer-events-none select-none' : 'draggable-unit pointer-events-auto'
+                          } ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}`}
+                          style={{ 
+                            left: unit.x_coord, 
+                            top: unit.y_coord, 
+                            width: CELL_SIZE, 
+                            height: CELL_SIZE,
+                            transform: 'scale(var(--unit-inverse-scale, 1))',
+                            zIndex: isSelected ? 9999 : undefined
+                          }}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          onClick={(e) => {
+                             if (isDragMode) return;
+                             e.stopPropagation();
+                             if (onUnitClick) onUnitClick(unit);
+                          }}
                         >
-                          <Eye size={9} className="text-white" strokeWidth={2.5} />
-                        </span>
-                      )}
-
-                      {/* Right indicator: Readiness */}
-                      {unit.health < 30 && (
-                        <span 
-                          className="absolute top-0 -right-0.5 w-4 h-4 bg-[#c03a6b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60"
-                          title="Prontidão crítica"
-                        >
-                          !
-                        </span>
-                      )}
-                      {unit.health >= 30 && unit.health <= 70 && (
-                        <span 
-                          className="absolute top-0 -right-0.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60"
-                          title="Prontidão degradada"
-                        >
-                          !
-                        </span>
-                      )}
-
-                      <div className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
-                        isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
-                      }`}>
-                        <div className={`font-mono text-[10px] font-bold leading-tight ${
-                          isSelected ? 'text-[#d4a017]' : unit.owner === 'Player A' ? 'text-[#a4f1e5]' : unit.owner === 'Player B' ? 'text-[#f26a4b]' : unit.owner === 'Unknown' ? 'text-[#d4a017]' : 'text-white'
-                        }`}>
-                          {unit.name || getHumanReadableFromSidc(unit.type)}
+                          {isSelected && (
+                            <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
+                          )}
+                          <div className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}>
+                            <NatoSymbol sidc={getSidcForUnit(unit)} size={30.6} className="drop-shadow-xl" />
+                          </div>
+                          {unit.is_visible_to_enemy && role === 'Moderator' && (
+                            <span className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70" title="Visível ao adversário">
+                              <Eye size={9} className="text-white" strokeWidth={2.5} />
+                            </span>
+                          )}
+                          {unit.health < 30 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#c03a6b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão crítica">!</span>
+                          )}
+                          {unit.health >= 30 && unit.health <= 70 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão degradada">!</span>
+                          )}
+                          <div className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
+                            isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
+                          }`}>
+                            <div className={`font-mono text-[10px] font-bold leading-tight ${isSelected ? 'text-[#d4a017]' : 'text-[#a4f1e5]'}`}>
+                              {unit.name || getHumanReadableFromSidc(unit.type)}
+                            </div>
+                            <div className="font-mono text-[8px] text-[#f7f4eb]/80 uppercase tracking-tight">
+                              {unit.health >= 70 ? 'NORMAL' : unit.health >= 30 ? 'DEGRADED' : 'CRITICAL'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="font-mono text-[8px] text-[#f7f4eb]/80 uppercase tracking-tight">
-                          {unit.health >= 70 ? 'NORMAL' : unit.health >= 30 ? 'DEGRADED' : 'CRITICAL'}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Team B Units */}
+                {layers.teamB && (
+                  <div className="absolute inset-0 pointer-events-none" style={{ zIndex: getLayerZIndex('teamB', 1700) }}>
+                    {units.filter(unit => unit.owner === 'Player B').map((unit) => {
+                      const canDrag = !isDragMode && isDraggable ? isDraggable(unit) : false;
+                      const isSelected = selectedUnitId === unit.id;
+                      return (
+                        <div 
+                          key={unit.id}
+                          draggable={canDrag}
+                          onDragStart={(e) => handleDragStart(e, unit)}
+                          onDragEnd={handleDragEnd}
+                          className={`absolute flex flex-col items-center justify-center opacity-100 group ${
+                            isDragMode ? 'pointer-events-none select-none' : 'draggable-unit pointer-events-auto'
+                          } ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}`}
+                          style={{ 
+                            left: unit.x_coord, 
+                            top: unit.y_coord, 
+                            width: CELL_SIZE, 
+                            height: CELL_SIZE,
+                            transform: 'scale(var(--unit-inverse-scale, 1))',
+                            zIndex: isSelected ? 9999 : undefined
+                          }}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          onClick={(e) => {
+                             if (isDragMode) return;
+                             e.stopPropagation();
+                             if (onUnitClick) onUnitClick(unit);
+                          }}
+                        >
+                          {isSelected && (
+                            <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
+                          )}
+                          <div className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}>
+                            <NatoSymbol sidc={getSidcForUnit(unit)} size={30.6} className="drop-shadow-xl" />
+                          </div>
+                          {unit.is_visible_to_enemy && role === 'Moderator' && (
+                            <span className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70" title="Visível ao adversário">
+                              <Eye size={9} className="text-white" strokeWidth={2.5} />
+                            </span>
+                          )}
+                          {unit.health < 30 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#c03a6b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão crítica">!</span>
+                          )}
+                          {unit.health >= 30 && unit.health <= 70 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão degradada">!</span>
+                          )}
+                          <div className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
+                            isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
+                          }`}>
+                            <div className={`font-mono text-[10px] font-bold leading-tight ${isSelected ? 'text-[#d4a017]' : 'text-[#f26a4b]'}`}>
+                              {unit.name || getHumanReadableFromSidc(unit.type)}
+                            </div>
+                            <div className="font-mono text-[8px] text-[#f7f4eb]/80 uppercase tracking-tight">
+                              {unit.health >= 70 ? 'NORMAL' : unit.health >= 30 ? 'DEGRADED' : 'CRITICAL'}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Unconfirmed / Unknown Units */}
+                {layers.unconfirmed && (
+                  <div className="absolute inset-0 pointer-events-none" style={{ zIndex: getLayerZIndex('unconfirmed', 1600) }}>
+                    {units.filter(unit => unit.owner !== 'Player A' && unit.owner !== 'Player B').map((unit) => {
+                      const canDrag = !isDragMode && isDraggable ? isDraggable(unit) : false;
+                      const isSelected = selectedUnitId === unit.id;
+                      return (
+                        <div 
+                          key={unit.id}
+                          draggable={canDrag}
+                          onDragStart={(e) => handleDragStart(e, unit)}
+                          onDragEnd={handleDragEnd}
+                          className={`absolute flex flex-col items-center justify-center opacity-100 group ${
+                            isDragMode ? 'pointer-events-none select-none' : 'draggable-unit pointer-events-auto'
+                          } ${canDrag ? 'cursor-grab active:cursor-grabbing' : (onUnitClick ? 'cursor-pointer' : 'cursor-default')}`}
+                          style={{ 
+                            left: unit.x_coord, 
+                            top: unit.y_coord, 
+                            width: CELL_SIZE, 
+                            height: CELL_SIZE,
+                            transform: 'scale(var(--unit-inverse-scale, 1))',
+                            zIndex: isSelected ? 9999 : undefined
+                          }}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          onClick={(e) => {
+                             if (isDragMode) return;
+                             e.stopPropagation();
+                             if (onUnitClick) onUnitClick(unit);
+                          }}
+                        >
+                          {isSelected && (
+                            <span className="absolute -inset-2 rounded-xl bg-[#d4a017]/40 animate-pulse pointer-events-none" />
+                          )}
+                          <div className={`relative z-10 flex items-center justify-center ${isSelected ? 'ring-2 ring-[#d4a017] ring-offset-2 ring-offset-[#1f2420] rounded-lg bg-surface-canvas-void/30' : ''}`}>
+                            <NatoSymbol sidc={getSidcForUnit(unit)} size={30.6} className="drop-shadow-xl" />
+                          </div>
+                          {unit.is_visible_to_enemy && role === 'Moderator' && (
+                            <span className="absolute top-0 -left-0.5 w-4 h-4 bg-gray-600 text-white rounded-full flex items-center justify-center z-20 shadow border border-white/70" title="Visível ao adversário">
+                              <Eye size={9} className="text-white" strokeWidth={2.5} />
+                            </span>
+                          )}
+                          {unit.health < 30 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#c03a6b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão crítica">!</span>
+                          )}
+                          {unit.health >= 30 && unit.health <= 70 && (
+                            <span className="absolute top-0 -right-0.5 w-4 h-4 bg-[#f26a4b] text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 shadow border border-white/60" title="Prontidão degradada">!</span>
+                          )}
+                          <div className={`pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md shadow-xl whitespace-nowrap text-center backdrop-blur-md border ${
+                            isSelected ? 'bg-[#313030]/95 border-[#d4a017]/70 z-50' : 'bg-[#313030]/90 border-white/15 opacity-0 group-hover:opacity-100 z-50'
+                          }`}>
+                            <div className={`font-mono text-[10px] font-bold leading-tight ${isSelected ? 'text-[#d4a017]' : 'text-[#d4a017]'}`}>
+                              {unit.name || getHumanReadableFromSidc(unit.type)}
+                            </div>
+                            <div className="font-mono text-[8px] text-[#f7f4eb]/80 uppercase tracking-tight">
+                              {unit.health >= 70 ? 'NORMAL' : unit.health >= 30 ? 'DEGRADED' : 'CRITICAL'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
 
           </div>

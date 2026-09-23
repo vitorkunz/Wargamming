@@ -20,6 +20,16 @@ export interface LayerVisibility {
   [key: string]: boolean; // For dynamic layers if we want them here, but we manage them via hiddenDynamicLayers
 }
 
+export const DEFAULT_LAYER_ORDER = [
+  'teamA',
+  'teamB',
+  'unconfirmed',
+  'pois',
+  'tacticalGrid',
+  'hazards',
+  'baseMap'
+];
+
 interface SidebarProps {
   layers: LayerVisibility;
   toggleLayer: (layer: keyof LayerVisibility) => void;
@@ -45,6 +55,8 @@ interface SidebarProps {
   onOpacityChange?: (layerId: string, opacity: number) => void;
   activeTab?: 'planning' | 'battle';
   isMobileOpen?: boolean;
+  layerOrder?: string[];
+  onReorderLayers?: (newOrder: string[]) => void;
 }
 
 export default function Sidebar({ 
@@ -64,7 +76,9 @@ export default function Sidebar({
   unitsTable,
   layerOpacities,
   onOpacityChange,
-  activeTab
+  activeTab,
+  layerOrder,
+  onReorderLayers
 }: SidebarProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(true);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -77,6 +91,102 @@ export default function Sidebar({
   const [isPoiExpanded, setIsPoiExpanded] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showNovaUnidadeModal, setShowNovaUnidadeModal] = useState(false);
+
+  const [internalLayerOrder, setInternalLayerOrder] = useState<string[]>(DEFAULT_LAYER_ORDER);
+  const currentOrder = layerOrder && layerOrder.length > 0 ? layerOrder : internalLayerOrder;
+  const handleReorder = onReorderLayers || setInternalLayerOrder;
+
+  const [draggedLayerKey, setDraggedLayerKey] = useState<string | null>(null);
+  const [dragOverLayerKey, setDragOverLayerKey] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(null);
+
+  const effectiveLayerOrder = React.useMemo(() => {
+    const baseKeys = DEFAULT_LAYER_ORDER;
+    const dynamicIds = dynamicLayers.map(l => l.id);
+    const order = currentOrder.slice();
+
+    const filtered = order.filter(k => baseKeys.includes(k) || dynamicIds.includes(k));
+
+    baseKeys.forEach(k => {
+      if (!filtered.includes(k)) {
+        if (k === 'baseMap') filtered.push(k);
+        else filtered.unshift(k);
+      }
+    });
+
+    dynamicIds.forEach(id => {
+      if (!filtered.includes(id)) {
+        const baseMapIdx = filtered.indexOf('baseMap');
+        if (baseMapIdx !== -1) {
+          filtered.splice(baseMapIdx, 0, id);
+        } else {
+          filtered.push(id);
+        }
+      }
+    });
+
+    return filtered;
+  }, [currentOrder, dynamicLayers]);
+
+  const handleLayerDragStart = (e: React.DragEvent, key: string) => {
+    e.dataTransfer.setData('text/plain', `wargame-layer:${key}`);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedLayerKey(key);
+  };
+
+  const handleLayerDragOver = (e: React.DragEvent, targetKey: string) => {
+    if (draggedLayerKey && draggedLayerKey !== targetKey) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      const pos = e.clientY < midpoint ? 'above' : 'below';
+      setDragOverLayerKey(targetKey);
+      setDropPosition(pos);
+    }
+  };
+
+  const handleLayerDragLeave = () => {
+    setDragOverLayerKey(null);
+    setDropPosition(null);
+  };
+
+  const handleLayerDrop = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedLayerKey || draggedLayerKey === targetKey) {
+      setDraggedLayerKey(null);
+      setDragOverLayerKey(null);
+      setDropPosition(null);
+      return;
+    }
+
+    const currentList = [...effectiveLayerOrder];
+    const fromIndex = currentList.indexOf(draggedLayerKey);
+    if (fromIndex === -1) return;
+
+    currentList.splice(fromIndex, 1);
+    let targetIndex = currentList.indexOf(targetKey);
+    if (targetIndex === -1) {
+      targetIndex = currentList.length;
+    } else if (dropPosition === 'below') {
+      targetIndex += 1;
+    }
+
+    currentList.splice(targetIndex, 0, draggedLayerKey);
+    handleReorder(currentList);
+
+    setDraggedLayerKey(null);
+    setDragOverLayerKey(null);
+    setDropPosition(null);
+  };
+
+  const handleLayerDragEnd = () => {
+    setDraggedLayerKey(null);
+    setDragOverLayerKey(null);
+    setDropPosition(null);
+  };
 
   useEffect(() => {
     const fetchLayers = async () => {
@@ -198,275 +308,358 @@ export default function Sidebar({
       </div>
 
       <div className={`flex-1 overflow-y-auto p-3.5 space-y-2.5 text-on-surface custom-scrollbar relative z-0 ${!isOpen ? 'hidden' : 'block'}`} id="layer-tree">
-        
-        {/* Layer 1: Base Map */}
-        <div className={`group rounded-lg p-2.5 border transition-all ${layers.baseMap ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/40 shadow-sm hover:bg-surface-parchment-dim' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('baseMap')}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.baseMap ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
-                <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Master Cartography</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
-                {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
-              </span>
-            </div>
-          </div>
+        {effectiveLayerOrder.map(key => {
+          const isDragging = draggedLayerKey === key;
+          const isOver = dragOverLayerKey === key;
 
-          {/* Transparency Slider */}
-          {layers.baseMap && onOpacityChange && (
-            <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência">opacity</span>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
-                onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
-                className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
-              />
-              <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
-                {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
-              </span>
-            </div>
-          )}
-        </div>
+          const cardWrapperProps = {
+            key,
+            draggable: true,
+            onDragStart: (e: React.DragEvent) => handleLayerDragStart(e, key),
+            onDragOver: (e: React.DragEvent) => handleLayerDragOver(e, key),
+            onDragLeave: handleLayerDragLeave,
+            onDrop: (e: React.DragEvent) => handleLayerDrop(e, key),
+            onDragEnd: handleLayerDragEnd,
+            className: `transition-all duration-150 rounded-lg relative ${
+              isDragging ? 'opacity-30 scale-[0.98]' : ''
+            } ${
+              isOver && dropPosition === 'above' ? 'border-t-2 border-primary -mt-0.5' : ''
+            } ${
+              isOver && dropPosition === 'below' ? 'border-b-2 border-primary -mb-0.5' : ''
+            }`
+          };
 
-        {/* Layer 2: Strategic POIs & Objectives (Expandable) */}
-        <div className={`rounded-lg p-2.5 border shadow-sm ${layers.pois ? 'bg-surface-card/90 border-border-parchment' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setIsPoiExpanded(!isPoiExpanded)}>
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab" onClick={(e)=>e.stopPropagation()}>drag_indicator</span>
-              <button 
-                onClick={(e) => { e.stopPropagation(); toggleLayer('pois'); }}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.pois ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Strategic Objectives</span>
-                <span className={`font-tag-overline text-[8px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>{pois.length} Key Assets</span>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-outline text-[15px]">{isPoiExpanded ? 'expand_less' : 'expand_more'}</span>
-          </div>
-          
-          {/* POI Sub-Items */}
-          {isPoiExpanded && (
-            <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60">
-              {pois.length === 0 ? (
-                <div className="text-[9px] italic text-on-surface-variant">No active objectives</div>
-              ) : (
-                pois.map(poi => {
-                   const isVisible = !hiddenPois.includes(poi.id);
-                   return (
-                     <div key={poi.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalPoi(poi.id)}>
-                       <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
-                         <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-status-objective' : 'bg-surface-dim'}`}></span>
-                         <span className="truncate">{poi.name}</span>
-                       </span>
-                       <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
-                         {isVisible ? 'check' : 'add'}
-                       </span>
-                     </div>
-                   );
-                })
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Layer 3: Friendly Forces */}
-        <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamA ? 'bg-surface-card/90 border-border-parchment hover:border-faction-friendly/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('teamA')}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.teamA ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamA ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time A</span>
-                <span className={`font-tag-overline text-[8px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>{teamACount} Units Deployed</span>
-              </div>
-            </div>
-            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamA ? 'bg-faction-friendly ring-2 ring-faction-friendly/20' : 'bg-surface-dim'}`}></span>
-          </div>
-        </div>
-
-        {/* Layer 4: Hostile Forces */}
-        <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamB ? 'bg-surface-card/90 border-border-parchment hover:border-faction-hostile/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('teamB')}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.teamB ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamB ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time B</span>
-                <span className={`font-tag-overline text-[8px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>{teamBCount} Units Active</span>
-              </div>
-            </div>
-            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamB ? 'bg-faction-hostile ring-2 ring-faction-hostile/20' : 'bg-surface-dim'}`}></span>
-          </div>
-        </div>
-
-        {/* Layer 5: Unconfirmed & Fog */}
-        <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.unconfirmed ? 'bg-surface-card/90 border-border-parchment hover:border-faction-unknown/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('unconfirmed')}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.unconfirmed ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Unconfirmed Contacts</span>
-                <span className={`font-tag-overline text-[8px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>{unconfirmedCount} Ambiguous Pings</span>
-              </div>
-            </div>
-            <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.unconfirmed ? 'bg-faction-unknown ring-2 ring-faction-unknown/20' : 'bg-surface-dim'}`}></span>
-          </div>
-        </div>
-
-        {/* Layer 6: Operational Boundaries */}
-        <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.hazards ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('hazards')}
-                className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.hazards ? 'polyline' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Operational Sectors</span>
-                <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
-              </div>
-            </div>
-            <span className={`material-symbols-outlined text-[15px] ${layers.hazards ? 'text-on-surface-variant' : 'text-outline-variant'}`}>polyline</span>
-          </div>
-        </div>
-
-        {/* Layer 7: Tactical Grid */}
-        <div className={`rounded-lg p-2.5 border transition-all ${layers.tacticalGrid ? 'bg-surface-card/90 border-border-parchment shadow-sm hover:border-secondary/30' : 'bg-surface-card/60 border-border-parchment/60 opacity-60'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-              <button 
-                onClick={() => toggleLayer('tacticalGrid')}
-                className="text-outline hover:text-on-surface transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[16px]">{layers.tacticalGrid ? 'visibility' : 'visibility_off'}</span>
-              </button>
-              <div className="flex flex-col min-w-0">
-                <span className={`font-label-md text-[10px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Tactical Grid (MGRS 10k)</span>
-                <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
-                {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
-              </span>
-              <span className={`material-symbols-outlined text-[15px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
-            </div>
-          </div>
-
-          {/* Transparency Slider */}
-          {layers.tacticalGrid && onOpacityChange && (
-            <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Grade">opacity</span>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
-                onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
-                className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
-              />
-              <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
-                {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Dynamic Uploaded Layers */}
-        {dynamicLayers.map(layer => {
-          const isVisible = !hiddenDynamicLayers.includes(layer.id) && layer.is_global_visible;
-          const currentOpacity = layerOpacities?.[layer.id] ?? 1;
-          return (
-            <div key={layer.id} className={`rounded-lg p-2.5 border shadow-sm transition-all ${isVisible ? 'bg-surface-card/90 border-border-parchment hover:border-primary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
-                  <button 
-                    onClick={() => toggleDynamic(layer.id)}
-                    className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">{isVisible ? 'visibility' : 'visibility_off'}</span>
-                  </button>
-                  <div className="flex flex-col min-w-0">
-                    <span className={`font-label-md text-[10px] truncate font-bold ${isVisible ? 'text-on-surface' : 'text-on-surface-variant'}`}>{layer.name}</span>
-                    <span className="font-tag-overline text-[8px] text-on-surface-variant">Custom Layer</span>
+          if (key === 'baseMap') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`group rounded-lg p-2.5 border transition-all ${layers.baseMap ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/40 shadow-sm hover:bg-surface-parchment-dim' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('baseMap')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.baseMap ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
+                        <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Master Cartography</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                        {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
-                    {Math.round(currentOpacity * 100)}%
-                  </span>
-                  {isModerator && (
-                    <button onClick={async () => {
-                       if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
-                    }} className="text-status-alert hover:text-red-700 p-1" title="Delete layer">
-                      <span className="material-symbols-outlined text-[13px]">delete</span>
-                    </button>
+
+                  {/* Transparency Slider */}
+                  {layers.baseMap && onOpacityChange && (
+                    <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                      <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência">opacity</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value={Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}
+                        onChange={(e) => onOpacityChange('baseMap', Number(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+                      />
+                      <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                        {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
+            );
+          }
 
-              {/* Transparency Slider */}
-              {isVisible && onOpacityChange && (
-                <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Camada">opacity</span>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={Math.round(currentOpacity * 100)}
-                    onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
-                    className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
-                  />
-                  <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
-                    {Math.round(currentOpacity * 100)}%
-                  </span>
+          if (key === 'pois') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm ${layers.pois ? 'bg-surface-card/90 border-border-parchment' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setIsPoiExpanded(!isPoiExpanded)}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" onClick={(e)=>e.stopPropagation()} title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); toggleLayer('pois'); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.pois ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Strategic Objectives</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>{pois.length} Key Assets</span>
+                      </div>
+                    </div>
+                    <span className="material-symbols-outlined text-outline text-[15px]">{isPoiExpanded ? 'expand_less' : 'expand_more'}</span>
+                  </div>
+                  
+                  {/* POI Sub-Items */}
+                  {isPoiExpanded && (
+                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                      {pois.length === 0 ? (
+                        <div className="text-[9px] italic text-on-surface-variant">No active objectives</div>
+                      ) : (
+                        pois.map(poi => {
+                           const isVisible = !hiddenPois.includes(poi.id);
+                           return (
+                             <div key={poi.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalPoi(poi.id)}>
+                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
+                                 <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-status-objective' : 'bg-surface-dim'}`}></span>
+                                 <span className="truncate">{poi.name}</span>
+                               </span>
+                               <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
+                                 {isVisible ? 'check' : 'add'}
+                               </span>
+                             </div>
+                           );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            );
+          }
+
+          if (key === 'teamA') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamA ? 'bg-surface-card/90 border-border-parchment hover:border-faction-friendly/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('teamA')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.teamA ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamA ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time A</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>{teamACount} Units Deployed</span>
+                      </div>
+                    </div>
+                    <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamA ? 'bg-faction-friendly ring-2 ring-faction-friendly/20' : 'bg-surface-dim'}`}></span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (key === 'teamB') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamB ? 'bg-surface-card/90 border-border-parchment hover:border-faction-hostile/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('teamB')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.teamB ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamB ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time B</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>{teamBCount} Units Active</span>
+                      </div>
+                    </div>
+                    <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamB ? 'bg-faction-hostile ring-2 ring-faction-hostile/20' : 'bg-surface-dim'}`}></span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (key === 'unconfirmed') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.unconfirmed ? 'bg-surface-card/90 border-border-parchment hover:border-faction-unknown/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('unconfirmed')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.unconfirmed ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Unconfirmed Contacts</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>{unconfirmedCount} Ambiguous Pings</span>
+                      </div>
+                    </div>
+                    <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.unconfirmed ? 'bg-faction-unknown ring-2 ring-faction-unknown/20' : 'bg-surface-dim'}`}></span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (key === 'hazards') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.hazards ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('hazards')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.hazards ? 'polyline' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Operational Sectors</span>
+                        <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
+                      </div>
+                    </div>
+                    <span className={`material-symbols-outlined text-[15px] ${layers.hazards ? 'text-on-surface-variant' : 'text-outline-variant'}`}>polyline</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (key === 'tacticalGrid') {
+            return (
+              <div {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border transition-all ${layers.tacticalGrid ? 'bg-surface-card/90 border-border-parchment shadow-sm hover:border-secondary/30' : 'bg-surface-card/60 border-border-parchment/60 opacity-60'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                      <button 
+                        onClick={() => toggleLayer('tacticalGrid')}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-outline hover:text-on-surface transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{layers.tacticalGrid ? 'visibility' : 'visibility_off'}</span>
+                      </button>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Tactical Grid (MGRS 10k)</span>
+                        <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                        {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+                      </span>
+                      <span className={`material-symbols-outlined text-[15px] ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>grid_4x4</span>
+                    </div>
+                  </div>
+
+                  {/* Transparency Slider */}
+                  {layers.tacticalGrid && onOpacityChange && (
+                    <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                      <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Grade">opacity</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value={Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}
+                        onChange={(e) => onOpacityChange('tacticalGrid', Number(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+                      />
+                      <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                        {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          // Dynamic Uploaded Layer
+          const layer = dynamicLayers.find(l => l.id === key);
+          if (!layer) return null;
+
+          const isVisible = !hiddenDynamicLayers.includes(layer.id) && layer.is_global_visible;
+          const currentOpacity = layerOpacities?.[layer.id] ?? 1;
+
+          return (
+            <div {...cardWrapperProps}>
+              <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${isVisible ? 'bg-surface-card/90 border-border-parchment hover:border-primary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="material-symbols-outlined text-outline hover:text-primary active:text-primary text-[16px] cursor-grab active:cursor-grabbing select-none" title="Arrastar para reordenar camada">drag_indicator</span>
+                    <button 
+                      onClick={() => toggleDynamic(layer.id)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      draggable={false}
+                      className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">{isVisible ? 'visibility' : 'visibility_off'}</span>
+                    </button>
+                    <div className="flex flex-col min-w-0">
+                      <span className={`font-label-md text-[10px] truncate font-bold ${isVisible ? 'text-on-surface' : 'text-on-surface-variant'}`}>{layer.name}</span>
+                      <span className="font-tag-overline text-[8px] text-on-surface-variant">Custom Layer</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-surface-container px-1 py-0.5 rounded text-[9px] font-mono font-semibold text-on-surface-variant">
+                      {Math.round(currentOpacity * 100)}%
+                    </span>
+                    {isModerator && (
+                      <button 
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
+                        }} 
+                        onMouseDown={(e) => e.stopPropagation()}
+                        draggable={false}
+                        className="text-status-alert hover:text-red-700 p-1" 
+                        title="Delete layer"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">delete</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Transparency Slider */}
+                {isVisible && onOpacityChange && (
+                  <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                    <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência da Camada">opacity</span>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={Math.round(currentOpacity * 100)}
+                      onChange={(e) => onOpacityChange(layer.id, Number(e.target.value) / 100)}
+                      className="w-full h-1.5 bg-surface-dim rounded-lg appearance-none cursor-pointer accent-[#2d7d74]"
+                    />
+                    <span className="font-mono text-[9px] font-semibold text-on-surface-variant w-7 text-right">
+                      {Math.round(currentOpacity * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

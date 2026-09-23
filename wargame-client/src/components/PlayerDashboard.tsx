@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import MapGrid, { Unit, MapPOI, BattleHazard } from './MapGrid';
-import Sidebar, { LayerVisibility } from './Sidebar';
+import Sidebar, { LayerVisibility, DEFAULT_LAYER_ORDER } from './Sidebar';
 import UnitCreationModal from './UnitCreationModal';
 import ReservesPanel from './ReservesPanel';
 import UnitPanel from './UnitPanel';
@@ -37,6 +37,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   });
   
   const [layerOpacities, setLayerOpacities] = useState<Record<string, number>>({ baseMap: 1, tacticalGrid: 0.45 });
+  const [layerOrder, setLayerOrder] = useState<string[]>(DEFAULT_LAYER_ORDER);
 
   useEffect(() => {
     try {
@@ -46,6 +47,18 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
       }
     } catch (e) {
       console.error('Error loading layer opacities from localStorage', e);
+    }
+
+    try {
+      const savedOrder = localStorage.getItem('wargame_layer_order');
+      if (savedOrder) {
+        const parsed = JSON.parse(savedOrder);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLayerOrder(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading layer order from localStorage', e);
     }
   }, []);
 
@@ -62,6 +75,17 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
       }
       return next;
     });
+  };
+
+  const handleReorderLayers = (newOrder: string[]) => {
+    setLayerOrder(newOrder);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('wargame_layer_order', JSON.stringify(newOrder));
+      } catch (e) {
+        console.error('Error saving layer order to localStorage', e);
+      }
+    }
   };
 
   const [planningUnits, setPlanningUnits] = useState<Unit[]>([]);
@@ -410,6 +434,8 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             layerOpacities={layerOpacities}
             onOpacityChange={handleOpacityChange}
             activeTab={activeTab}
+            layerOrder={layerOrder}
+            onReorderLayers={handleReorderLayers}
           />
 
           {/* Center Canvas */}
@@ -480,6 +506,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 hideEditingTools={activeTab === 'battle'}
                 layerOpacities={layerOpacities}
                 onOpacityChange={handleOpacityChange}
+                layerOrder={layerOrder}
               />
             </div>
 
