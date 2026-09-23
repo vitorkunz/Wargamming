@@ -25,9 +25,9 @@ export default function TeamAssignment() {
   const [isAddModModalOpen, setIsAddModModalOpen] = useState(false);
 
   const [factionSettings, setFactionSettings] = useState({
-    team_a_name: 'Força Azul Marítima',
+    team_a_name: 'Força Aliada',
     team_a_icon: 'directions_boat',
-    team_b_name: 'Força Vermelha Costeira',
+    team_b_name: 'Força Oposição',
     team_b_icon: 'shield'
   });
   const [editingFaction, setEditingFaction] = useState<'team-a' | 'team-b' | null>(null);
@@ -45,9 +45,9 @@ export default function TeamAssignment() {
     const { data, error } = await supabase.from('Game_State').select('*').eq('id', 1).single();
     if (!error && data) {
       setFactionSettings({
-        team_a_name: data.team_a_name || 'Força Azul Marítima',
+        team_a_name: data.team_a_name || 'Força Aliada',
         team_a_icon: data.team_a_icon || 'directions_boat',
-        team_b_name: data.team_b_name || 'Força Vermelha Costeira',
+        team_b_name: data.team_b_name || 'Força Oposição',
         team_b_icon: data.team_b_icon || 'shield'
       });
     }

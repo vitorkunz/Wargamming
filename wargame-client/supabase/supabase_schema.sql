@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS public."Profiles" (
 CREATE TABLE IF NOT EXISTS public."Game_State" (
     id INTEGER PRIMARY KEY DEFAULT 1, -- Single row table
     base_map_url TEXT,
-    team_a_name TEXT DEFAULT 'Força Azul Marítima',
+    team_a_name TEXT DEFAULT 'Força Aliada',
     team_a_icon TEXT DEFAULT 'directions_boat',
-    team_b_name TEXT DEFAULT 'Força Vermelha Costeira',
+    team_b_name TEXT DEFAULT 'Força Oposição',
     team_b_icon TEXT DEFAULT 'shield',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     CONSTRAINT single_row CHECK (id = 1)
