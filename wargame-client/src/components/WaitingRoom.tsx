@@ -54,6 +54,7 @@ export default function WaitingRoom({ userEmail, userId, onSignOut }: WaitingRoo
   const handleManualRefresh = () => {
     setSecondsLeft(totalSeconds);
     triggerSimulatedSync();
+    window.location.reload();
   };
 
   const emailPrefix = userEmail ? userEmail.split('@')[0] : 'Usuário';

@@ -79,13 +79,27 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
   return (
     <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
       {/* Header */}
-      <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
-        <h2 className="font-headline-sm text-[9.5px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[14px]">location_on</span>
-          Detalhes do POI
-        </h2>
-        <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
-          <span className="material-symbols-outlined text-[14px]">keyboard_double_arrow_right</span>
+      <div className="bg-primary-container p-1 flex items-center gap-1 shadow-sm border-b border-white/10 text-white shrink-0">
+        <button
+          type="button"
+          onClick={() => onSelectPoi(null)}
+          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${!currentPoi ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
+        >
+          <span>Roster</span>
+        </button>
+        <button
+          type="button"
+          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${currentPoi ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
+        >
+          <span>Detalhes</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { setIsOpen(false); onClose(); }}
+          className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors ml-0.5"
+          title="Recolher Dossiê"
+        >
+          <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_right</span>
         </button>
       </div>
 

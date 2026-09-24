@@ -174,14 +174,21 @@ export default function LoginPage() {
               </div>
 
               {/* Primary Submit Button */}
-              <div className="pt-2">
+              <div className="pt-2 flex gap-3 w-full">
+                <button 
+                  type="button" 
+                  onClick={() => window.location.href = '/register'}
+                  className="w-1/3 bg-[#f7f4eb] hover:bg-[#e8e2d1] text-[#004b41] border border-[#004b41]/20 py-3 px-2 rounded font-heading font-bold text-sm tracking-wide transition-colors flex items-center justify-center shadow-sm active:translate-y-px"
+                >
+                  Cadastrar
+                </button>
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full bg-[#004b41] hover:bg-[#2d7d74] text-[#f7f4eb] py-3 px-4 rounded font-heading font-bold text-sm tracking-wide transition-colors flex items-center justify-center gap-2 shadow-sm active:translate-y-px disabled:opacity-70"
+                  className="w-2/3 bg-[#004b41] hover:bg-[#2d7d74] text-[#f7f4eb] py-3 px-4 rounded font-heading font-bold text-sm tracking-wide transition-colors flex items-center justify-center gap-2 shadow-sm active:translate-y-px disabled:opacity-70"
                 >
-                  <span>{loading ? 'Autenticando...' : 'Entrar na Mesa de Operações'}</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="truncate">{loading ? 'Autenticando...' : 'Entrar na Mesa de Operações'}</span>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                   </svg>
                 </button>
