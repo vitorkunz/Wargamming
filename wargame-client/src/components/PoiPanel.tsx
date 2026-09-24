@@ -36,30 +36,44 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
     setCurrentPoi(prev => prev ? { ...prev, [field]: value } : null);
     const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentPoi.id);
     if (error) {
-      alert("Failed to update POI: " + error.message);
+      alert("Falha ao atualizar POI: " + error.message);
     }
   };
 
   const handleDelete = async () => {
     if (!currentPoi || !isModerator) return;
-    if (window.confirm("Delete this POI?")) {
+    if (window.confirm("Excluir este POI?")) {
       const { error } = await supabase.from(targetTable).delete().eq('id', currentPoi.id);
       if (!error) onSelectPoi(null);
     }
   };
 
   const poiTypes = [
-    { value: 'military_base', label: 'Military Base' },
-    { value: 'headquarters', label: 'Headquarters (HQ)' },
-    { value: 'factory', label: 'Factory' },
-    { value: 'bridge', label: 'Bridge' },
-    { value: 'airfield', label: 'Airfield' },
+    { value: 'military_base', label: 'Base Militar' },
+    { value: 'headquarters', label: 'Quartel General (HQ)' },
+    { value: 'factory', label: 'Fábrica' },
+    { value: 'bridge', label: 'Ponte' },
+    { value: 'airfield', label: 'Aeródromo / Base Aérea' },
     { value: 'bunker', label: 'Bunker' },
-    { value: 'checkpoint', label: 'Checkpoint' },
-    { value: 'depot', label: 'Supply Depot' },
-    { value: 'port', label: 'Harbor / Port' },
-    { value: 'radar', label: 'Radar Station' },
-    { value: 'outpost', label: 'Outpost' },
+    { value: 'checkpoint', label: 'Ponto de Controle (Checkpoint)' },
+    { value: 'depot', label: 'Depósito de Suprimentos' },
+    { value: 'port', label: 'Porto / Base Naval' },
+    { value: 'radar', label: 'Estação de Radar' },
+    { value: 'outpost', label: 'Posto Avançado' },
+  ];
+
+  const statusOptions = [
+    { value: 'operational', label: 'Operacional' },
+    { value: 'damaged', label: 'Danificado' },
+    { value: 'destroyed', label: 'Destruído' },
+    { value: 'under_construction', label: 'Em Construção' },
+  ];
+
+  const ownerOptions = [
+    { value: 'Neutral', label: 'Neutro' },
+    { value: 'Player A', label: 'Time A' },
+    { value: 'Player B', label: 'Time B' },
+    { value: 'Unknown', label: 'Não Confirmado' },
   ];
 
   return (
@@ -68,7 +82,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
       <div className="bg-primary-container p-2 flex items-center justify-between shadow-sm border-b border-white/10 shrink-0">
         <h2 className="font-headline-sm text-[9.5px] text-text-on-dark uppercase tracking-wider font-bold flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[14px]">location_on</span>
-          POI Details
+          Detalhes do POI
         </h2>
         <button onClick={() => { setIsOpen(false); onClose(); }} className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors">
           <span className="material-symbols-outlined text-[14px]">keyboard_double_arrow_right</span>
@@ -79,7 +93,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
         {!currentPoi ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
             <span className="material-symbols-outlined text-[20px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md text-[10px]">Select a POI on the map or sidebar to view details.</p>
+            <p className="font-label-md text-[10px]">Selecione um POI no mapa ou na barra lateral para ver detalhes.</p>
           </div>
         ) : (
           <>
@@ -95,13 +109,13 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                      currentPoi.status === 'under_construction' ? 'bg-secondary/20 text-secondary border-secondary/30' :
                      'bg-status-success/20 text-status-success border-status-success/30'
                    }`}>
-                     {currentPoi.status.replace('_', ' ')}
+                     {statusOptions.find(s => s.value === currentPoi.status)?.label || currentPoi.status.replace('_', ' ')}
                    </span>
                  </div>
               </div>
 
               <div>
-                <span className="font-tag-overline text-[8.5px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Name</span>
+                <span className="font-tag-overline text-[8.5px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Nome</span>
                 {isModerator ? (
                   <input
                     type="text"
@@ -120,13 +134,13 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
             {/* Properties Card */}
             <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Properties</span>
+                <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Propriedades</span>
                 <span className="material-symbols-outlined text-primary text-[14px]">tune</span>
               </div>
               
               <div className="space-y-2">
                 <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
-                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Type</label>
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Tipo</label>
                   {isModerator ? (
                     <select 
                       className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1 text-[11px] font-semibold outline-none"
@@ -141,7 +155,9 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                       )}
                     </select>
                   ) : (
-                    <p className="text-[11px] font-semibold capitalize text-on-surface">{currentPoi.type.replace('_', ' ')}</p>
+                    <p className="text-[11px] font-semibold capitalize text-on-surface">
+                      {poiTypes.find(pt => pt.value === currentPoi.type)?.label || currentPoi.type.replace('_', ' ')}
+                    </p>
                   )}
                 </div>
 
@@ -153,25 +169,23 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                     value={currentPoi.status}
                     onChange={(e) => handleUpdate('status', e.target.value)}
                   >
-                    <option value="operational">Operational</option>
-                    <option value="damaged">Damaged</option>
-                    <option value="destroyed">Destroyed</option>
-                    <option value="under_construction">Under Construction</option>
+                    {statusOptions.map(st => (
+                      <option key={st.value} value={st.value}>{st.label}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
-                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Owner</label>
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Proprietário</label>
                   <select 
                     disabled={!isModerator}
                     className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1 text-[11px] font-semibold outline-none disabled:opacity-50"
                     value={currentPoi.owner}
                     onChange={(e) => handleUpdate('owner', e.target.value)}
                   >
-                    <option value="Neutral">Neutral</option>
-                    <option value="Player A">Player A</option>
-                    <option value="Player B">Player B</option>
-                    <option value="Unknown">Não Confirmado</option>
+                    {ownerOptions.map(ow => (
+                      <option key={ow.value} value={ow.value}>{ow.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -233,12 +247,12 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                 {isModerator && (
                   <>
                     <div className="pt-1">
-                       <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Notes (Private)</label>
+                       <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Anotações (Privadas)</label>
                        <textarea 
                          className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-1.5 text-[11px] h-20 outline-none focus:border-primary shadow-inner custom-scrollbar"
                          key={currentPoi.id + (currentPoi.notes || '')}
                          defaultValue={currentPoi.notes || ''}
-                         placeholder="Add private moderator notes..."
+                         placeholder="Adicionar anotações privadas do moderador..."
                          onBlur={(e) => handleUpdate('notes', e.target.value)}
                        />
                     </div>
@@ -249,7 +263,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                         className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                       >
                         <span className="material-symbols-outlined text-[13px]">delete_forever</span>
-                        <span>Delete POI</span>
+                        <span>Excluir POI</span>
                       </button>
                     </div>
                   </>

@@ -46,62 +46,62 @@ export default function PoiCreation({ table = 'Map_POIs' }: PoiCreationProps) {
         <div className="w-16 h-16 flex flex-col items-center justify-center bg-surface-container border border-border-parchment rounded-lg p-1 shrink-0 shadow-inner">
           <PoiBadge type={type} owner={owner} size={42} />
         </div>
-        <h2 className="text-[12px] font-bold text-primary font-headline-sm flex-1">Construct POI</h2>
+        <h2 className="text-[12px] font-bold text-primary font-headline-sm flex-1">Construir POI</h2>
       </div>
 
       <div className="flex-1">
         <form onSubmit={handleCreatePoi} className="flex flex-col gap-3">
           <div>
-            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Name</label>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Nome</label>
             <input 
               type="text" 
               className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none focus:border-primary shadow-inner" 
               value={name} 
               onChange={(e) => setName(e.target.value)} 
-              placeholder="e.g. Checkpoint Alpha" 
+              placeholder="Ex: Ponto de Controle Alpha" 
             />
           </div>
           
           <div>
-            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Type</label>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Tipo</label>
             <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="military_base">Military Base</option>
-              <option value="headquarters">Headquarters (HQ)</option>
-              <option value="factory">Factory</option>
-              <option value="bridge">Bridge</option>
-              <option value="airfield">Airfield</option>
+              <option value="military_base">Base Militar</option>
+              <option value="headquarters">Quartel General (HQ)</option>
+              <option value="factory">Fábrica</option>
+              <option value="bridge">Ponte</option>
+              <option value="airfield">Aeródromo / Base Aérea</option>
               <option value="bunker">Bunker</option>
-              <option value="checkpoint">Checkpoint</option>
-              <option value="depot">Supply Depot</option>
-              <option value="port">Harbor / Port</option>
-              <option value="radar">Radar Station</option>
-              <option value="outpost">Outpost</option>
+              <option value="checkpoint">Ponto de Controle (Checkpoint)</option>
+              <option value="depot">Depósito de Suprimentos</option>
+              <option value="port">Porto / Base Naval</option>
+              <option value="radar">Estação de Radar</option>
+              <option value="outpost">Posto Avançado</option>
             </select>
           </div>
           
           <div>
-            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Owner</label>
+            <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Proprietário</label>
             <select className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none font-semibold" value={owner} onChange={(e) => setOwner(e.target.value)}>
-              <option value="Neutral">Neutral</option>
-              <option value="Player A">Player A</option>
-              <option value="Player B">Player B</option>
+              <option value="Neutral">Neutro</option>
+              <option value="Player A">Time A</option>
+              <option value="Player B">Time B</option>
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-2 mt-1">
              <div>
-               <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">X Cell</label>
+               <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Célula X</label>
                <input type="number" className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none shadow-inner" value={x} onChange={(e) => setX(parseInt(e.target.value) || 0)} />
              </div>
              <div>
-               <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Y Cell</label>
+               <label className="block font-tag-overline text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-bold">Célula Y</label>
                <input type="number" className="border border-border-parchment rounded-lg p-2 text-on-surface bg-surface-container w-full text-sm outline-none shadow-inner" value={y} onChange={(e) => setY(parseInt(e.target.value) || 0)} />
              </div>
           </div>
           
           <button type="submit" className="w-full mt-3 bg-primary hover:bg-primary-fixed-dim text-white font-bold py-1.5 px-3 rounded-lg transition-colors font-headline-sm text-[10.5px] shadow-sm flex items-center justify-center gap-1.5">
             <span className="material-symbols-outlined text-[15px]">add_location</span>
-            Deploy to Map
+            Implantar no Mapa
           </button>
         </form>
       </div>

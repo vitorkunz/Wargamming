@@ -129,7 +129,7 @@ function MapControls({
             ? 'bg-faction-friendly text-text-on-dark shadow-sm'
             : 'hover:bg-white/10 text-text-on-dark'
         }`}
-        title="Select / Move"
+        title="Selecionar / Mover"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">near_me</span>
@@ -141,7 +141,7 @@ function MapControls({
             ? 'bg-faction-friendly text-text-on-dark shadow-sm'
             : 'hover:bg-white/10 text-text-on-dark'
         }`}
-        title="Drag Map (Arrastar Mapa) - Espaço ou clique"
+        title="Arrastar Mapa"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">pan_tool</span>
@@ -156,7 +156,7 @@ function MapControls({
                 ? 'bg-faction-friendly text-text-on-dark shadow-sm'
                 : 'hover:bg-white/10 text-text-on-dark'
             }`}
-            title="Place Unit Marker"
+            title="Posicionar Unidade"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">add_location_alt</span>
@@ -168,7 +168,7 @@ function MapControls({
                 ? 'bg-faction-friendly text-text-on-dark shadow-sm'
                 : 'hover:bg-white/10 text-text-on-dark'
             }`}
-            title="Draw Operational Zone"
+            title="Desenhar Zona Operacional"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">polyline</span>
@@ -180,7 +180,7 @@ function MapControls({
                 ? 'bg-faction-friendly text-text-on-dark shadow-sm'
                 : 'hover:bg-white/10 text-text-on-dark'
             }`}
-            title="Tactical Arrow / Advance Line"
+            title="Seta Tática / Linha de Avanço"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">north_east</span>
@@ -192,7 +192,7 @@ function MapControls({
                 ? 'bg-faction-friendly text-text-on-dark shadow-sm'
                 : 'hover:bg-white/10 text-text-on-dark'
             }`}
-            title="Strategic Target Point"
+            title="Ponto Estratégico"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">flag</span>
@@ -207,7 +207,7 @@ function MapControls({
       <button
         onClick={() => zoomIn(0.2)}
         className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-        title="Zoom In"
+        title="Aproximar Zoom"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
@@ -215,7 +215,7 @@ function MapControls({
       <button
         onClick={() => zoomOut(0.2)}
         className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-        title="Zoom Out"
+        title="Afastar Zoom"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">remove</span>
@@ -223,7 +223,7 @@ function MapControls({
       <button
         onClick={() => resetTransform()}
         className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-        title="Center on Selected / Ajustar à Tela"
+        title="Ajustar à Tela"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">center_focus_strong</span>
@@ -231,7 +231,7 @@ function MapControls({
       <button
         onClick={onToggleFullscreen}
         className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-on-dark"
-        title={isFullscreen ? "Exit Fullscreen" : "Tela Cheia / Fullscreen"}
+        title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">
@@ -246,7 +246,7 @@ function MapControls({
             className={`p-2 rounded-lg transition-colors text-text-on-dark ${
               showOpacityMenu ? 'bg-faction-friendly text-white shadow-sm' : 'hover:bg-white/10'
             }`}
-            title="Transparência das Camadas / Layer Opacity"
+            title="Opacidade das Camadas"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">opacity</span>
@@ -261,7 +261,7 @@ function MapControls({
                 <div className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[14px] text-primary-fixed-dim">opacity</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-primary-fixed-dim">
-                    Layer Opacity
+                    Opacidade das Camadas
                   </span>
                 </div>
                 <button 
@@ -275,7 +275,7 @@ function MapControls({
 
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between text-[10px] font-bold">
-                  <span>Base Map</span>
+                  <span>Mapa Base</span>
                   <span className="font-mono text-primary-fixed-dim">
                     {Math.round((layerOpacities?.['baseMap'] ?? 1) * 100)}%
                   </span>
@@ -315,7 +315,7 @@ function MapControls({
 
               <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
                 <div className="flex justify-between text-[10px] text-white/80">
-                  <span>Tactical Grid</span>
+                  <span>Grade Tática</span>
                   <span className="font-mono text-primary-fixed-dim">
                     {Math.round((layerOpacities?.['tacticalGrid'] ?? 0.45) * 100)}%
                   </span>
@@ -1059,7 +1059,7 @@ export default function MapGrid({
                             transform: 'scale(var(--unit-inverse-scale, 1))',
                             zIndex: isSelected ? 9999 : undefined
                           }}
-                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visível ao adversário' : ''}`}
                           onClick={(e) => {
                              if (isDragMode) return;
                              e.stopPropagation();
@@ -1122,7 +1122,7 @@ export default function MapGrid({
                             transform: 'scale(var(--unit-inverse-scale, 1))',
                             zIndex: isSelected ? 9999 : undefined
                           }}
-                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visível ao adversário' : ''}`}
                           onClick={(e) => {
                              if (isDragMode) return;
                              e.stopPropagation();
@@ -1185,7 +1185,7 @@ export default function MapGrid({
                             transform: 'scale(var(--unit-inverse-scale, 1))',
                             zIndex: isSelected ? 9999 : undefined
                           }}
-                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visible to Enemy' : ''}`}
+                          title={`${unit.name ? `${unit.name} (${unit.type})` : unit.type} (HP: ${unit.health}) ${unit.is_visible_to_enemy && role === 'Moderator' ? '- Visível ao adversário' : ''}`}
                           onClick={(e) => {
                              if (isDragMode) return;
                              e.stopPropagation();

@@ -13,25 +13,28 @@ export default function BottomNavbar({ activePanel, onTogglePanel }: BottomNavba
       <button 
         onClick={() => onTogglePanel(activePanel === 'layers' ? null : 'layers')}
         className={`flex flex-col items-center p-2 rounded-lg transition-colors ${activePanel === 'layers' ? 'text-[#2d7d74]' : 'text-white/60 hover:text-white'}`}
+        title="Camadas"
       >
         <span className="material-symbols-outlined text-2xl">layers</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Layers</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Camadas</span>
       </button>
 
       <button 
         onClick={() => onTogglePanel(activePanel === 'reserves' ? null : 'reserves')}
         className={`flex flex-col items-center p-2 rounded-lg transition-colors ${activePanel === 'reserves' ? 'text-[#2d7d74]' : 'text-white/60 hover:text-white'}`}
+        title="Reservas"
       >
         <span className="material-symbols-outlined text-2xl">inventory_2</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Reserves</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Reservas</span>
       </button>
 
       <button 
         onClick={() => onTogglePanel(activePanel === 'dossier' ? null : 'dossier')}
         className={`flex flex-col items-center p-2 rounded-lg transition-colors ${activePanel === 'dossier' ? 'text-[#2d7d74]' : 'text-white/60 hover:text-white'}`}
+        title="Dossiê"
       >
         <span className="material-symbols-outlined text-2xl">article</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Dossier</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest mt-1">Dossiê</span>
       </button>
     </div>
   );

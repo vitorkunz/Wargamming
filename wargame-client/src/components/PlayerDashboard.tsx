@@ -487,7 +487,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                       <button 
                         onClick={handleSyncDraft} 
                         className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" 
-                        title="Sincronizar mapa de planejamento com mapa de batalha" 
+                        title="Sincronizar Rascunho" 
                         type="button"
                       >
                         <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>

@@ -24,47 +24,43 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
     setCurrentHazard(prev => prev ? { ...prev, [field]: value } : null);
     const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentHazard.id);
     if (error) {
-      alert("Failed to update hazard: " + error.message);
+      alert("Falha ao atualizar zona operacional: " + error.message);
     }
   };
 
-  const handleToggleTeamVisibility = async (team: 'Player A' | 'Player B') => {
+  const isVisibleToPlayers = Boolean(
+    currentHazard?.visible_to_teams?.some(team => team === 'Player A' || team === 'Player B')
+  );
+
+  const handleSetVisibility = async (visible: boolean) => {
     if (!currentHazard || !isModerator) return;
-    const currentTeams = currentHazard.visible_to_teams || ['Moderator'];
-    let updatedTeams: string[];
-    if (currentTeams.includes(team)) {
-      updatedTeams = currentTeams.filter(t => t !== team);
-    } else {
-      updatedTeams = [...currentTeams, team];
-    }
-    // Always preserve Moderator
-    if (!updatedTeams.includes('Moderator')) {
-      updatedTeams.push('Moderator');
-    }
+    const updatedTeams = visible 
+      ? ['Moderator', 'Player A', 'Player B'] 
+      : ['Moderator'];
     await handleUpdate('visible_to_teams', updatedTeams);
   };
 
   const handleDelete = async () => {
     if (!currentHazard || !isModerator) return;
-    if (window.confirm("Delete this Hazard?")) {
+    if (window.confirm("Excluir esta Zona Operacional?")) {
       const { error } = await supabase.from(targetTable).delete().eq('id', currentHazard.id);
       if (!error) {
         onSelectHazard(null);
       } else {
-        alert("Failed to delete hazard: " + error.message);
+        alert("Falha ao excluir zona operacional: " + error.message);
       }
     }
   };
 
   const hazardTypes = [
-    { value: 'minefield', label: 'Minefield' },
-    { value: 'flooded_zone', label: 'Flooded Zone' },
-    { value: 'naval_blockade', label: 'Naval Blockade' },
-    { value: 'chemical_zone', label: 'Chemical / Gas Zone' },
-    { value: 'artillery_barrage', label: 'Artillery Barrage Zone' },
-    { value: 'smoke_screen', label: 'Smoke Screen' },
-    { value: 'dmz', label: 'DMZ' },
-    { value: 'trenches', label: 'Trenches' },
+    { value: 'minefield', label: 'Campo Minado' },
+    { value: 'flooded_zone', label: 'Zona Inundada' },
+    { value: 'naval_blockade', label: 'Bloqueio Naval' },
+    { value: 'chemical_zone', label: 'Gás / Área Química' },
+    { value: 'artillery_barrage', label: 'Barragem de Artilharia' },
+    { value: 'smoke_screen', label: 'Cortina de Fumaça' },
+    { value: 'dmz', label: 'Zona Desmilitarizada (DMZ)' },
+    { value: 'trenches', label: 'Trincheiras' },
     { value: 'influence_zone', label: 'Zona de Influência' },
   ];
 
@@ -85,24 +81,24 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
         {!currentHazard ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
             <span className="material-symbols-outlined text-[20px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md text-[10px]">Select a Hazard on the map or sidebar to view details.</p>
+            <p className="font-label-md text-[10px]">Selecione uma Zona Operacional no mapa ou na barra lateral para ver detalhes.</p>
           </div>
         ) : (
           <>
             {/* Identification Card */}
             <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow">
-              <span className="font-tag-overline text-[8.5px] text-faction-hostile uppercase font-bold tracking-wider mb-0.5 block">Label / Name</span>
+              <span className="font-tag-overline text-[8.5px] text-faction-hostile uppercase font-bold tracking-wider mb-0.5 block">Rótulo / Nome</span>
               {isModerator ? (
                 <input
                   type="text"
                   key={currentHazard.id + (currentHazard.label || '')}
                   defaultValue={currentHazard.label || ''}
-                  placeholder="e.g. Minefield Alpha"
+                  placeholder="Ex: Campo Minado Alpha"
                   onBlur={(e) => handleUpdate('label', e.target.value)}
                   className="font-headline-md text-[12px] font-bold text-faction-hostile tracking-tight leading-tight w-full bg-surface-container rounded px-1 -mx-1 border border-transparent hover:border-outline-variant focus:border-faction-hostile focus:outline-none"
                 />
               ) : (
-                <h3 className="font-headline-md text-[12px] font-bold text-faction-hostile tracking-tight leading-tight">{currentHazard.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
+                <h3 className="font-headline-md text-[12px] font-bold text-faction-hostile tracking-tight leading-tight">{currentHazard.label || hazardTypes.find(ht => ht.value === currentHazard.hazard_type)?.label || currentHazard.hazard_type.replace('_', ' ')}</h3>
               )}
               <span className="font-tag-overline text-[8.5px] text-on-surface-variant mt-1 block">ID: {currentHazard.id.substring(0, 8).toUpperCase()}</span>
             </div>
@@ -110,13 +106,13 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
             {/* Properties Card */}
             <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Properties</span>
+                <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Propriedades</span>
                 <span className="material-symbols-outlined text-primary text-[14px]">tune</span>
               </div>
               
               <div className="space-y-2">
                 <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment">
-                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Type</label>
+                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Tipo</label>
                   {isModerator ? (
                     <select 
                       className="w-full bg-surface-card text-on-surface border border-border-parchment rounded p-1 text-[11px] font-semibold outline-none"
@@ -131,7 +127,9 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                       )}
                     </select>
                   ) : (
-                    <p className="text-[11px] font-semibold capitalize text-on-surface">{currentHazard.hazard_type.replace('_', ' ')}</p>
+                    <p className="text-[11px] font-semibold capitalize text-on-surface">
+                      {hazardTypes.find(ht => ht.value === currentHazard.hazard_type)?.label || currentHazard.hazard_type.replace('_', ' ')}
+                    </p>
                   )}
                 </div>
 
@@ -155,39 +153,58 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
             {isModerator && (
               <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Moderator Settings</span>
+                  <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Configurações do Moderador</span>
                   <span className="material-symbols-outlined text-primary text-[14px]">admin_panel_settings</span>
                 </div>
                 
-                <div className="bg-surface-parchment-dim p-2 rounded-lg border border-border-parchment space-y-1.5">
-                  <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider block">Team Visibility</label>
-                  <label className="flex items-center space-x-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      checked={(currentHazard.visible_to_teams || []).includes('Player A')} 
-                      onChange={() => handleToggleTeamVisibility('Player A')}
-                      className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-faction-friendly focus:ring-faction-friendly"
-                    />
-                    <span className="font-label-md text-[11px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player A</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      checked={(currentHazard.visible_to_teams || []).includes('Player B')} 
-                      onChange={() => handleToggleTeamVisibility('Player B')}
-                      className="w-3.5 h-3.5 rounded bg-surface-container border-border-parchment text-faction-hostile focus:ring-faction-hostile"
-                    />
-                    <span className="font-label-md text-[11px] font-bold text-on-surface group-hover:text-primary transition-colors">Visible to Player B</span>
-                  </label>
+                <div className="bg-surface-parchment-dim/80 rounded-lg p-1.5 border border-border-parchment space-y-1" id="enemy-visibility-control">
+                  <div className="flex items-center justify-between">
+                    <span className="font-tag-overline text-[8px] uppercase font-bold text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px] text-secondary">radar</span>
+                      Visibilidade Inimiga
+                    </span>
+                    <span className={`font-tag-overline text-[8px] px-1.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                      isVisibleToPlayers ? 'bg-status-alert/15 text-status-alert border-status-alert/30' : 'bg-gray-100 text-gray-500 border-gray-300'
+                    }`}>
+                      <span className={`w-1 h-1 rounded-full ${isVisibleToPlayers ? 'bg-status-alert' : 'bg-gray-400'}`}></span>
+                      {isVisibleToPlayers ? 'Visível' : 'Oculto'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-surface-container rounded-lg border border-border-parchment/60">
+                    <button 
+                      onClick={() => handleSetVisibility(true)} 
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
+                        isVisibleToPlayers 
+                          ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
+                          : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
+                      }`} 
+                      type="button"
+                    >
+                      <span className={`material-symbols-outlined text-[13px] ${isVisibleToPlayers ? 'text-status-alert' : ''}`}>visibility</span>
+                      <span>Visível</span>
+                    </button>
+                    <button 
+                      onClick={() => handleSetVisibility(false)} 
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-md font-label-md text-[9.5px] transition-all ${
+                        !isVisibleToPlayers 
+                          ? 'bg-surface-card text-primary shadow-sm border border-border-parchment font-bold' 
+                          : 'font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-card/60'
+                      }`} 
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">visibility_off</span>
+                      <span>Ocultar</span>
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="pt-1">
-                   <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Notes (Private)</label>
+                   <label className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-0.5 block">Anotações (Privadas)</label>
                    <textarea 
                      className="w-full bg-surface-container text-on-surface border border-border-parchment rounded p-1.5 text-[11px] h-20 outline-none focus:border-primary shadow-inner custom-scrollbar"
                      key={currentHazard.id + (currentHazard.notes || '')}
                      defaultValue={currentHazard.notes || ''}
-                     placeholder="Add private moderator notes about this hazard..."
+                     placeholder="Adicionar anotações privadas do moderador sobre esta zona..."
                      onBlur={(e) => handleUpdate('notes', e.target.value)}
                    />
                 </div>
@@ -198,7 +215,7 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
                     className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                   >
                     <span className="material-symbols-outlined text-[13px]">delete_forever</span>
-                    <span>Delete Hazard</span>
+                    <span>Excluir Zona Operacional</span>
                   </button>
                 </div>
               </div>

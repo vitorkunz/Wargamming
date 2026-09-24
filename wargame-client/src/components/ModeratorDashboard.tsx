@@ -473,7 +473,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                           <button 
                             onClick={handleSyncFromLive} 
                             className="group bg-inverse-surface/90 hover:bg-inverse-surface text-text-on-dark px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-2 transition-all hover:border-secondary-fixed/50" 
-                            title="Sincronizar e carregar estado publicado da mesa" 
+                            title="Sincronizar Rascunho" 
                             type="button"
                           >
                             <span className="material-symbols-outlined text-[18px] text-primary-fixed-dim group-hover:rotate-180 transition-transform duration-300">sync</span>
@@ -486,7 +486,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                           <button 
                             onClick={handlePublish} 
                             className="group bg-faction-friendly hover:bg-chrome-hover text-text-on-dark px-3.5 py-1.5 rounded-lg border border-secondary-fixed/40 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ring-1 ring-secondary-fixed/30 shadow-sm" 
-                            title="Publicar alterações táticas para visualização dos delegados" 
+                            title="Publicar Mapa" 
                             type="button"
                           >
                             <span className="material-symbols-outlined text-[19px] text-secondary-fixed group-hover:scale-110 transition-transform">cell_tower</span>

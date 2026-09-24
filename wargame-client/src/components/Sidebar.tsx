@@ -103,6 +103,7 @@ export default function Sidebar({
   const [hazards, setHazards] = useState<BattleHazard[]>([]);
   
   const [isPoiExpanded, setIsPoiExpanded] = useState(false);
+  const [isHazardsExpanded, setIsHazardsExpanded] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showNovaUnidadeModal, setShowNovaUnidadeModal] = useState(false);
 
@@ -304,6 +305,14 @@ export default function Sidebar({
     }
   };
 
+  const toggleLocalHazard = (id: string) => {
+    if (hiddenHazards.includes(id)) {
+      setHiddenHazards(hiddenHazards.filter(h => h !== id));
+    } else {
+      setHiddenHazards([...hiddenHazards, id]);
+    }
+  };
+
   const handleDragStartNATO = (e: React.DragEvent, type: string) => {
     e.dataTransfer.setData('text/plain', `nato-template:${type}`);
     e.dataTransfer.effectAllowed = 'all';
@@ -357,7 +366,7 @@ export default function Sidebar({
             <button 
               onClick={() => setShowUploadModal(true)}
               className="bg-primary hover:bg-chrome-hover px-2 py-0.5 rounded text-text-on-dark transition-colors flex items-center gap-1 shadow-sm font-semibold border border-primary-fixed-dim/20" 
-              title="Upload Layer Data" 
+              title="Enviar Dados da Camada" 
               type="button"
             >
               <span className="material-symbols-outlined text-[12px]">add</span>
@@ -381,7 +390,6 @@ export default function Sidebar({
           const isOver = dragOverLayerKey === key;
 
           const cardWrapperProps = {
-            key,
             draggable: draggableLayerKey === key,
             onDragStart: (e: React.DragEvent) => handleLayerDragStart(e, key),
             onDragOver: (e: React.DragEvent) => handleLayerDragOver(e, key),
@@ -399,7 +407,7 @@ export default function Sidebar({
 
           if (key === 'baseMap') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`group rounded-lg p-2.5 border transition-all ${layers.baseMap ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/40 shadow-sm hover:bg-surface-parchment-dim' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -449,7 +457,7 @@ export default function Sidebar({
 
           if (key === 'pois') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`rounded-lg p-2.5 border shadow-sm ${layers.pois ? 'bg-surface-card/90 border-border-parchment' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setIsPoiExpanded(!isPoiExpanded)}>
                     <div className="flex items-center gap-2 min-w-0">
@@ -501,7 +509,7 @@ export default function Sidebar({
 
           if (key === 'teamA') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamA ? 'bg-surface-card/90 border-border-parchment hover:border-faction-friendly/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -529,7 +537,7 @@ export default function Sidebar({
 
           if (key === 'teamB') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.teamB ? 'bg-surface-card/90 border-border-parchment hover:border-faction-hostile/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -557,7 +565,7 @@ export default function Sidebar({
 
           if (key === 'unconfirmed') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.unconfirmed ? 'bg-surface-card/90 border-border-parchment hover:border-faction-unknown/50' : 'bg-surface-container opacity-60 border-transparent'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -585,13 +593,13 @@ export default function Sidebar({
 
           if (key === 'hazards') {
             return (
-              <div {...cardWrapperProps}>
-                <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${layers.hazards ? 'bg-surface-card/90 border-border-parchment hover:border-secondary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
-                  <div className="flex items-center justify-between gap-2">
+              <div key={key} {...cardWrapperProps}>
+                <div className={`rounded-lg p-2.5 border shadow-sm ${layers.hazards ? 'bg-surface-card/90 border-border-parchment' : 'bg-surface-container opacity-60 border-transparent'}`}>
+                  <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setIsHazardsExpanded(!isHazardsExpanded)}>
                     <div className="flex items-center gap-2 min-w-0">
                       <span {...getDragHandleProps('hazards')}>drag_indicator</span>
                       <button 
-                        onClick={() => toggleLayer('hazards')}
+                        onClick={(e) => { e.stopPropagation(); toggleLayer('hazards'); }}
                         onMouseDown={(e) => e.stopPropagation()}
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
@@ -604,8 +612,32 @@ export default function Sidebar({
                         <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
                       </div>
                     </div>
-                    <span className={`material-symbols-outlined text-[15px] ${layers.hazards ? 'text-on-surface-variant' : 'text-outline-variant'}`}>polyline</span>
+                    <span className="material-symbols-outlined text-outline text-[15px]">{isHazardsExpanded ? 'expand_less' : 'expand_more'}</span>
                   </div>
+                  
+                  {/* Hazards Sub-Items */}
+                  {isHazardsExpanded && (
+                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                      {hazards.length === 0 ? (
+                        <div className="text-[9px] italic text-on-surface-variant">No active sectors</div>
+                      ) : (
+                        hazards.map(hazard => {
+                           const isVisible = !hiddenHazards.includes(hazard.id);
+                           return (
+                             <div key={hazard.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalHazard(hazard.id)}>
+                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
+                                 <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-secondary' : 'bg-surface-dim'}`}></span>
+                                 <span className="truncate">{hazard.name || 'Unnamed Sector'}</span>
+                               </span>
+                               <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
+                                 {isVisible ? 'check' : 'add'}
+                               </span>
+                             </div>
+                           );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -613,7 +645,7 @@ export default function Sidebar({
 
           if (key === 'tacticalGrid') {
             return (
-              <div {...cardWrapperProps}>
+              <div key={key} {...cardWrapperProps}>
                 <div className={`rounded-lg p-2.5 border transition-all ${layers.tacticalGrid ? 'bg-surface-card/90 border-border-parchment shadow-sm hover:border-secondary/30' : 'bg-surface-card/60 border-border-parchment/60 opacity-60'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -670,7 +702,7 @@ export default function Sidebar({
           const currentOpacity = layerOpacities?.[layer.id] ?? 1;
 
           return (
-            <div {...cardWrapperProps}>
+            <div key={key} {...cardWrapperProps}>
               <div className={`rounded-lg p-2.5 border shadow-sm transition-all ${isVisible ? 'bg-surface-card/90 border-border-parchment hover:border-primary/30' : 'bg-surface-container opacity-60 border-transparent'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -702,7 +734,7 @@ export default function Sidebar({
                         onMouseDown={(e) => e.stopPropagation()}
                         draggable={false}
                         className="text-status-alert hover:text-red-700 p-1" 
-                        title="Delete layer"
+                        title="Excluir camada"
                       >
                         <span className="material-symbols-outlined text-[13px]">delete</span>
                       </button>

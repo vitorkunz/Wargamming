@@ -9,6 +9,18 @@ interface OperationalSectorsListProps {
   setIsDrawingHazard: (isDrawing: boolean) => void;
 }
 
+const hazardTypeLabels: Record<string, string> = {
+  minefield: 'Campo Minado',
+  flooded_zone: 'Zona Inundada',
+  naval_blockade: 'Bloqueio Naval',
+  chemical_zone: 'Gás / Área Química',
+  artillery_barrage: 'Barragem de Artilharia',
+  smoke_screen: 'Cortina de Fumaça',
+  dmz: 'Zona Desmilitarizada (DMZ)',
+  trenches: 'Trincheiras',
+  influence_zone: 'Zona de Influência',
+};
+
 export default function OperationalSectorsList({
   hazards,
   onHazardClick,
@@ -26,7 +38,7 @@ export default function OperationalSectorsList({
         <div className="flex items-center gap-2 min-w-0">
           <span className="material-symbols-outlined text-[#2d7d74] text-[18px]">polyline</span>
           <div className="flex flex-col min-w-0">
-            <span className="font-label-md text-[11px] truncate font-bold text-on-surface">Operational Sectors</span>
+            <span className="font-label-md text-[11px] truncate font-bold text-on-surface">Zonas Operacionais</span>
             <span className="font-tag-overline text-[9px] font-bold text-on-surface-variant">{hazards.length} Zonas Ativas</span>
           </div>
         </div>
@@ -82,10 +94,10 @@ export default function OperationalSectorsList({
                   }`}></div>
                   <div className="flex flex-col min-w-0">
                     <span className="truncate font-bold text-on-surface text-[10.5px]">
-                      {hazard.label || hazard.hazard_type.replace('_', ' ').toUpperCase()}
+                      {hazard.label || hazardTypeLabels[hazard.hazard_type] || hazard.hazard_type.replace('_', ' ').toUpperCase()}
                     </span>
                     <span className="text-[8.5px] uppercase tracking-wider text-on-surface-variant">
-                      {hazard.hazard_type.replace('_', ' ')}
+                      {hazardTypeLabels[hazard.hazard_type] || hazard.hazard_type.replace('_', ' ')}
                     </span>
                   </div>
                 </div>
