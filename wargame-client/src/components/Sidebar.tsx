@@ -821,7 +821,7 @@ export default function Sidebar({
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUUS--------`} size={20} variant="quick-panel" />
               </div>
-              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Comando</span>
+              <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Comunicações</span>
             </div>
             
           </div>
