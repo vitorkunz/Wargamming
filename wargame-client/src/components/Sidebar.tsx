@@ -627,7 +627,7 @@ export default function Sidebar({
                              <div key={hazard.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalHazard(hazard.id)}>
                                <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
                                  <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-secondary' : 'bg-surface-dim'}`}></span>
-                                 <span className="truncate">{hazard.name || 'Unnamed Sector'}</span>
+                                 <span className="truncate">{hazard.label || 'Unnamed Sector'}</span>
                                </span>
                                <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
                                  {isVisible ? 'check' : 'add'}
