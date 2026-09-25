@@ -29,7 +29,7 @@ export default function PoiCreationModal({
   const handleCreatePoi = async () => {
     try {
       if (!name.trim()) {
-        alert("Please enter a name for the POI");
+        alert("Por favor, digite um nome para o objetivo estratégico");
         return;
       }
       
@@ -55,14 +55,14 @@ export default function PoiCreationModal({
 
       if (error) {
         console.error("Supabase insert error:", error);
-        alert("Failed to spawn POI: " + error.message + "\nCheck console for details.");
+        alert("Falha ao criar objetivo estratégico: " + error.message);
       } else {
         console.log("POI spawned successfully!");
         onClose();
       }
     } catch (err: any) {
       console.error("Unexpected error in handleCreatePoi:", err);
-      alert("Unexpected error: " + err.message);
+      alert("Erro inesperado: " + err.message);
     }
   };
 
@@ -80,8 +80,8 @@ export default function PoiCreationModal({
               <span className="material-symbols-outlined text-[24px]">flag</span>
             </div>
             <div>
-              <h2 className="text-lg font-bold leading-tight font-headline-sm">Criar Ponto Estratégico (POI)</h2>
-              <p className="text-[11px] text-white/80 font-body-base">Defina as características e localização do Ponto Estratégico</p>
+              <h2 className="text-lg font-bold leading-tight font-headline-sm">Criar Objetivo Estratégico</h2>
+              <p className="text-[11px] text-white/80 font-body-base">Defina as características e localização do objetivo estratégico</p>
             </div>
           </div>
           <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
@@ -130,8 +130,8 @@ export default function PoiCreationModal({
             <h3 className="font-tag-overline text-[11px] uppercase tracking-wider font-bold text-primary">2. Identidade & Tipo</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 space-y-1.5">
-                <label className="text-[11px] font-bold text-on-surface">Nome / Designação do POI *</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Base Alpha" className="w-full bg-[#F4F1E1] border border-border-parchment rounded-lg p-2.5 text-[13px] font-headline-sm font-bold text-on-surface focus:outline-none focus:border-primary shadow-inner" />
+                <label className="text-[11px] font-bold text-on-surface">Nome / Designação do Objetivo *</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Base Alfa" className="w-full bg-[#F4F1E1] border border-border-parchment rounded-lg p-2.5 text-[13px] font-headline-sm font-bold text-on-surface focus:outline-none focus:border-primary shadow-inner" />
               </div>
               <div className="col-span-1 space-y-1.5">
                 <label className="text-[11px] font-bold text-on-surface">Tipo *</label>

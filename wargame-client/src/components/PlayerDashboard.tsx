@@ -348,6 +348,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     setSelectedUnitId(null);
     setSelectedHazard(null);
     setIsRightPanelOpen(true);
+    setActiveBottomPanel('dossier');
   };
 
   const handleHazardClick = (hazard: BattleHazard) => {
@@ -355,6 +356,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     setSelectedPoi(null);
     setSelectedUnitId(null);
     setIsRightPanelOpen(true);
+    setActiveBottomPanel('dossier');
   };
 
 
@@ -433,6 +435,8 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
             hiddenHazards={hiddenHazards}
             setHiddenHazards={setHiddenHazards}
             role={role}
+            selectedPoiId={selectedPoi?.id}
+            selectedHazardId={selectedHazard?.id}
             onEditPoi={handlePoiClick}
             onEditHazard={handleHazardClick}
             isOpen={isLeftPanelOpen || activeBottomPanel === 'layers'}
@@ -463,7 +467,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
                 type="button"
               >
                 <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
-                <span className="text-xs uppercase tracking-wider">Layers</span>
+                <span className="text-xs uppercase tracking-wider">Camadas</span>
               </button>
             )}
             {!isRightPanelOpen && (

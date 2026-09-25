@@ -31,6 +31,46 @@ export const DEFAULT_LAYER_ORDER = [
   'baseMap'
 ];
 
+const hazardTypeLabels: Record<string, string> = {
+  minefield: 'Campo Minado',
+  flooded_zone: 'Zona Inundada',
+  naval_blockade: 'Bloqueio Naval',
+  chemical_zone: 'Gás / Área Química',
+  artillery_barrage: 'Barragem de Artilharia',
+  smoke_screen: 'Cortina de Fumaça',
+  dmz: 'Zona Desmilitarizada (DMZ)',
+  trenches: 'Trincheiras',
+  influence_zone: 'Zona de Influência',
+};
+
+const poiTypeLabels: Record<string, string> = {
+  military_base: 'Base Militar',
+  headquarters: 'Quartel General (HQ)',
+  factory: 'Fábrica',
+  bridge: 'Ponte',
+  airfield: 'Aeródromo / Base Aérea',
+  bunker: 'Bunker',
+  checkpoint: 'Ponto de Controle',
+  depot: 'Depósito de Suprimentos',
+  port: 'Porto / Base Naval',
+  radar: 'Estação de Radar',
+  outpost: 'Posto Avançado',
+};
+
+const getHazardDotColor = (type: string) => {
+  switch (type) {
+    case 'minefield': return 'bg-status-alert';
+    case 'naval_blockade': return 'bg-[#a855f7]';
+    case 'flooded_zone': return 'bg-blue-500';
+    case 'chemical_zone': return 'bg-emerald-600';
+    case 'dmz': return 'bg-gray-500';
+    case 'trenches': return 'bg-amber-700';
+    case 'artillery_barrage': return 'bg-orange-600';
+    case 'smoke_screen': return 'bg-slate-400';
+    default: return 'bg-[#2d7d74]';
+  }
+};
+
 interface SidebarProps {
   layers: LayerVisibility;
   toggleLayer: (layer: keyof LayerVisibility) => void;
@@ -43,6 +83,8 @@ interface SidebarProps {
   isModerator?: boolean;
   onEditPoi?: (poi: MapPOI) => void;
   onEditHazard?: (hazard: BattleHazard) => void;
+  selectedPoiId?: string | null;
+  selectedHazardId?: string | null;
   role?: string;
   isOpen?: boolean;
   onToggleOpen?: () => void;
@@ -66,6 +108,7 @@ export default function Sidebar({
   hiddenPois, setHiddenPois,
   hiddenHazards, setHiddenHazards,
   isModerator, onEditPoi, onEditHazard, role,
+  selectedPoiId, selectedHazardId,
   isOpen: externalIsOpen,
   onToggleOpen,
   isMobileOpen,
@@ -241,7 +284,15 @@ export default function Sidebar({
     };
 
     const fetchHazards = async () => {
-      const { data } = await supabase.from(hazardsTable).select('*');
+      let query = supabase.from(hazardsTable).select('*');
+      if (!isModerator && role !== 'Moderator') {
+        if (role) {
+          query = query.contains('visible_to_teams', [role]);
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+        }
+      }
+      const { data } = await query;
       if (data) setHazards(data as BattleHazard[]);
     };
 
@@ -255,6 +306,7 @@ export default function Sidebar({
         if (data) setPois(data as MapPOI[]);
       };
       fetchPlayerPois();
+      fetchHazards();
     }
 
     const layerChannel = supabase.channel('sidebar-map-layers')
@@ -275,8 +327,7 @@ export default function Sidebar({
           }
         })
         .subscribe();
-    }
-    if (isModerator || role === 'Moderator') {
+
       hazardChannel = supabase.channel(`sidebar-map-hazards-${hazardsTable}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: hazardsTable }, () => fetchHazards())
         .subscribe();
@@ -356,8 +407,8 @@ export default function Sidebar({
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-primary-fixed-dim text-[17px]">layers</span>
             <div className="flex flex-col">
-              <span className="font-headline-sm text-[9.5px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">Layers &amp; Camadas</span>
-              <span className="font-tag-overline text-[8px] text-primary-fixed-dim leading-none mt-0.5">Sector Cartography</span>
+              <span className="font-headline-sm text-[9.5px] font-bold text-text-on-dark uppercase tracking-wider leading-tight">Camadas do Mapa</span>
+              <span className="font-tag-overline text-[8px] text-primary-fixed-dim leading-none mt-0.5">Cartografia Setorial</span>
             </div>
           </div>
         )}
@@ -366,17 +417,17 @@ export default function Sidebar({
             <button 
               onClick={() => setShowUploadModal(true)}
               className="bg-primary hover:bg-chrome-hover px-2 py-0.5 rounded text-text-on-dark transition-colors flex items-center gap-1 shadow-sm font-semibold border border-primary-fixed-dim/20" 
-              title="Enviar Dados da Camada" 
+              title="Carregar Nova Camada" 
               type="button"
             >
               <span className="material-symbols-outlined text-[12px]">add</span>
-              <span className="text-[9.5px]">Upload</span>
+              <span className="text-[9.5px]">Carregar</span>
             </button>
           )}
           <button 
             className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors" 
             onClick={toggleIsOpen} 
-            title="Recolher Painel de Camadas" 
+            title={isOpen ? "Recolher Painel de Camadas" : "Expandir Painel de Camadas"} 
             type="button"
           >
             <span className="material-symbols-outlined text-[16px]">{isOpen ? 'keyboard_double_arrow_left' : 'keyboard_double_arrow_right'}</span>
@@ -418,12 +469,13 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.baseMap ? "Ocultar mapa base" : "Exibir mapa base"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.baseMap ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Base Map</span>
-                        <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Master Cartography</span>
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.baseMap ? 'text-on-surface' : 'text-on-surface-variant'}`}>Mapa Base</span>
+                        <span className="font-tag-overline text-[8px] text-on-surface-variant truncate">Cartografia Principal</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -436,7 +488,7 @@ export default function Sidebar({
                   {/* Transparency Slider */}
                   {layers.baseMap && onOpacityChange && (
                     <div className="mt-2 pt-2 border-t border-border-parchment/60 flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
-                      <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência">opacity</span>
+                      <span className="material-symbols-outlined text-outline text-[14px]" title="Transparência do Mapa Base">opacity</span>
                       <input 
                         type="range" 
                         min="0" 
@@ -468,34 +520,60 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.pois ? "Ocultar objetivos estratégicos" : "Exibir objetivos estratégicos"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.pois ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Strategic Objectives</span>
-                        <span className={`font-tag-overline text-[8px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>{pois.length} Key Assets</span>
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.pois ? 'text-on-surface' : 'text-on-surface-variant'}`}>Objetivos Estratégicos</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.pois ? 'text-status-objective' : 'text-on-surface-variant'}`}>
+                          {pois.length === 1 ? '1 Ativo Estratégico' : `${pois.length} Ativos Estratégicos`}
+                        </span>
                       </div>
                     </div>
-                    <span className="material-symbols-outlined text-outline text-[15px]">{isPoiExpanded ? 'expand_less' : 'expand_more'}</span>
+                    <span className="material-symbols-outlined text-outline text-[15px]" title={isPoiExpanded ? "Recolher objetivos" : "Expandir objetivos"}>
+                      {isPoiExpanded ? 'expand_less' : 'expand_more'}
+                    </span>
                   </div>
                   
                   {/* POI Sub-Items */}
                   {isPoiExpanded && (
-                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
                       {pois.length === 0 ? (
-                        <div className="text-[9px] italic text-on-surface-variant">No active objectives</div>
+                        <div className="text-[9px] italic text-on-surface-variant">Nenhum objetivo ativo</div>
                       ) : (
                         pois.map(poi => {
                            const isVisible = !hiddenPois.includes(poi.id);
+                           const isSelected = selectedPoiId === poi.id;
+                           const displayName = poi.name || poiTypeLabels[poi.type] || 'Objetivo Sem Nome';
                            return (
-                             <div key={poi.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalPoi(poi.id)}>
-                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
+                             <div 
+                               key={poi.id} 
+                               className={`flex items-center justify-between text-[10px] font-body-ui py-1 px-1.5 rounded cursor-pointer group transition-all ${
+                                 isSelected 
+                                   ? 'bg-surface-card border border-status-objective/60 shadow-xs' 
+                                   : 'hover:bg-surface-card/70 border border-transparent'
+                               }`}
+                               onClick={() => onEditPoi?.(poi)}
+                               title={`Ver detalhes de ${displayName}`}
+                             >
+                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? (isSelected ? 'text-primary font-bold' : 'text-on-surface font-semibold') : 'text-on-surface-variant'}`}>
                                  <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-status-objective' : 'bg-surface-dim'}`}></span>
-                                 <span className="truncate">{poi.name}</span>
+                                 <span className="truncate group-hover:text-primary transition-colors">{displayName}</span>
                                </span>
-                               <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
-                                 {isVisible ? 'check' : 'add'}
-                               </span>
+                               <button
+                                 type="button"
+                                 title={isVisible ? "Ocultar objetivo individual" : "Exibir objetivo individual"}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   toggleLocalPoi(poi.id);
+                                 }}
+                                 className="p-0.5 rounded hover:bg-surface-container flex items-center justify-center transition-colors shrink-0"
+                               >
+                                 <span className={`material-symbols-outlined text-[13px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-40 group-hover:opacity-100'}`}>
+                                   {isVisible ? 'visibility' : 'visibility_off'}
+                                 </span>
+                               </button>
                              </div>
                            );
                         })
@@ -520,12 +598,15 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.teamA ? "Ocultar forças do Time A" : "Exibir forças do Time A"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.teamA ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
                         <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamA ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time A</span>
-                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>{teamACount} Units Deployed</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamA ? 'text-faction-friendly' : 'text-on-surface-variant'}`}>
+                          {teamACount === 1 ? '1 Unidade Ativa' : `${teamACount} Unidades Ativas`}
+                        </span>
                       </div>
                     </div>
                     <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamA ? 'bg-faction-friendly ring-2 ring-faction-friendly/20' : 'bg-surface-dim'}`}></span>
@@ -548,12 +629,15 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.teamB ? "Ocultar forças do Time B" : "Exibir forças do Time B"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.teamB ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
                         <span className={`font-label-md text-[10px] truncate font-bold ${layers.teamB ? 'text-on-surface' : 'text-on-surface-variant'}`}>Forças Time B</span>
-                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>{teamBCount} Units Active</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.teamB ? 'text-faction-hostile' : 'text-on-surface-variant'}`}>
+                          {teamBCount === 1 ? '1 Unidade Ativa' : `${teamBCount} Unidades Ativas`}
+                        </span>
                       </div>
                     </div>
                     <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.teamB ? 'bg-faction-hostile ring-2 ring-faction-hostile/20' : 'bg-surface-dim'}`}></span>
@@ -576,12 +660,15 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.unconfirmed ? "Ocultar contatos não confirmados" : "Exibir contatos não confirmados"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.unconfirmed ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Unconfirmed Contacts</span>
-                        <span className={`font-tag-overline text-[8px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>{unconfirmedCount} Ambiguous Pings</span>
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.unconfirmed ? 'text-on-surface' : 'text-on-surface-variant'}`}>Contatos Não Confirmados</span>
+                        <span className={`font-tag-overline text-[8px] font-bold ${layers.unconfirmed ? 'text-faction-unknown' : 'text-on-surface-variant'}`}>
+                          {unconfirmedCount === 1 ? '1 Sinal Ambíguo' : `${unconfirmedCount} Sinais Ambíguos`}
+                        </span>
                       </div>
                     </div>
                     <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${layers.unconfirmed ? 'bg-faction-unknown ring-2 ring-faction-unknown/20' : 'bg-surface-dim'}`}></span>
@@ -604,34 +691,60 @@ export default function Sidebar({
                         draggable={false}
                         className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.hazards ? "Ocultar zonas operacionais" : "Exibir zonas operacionais"}
                       >
-                        <span className="material-symbols-outlined text-[16px]">{layers.hazards ? 'polyline' : 'visibility_off'}</span>
+                        <span className="material-symbols-outlined text-[16px]">{layers.hazards ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Operational Sectors</span>
-                        <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">{hazards.length} Restricted Zones</span>
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.hazards ? 'text-on-surface' : 'text-on-surface-variant'}`}>Zonas Operacionais</span>
+                        <span className="font-tag-overline text-[8px] text-on-surface-variant font-bold">
+                          {hazards.length === 1 ? '1 Zona Ativa' : `${hazards.length} Zonas Ativas`}
+                        </span>
                       </div>
                     </div>
-                    <span className="material-symbols-outlined text-outline text-[15px]">{isHazardsExpanded ? 'expand_less' : 'expand_more'}</span>
+                    <span className="material-symbols-outlined text-outline text-[15px]" title={isHazardsExpanded ? "Recolher zonas" : "Expandir zonas"}>
+                      {isHazardsExpanded ? 'expand_less' : 'expand_more'}
+                    </span>
                   </div>
                   
                   {/* Hazards Sub-Items */}
                   {isHazardsExpanded && (
-                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1.5 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
+                    <div className="mt-2.5 ml-5 pl-2.5 space-y-1 bg-surface-parchment-dim/80 rounded-md p-2 border border-border-parchment/60" onMouseDown={(e) => e.stopPropagation()} draggable={false}>
                       {hazards.length === 0 ? (
-                        <div className="text-[9px] italic text-on-surface-variant">No active sectors</div>
+                        <div className="text-[9px] italic text-on-surface-variant">Nenhuma zona operacional ativa</div>
                       ) : (
                         hazards.map(hazard => {
                            const isVisible = !hiddenHazards.includes(hazard.id);
+                           const isSelected = selectedHazardId === hazard.id;
+                           const displayName = hazard.label || hazardTypeLabels[hazard.hazard_type] || 'Zona Operacional';
                            return (
-                             <div key={hazard.id} className="flex items-center justify-between text-[10px] font-body-ui py-0.5 cursor-pointer group" onClick={() => toggleLocalHazard(hazard.id)}>
-                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
-                                 <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? 'bg-secondary' : 'bg-surface-dim'}`}></span>
-                                 <span className="truncate">{hazard.label || 'Unnamed Sector'}</span>
+                             <div 
+                               key={hazard.id} 
+                               className={`flex items-center justify-between text-[10px] font-body-ui py-1 px-1.5 rounded cursor-pointer group transition-all ${
+                                 isSelected 
+                                   ? 'bg-surface-card border border-secondary/60 shadow-xs' 
+                                   : 'hover:bg-surface-card/70 border border-transparent'
+                               }`}
+                               onClick={() => onEditHazard?.(hazard)}
+                               title={`Ver detalhes de ${displayName}`}
+                             >
+                               <span className={`flex items-center gap-1.5 truncate pr-2 ${isVisible ? (isSelected ? 'text-primary font-bold' : 'text-on-surface font-semibold') : 'text-on-surface-variant'}`}>
+                                 <span className={`w-1.5 h-1.5 rounded-full shadow-sm shrink-0 ${isVisible ? getHazardDotColor(hazard.hazard_type) : 'bg-surface-dim'}`}></span>
+                                 <span className="truncate group-hover:text-primary transition-colors">{displayName}</span>
                                </span>
-                               <span className={`material-symbols-outlined text-[12px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-0 group-hover:opacity-100'}`}>
-                                 {isVisible ? 'check' : 'add'}
-                               </span>
+                               <button
+                                 type="button"
+                                 title={isVisible ? "Ocultar zona individual" : "Exibir zona individual"}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   toggleLocalHazard(hazard.id);
+                                 }}
+                                 className="p-0.5 rounded hover:bg-surface-container flex items-center justify-center transition-colors shrink-0"
+                               >
+                                 <span className={`material-symbols-outlined text-[13px] ${isVisible ? 'text-primary' : 'text-outline-variant opacity-40 group-hover:opacity-100'}`}>
+                                   {isVisible ? 'visibility' : 'visibility_off'}
+                                 </span>
+                               </button>
                              </div>
                            );
                         })
@@ -656,12 +769,13 @@ export default function Sidebar({
                         draggable={false}
                         className="text-outline hover:text-on-surface transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                         type="button"
+                        title={layers.tacticalGrid ? "Ocultar grade tática" : "Exibir grade tática"}
                       >
                         <span className="material-symbols-outlined text-[16px]">{layers.tacticalGrid ? 'visibility' : 'visibility_off'}</span>
                       </button>
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Tactical Grid (MGRS 10k)</span>
-                        <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Layer Active' : 'Layer Inactive'}</span>
+                        <span className={`font-label-md text-[10px] truncate font-bold ${layers.tacticalGrid ? 'text-on-surface' : 'text-outline'}`}>Grade Tática (MGRS 10k)</span>
+                        <span className={`font-tag-overline text-[8px] ${layers.tacticalGrid ? 'text-primary' : 'text-outline'}`}>{layers.tacticalGrid ? 'Camada Ativa' : 'Camada Inativa'}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -713,12 +827,13 @@ export default function Sidebar({
                       draggable={false}
                       className="text-secondary hover:text-primary transition-colors flex items-center justify-center w-6 h-6 rounded hover:bg-surface-container" 
                       type="button"
+                      title={isVisible ? "Ocultar camada" : "Exibir camada"}
                     >
                       <span className="material-symbols-outlined text-[16px]">{isVisible ? 'visibility' : 'visibility_off'}</span>
                     </button>
                     <div className="flex flex-col min-w-0">
                       <span className={`font-label-md text-[10px] truncate font-bold ${isVisible ? 'text-on-surface' : 'text-on-surface-variant'}`}>{layer.name}</span>
-                      <span className="font-tag-overline text-[8px] text-on-surface-variant">Custom Layer</span>
+                      <span className="font-tag-overline text-[8px] text-on-surface-variant">Camada Personalizada</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -729,7 +844,7 @@ export default function Sidebar({
                       <button 
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if(window.confirm('Delete layer?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
+                          if(window.confirm('Excluir esta camada?')) await supabase.from('Map_Layers').delete().eq('id', layer.id);
                         }} 
                         onMouseDown={(e) => e.stopPropagation()}
                         draggable={false}
@@ -769,55 +884,56 @@ export default function Sidebar({
       {isOpen && (isModerator || activeTab === 'planning') && (
         <div className="p-3 bg-surface-parchment-dim/90 border-t border-border-parchment shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">NATO Counter Palette</span>
-            <span className="font-tag-overline text-[8px] text-on-surface-variant">Drag to Map</span>
+            <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">Paleta de Unidades NATO</span>
+            <span className="font-tag-overline text-[8px] text-on-surface-variant">Arrastar ao Mapa</span>
           </div>
           <button 
             onClick={() => setShowNovaUnidadeModal(true)}
             className="w-full mb-2 py-1.5 px-2.5 bg-primary-container hover:bg-chrome-hover text-text-on-dark font-headline-sm text-[11px] font-semibold rounded-lg shadow-sm flex items-center justify-center gap-1.5 border border-primary-fixed-dim/20 transition-all active:scale-95" 
             type="button"
+            title="Criar Nova Unidade"
           >
             <span className="material-symbols-outlined text-[15px] text-primary-fixed-dim">add_circle</span>
             <span>Nova Unidade</span>
           </button>
           <div className="grid grid-cols-3 gap-1.5 text-center">
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'infantaria')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'infantaria')} title="Arrastar Infantaria ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCI--------`} size={20} variant="quick-panel" />
               </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Infantaria</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'blindados')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'blindados')} title="Arrastar Blindados ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCA--------`} size={20} variant="quick-panel" />
               </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Blindados</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'artilharia')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'artilharia')} title="Arrastar Artilharia ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUCF--------`} size={20} variant="quick-panel" />
               </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Artilharia</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'combatenteSuperficie')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'combatenteSuperficie')} title="Arrastar Força Naval ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}SPCL---------`} size={20} variant="quick-panel" />
               </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Naval</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'caca')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'caca')} title="Arrastar Aviação ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}APMF---------`} size={20} variant="quick-panel" />
               </div>
               <span className="font-tag-overline text-[8px] text-on-surface mt-0.5">Aviação</span>
             </div>
             
-            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'comunicacoes')} className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
+            <div draggable onDragStart={(e) => handleDragStartNATO(e, 'comunicacoes')} title="Arrastar Comunicações ao mapa" className="bg-surface-card hover:bg-secondary-fixed/40 transition-all p-1.5 rounded-lg border border-border-parchment shadow-sm cursor-grab flex flex-col items-center group hover:shadow">
               <div className="group-hover:scale-110 transition-transform h-[24px] flex items-center justify-center">
                 <NatoSymbol sidc={`S${role === 'Player B' ? 'H' : 'F'}GPUUS--------`} size={20} variant="quick-panel" />
               </div>
@@ -833,8 +949,8 @@ export default function Sidebar({
         <div className="absolute inset-0 z-50 bg-black/50 flex flex-col justify-end">
           <div className="bg-surface-parchment rounded-t-xl shadow-[0_-8px_30px_rgba(0,0,0,0.3)] p-4 border-t border-border-parchment flex flex-col max-h-full">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-headline-sm text-primary font-bold">Upload Layer</h3>
-              <button onClick={() => setShowUploadModal(false)} className="text-on-surface-variant hover:text-status-alert">
+              <h3 className="font-headline-sm text-primary font-bold">Carregar Camada</h3>
+              <button onClick={() => setShowUploadModal(false)} className="text-on-surface-variant hover:text-status-alert" title="Fechar">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>

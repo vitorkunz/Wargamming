@@ -17,7 +17,7 @@ export default function HazardCreationModal({
   isModerator = true
 }: HazardCreationModalProps) {
   const [hazardType, setHazardType] = useState('minefield');
-  const [label, setLabel] = useState('New Hazard Zone');
+  const [label, setLabel] = useState('Nova Zona Operacional');
   const [visibleToPlayerA, setVisibleToPlayerA] = useState(false);
   const [visibleToPlayerB, setVisibleToPlayerB] = useState(false);
   const [notes, setNotes] = useState('');
@@ -44,12 +44,12 @@ export default function HazardCreationModal({
       const { error } = await supabase.from(table).insert(insertPayload);
 
       if (error) {
-        alert("Failed to spawn hazard: " + error.message);
+        alert("Falha ao criar zona operacional: " + error.message);
       } else {
         onClose();
       }
     } catch (err: any) {
-      alert("Unexpected error: " + err.message);
+      alert("Erro inesperado: " + err.message);
     }
   };
 
@@ -119,7 +119,7 @@ export default function HazardCreationModal({
             <h3 className="font-tag-overline text-[11px] uppercase tracking-wider font-bold text-primary">2. Identificação</h3>
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-on-surface">Rótulo / Nome da Zona *</label>
-              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex. Minefield Alpha" className="w-full bg-[#F4F1E1] border border-border-parchment rounded-lg p-2.5 text-[13px] font-headline-sm font-bold text-on-surface focus:outline-none focus:border-primary shadow-inner" />
+              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex. Campo Minado Alfa" className="w-full bg-[#F4F1E1] border border-border-parchment rounded-lg p-2.5 text-[13px] font-headline-sm font-bold text-on-surface focus:outline-none focus:border-primary shadow-inner" />
             </div>
           </div>
 

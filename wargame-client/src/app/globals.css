@@ -69,8 +69,15 @@
   --color-on-secondary: #ffffff;
   --color-surface-variant: #e5e2e1;
   --color-faction-friendly: #2d7d74;
+  --color-faction-allied-fill: #2d7d74;
+  --color-faction-allied-accent: #a4f1e5;
+  --color-faction-opposing-fill: #4e1a3d;
+  --color-faction-opposing-accent: #c03a6b;
+  --color-faction-recon-fill: #d4a017;
+  --color-faction-recon-accent: #ffdfa0;
   --color-on-primary-fixed: #00201b;
   --color-status-objective: #d4a017;
+  --color-status-success: #16a34a;
   
   --spacing-margin: 1.5rem;
   --spacing-space-lg: 1rem;
@@ -160,6 +167,11 @@
   .font-label-sm { font-size: 12px; line-height: 18px; letter-spacing: 0.01em; font-weight: 400; font-family: var(--font-karla); }
   .font-heading { font-family: var(--font-montserrat); }
   .font-karla { font-family: var(--font-karla); }
+  .rounded-DEFAULT { border-radius: 6px; }
+  .rounded-t-DEFAULT { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+  .text-label-md { font-size: 13px; line-height: 16px; }
+  .font-body-sm { font-family: var(--font-karla); }
+  .text-body-sm { font-size: 12px; line-height: 16px; }
 }
 
 :root {

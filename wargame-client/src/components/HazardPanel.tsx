@@ -66,29 +66,44 @@ export default function HazardPanel({ selectedHazard, onClose, onSelectHazard, i
 
   return (
     <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
-      {/* Header */}
-      <div className="bg-primary-container p-1 flex items-center gap-1 shadow-sm border-b border-white/10 text-white shrink-0">
-        <button
-          type="button"
-          onClick={() => onSelectHazard(null)}
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${!currentHazard ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
-        >
-          <span>Roster</span>
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${currentHazard ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
-        >
-          <span>Detalhes</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => { setIsOpen(false); onClose(); }}
-          className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors ml-0.5"
-          title="Recolher Dossiê"
-        >
-          <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_right</span>
-        </button>
+      {/* Header de Abas: Roster vs Detalhes */}
+      <div className="flex items-center justify-between px-space-md pt-space-xs pb-0 bg-surface-parchment-dim/80">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onSelectHazard(null)}
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              !currentHazard
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">groups</span>
+            <span>Roster</span>
+          </button>
+          <button
+            type="button"
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              currentHazard
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">id_card</span>
+            <span>Detalhes</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-1 pb-1">
+          <button
+            id="toggle-right-btn"
+            title="Minimizar painel"
+            type="button"
+            onClick={() => { setIsOpen(false); onClose(); }}
+            className="p-1 rounded-DEFAULT hover:bg-surface-parchment text-primary-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">

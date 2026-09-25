@@ -182,176 +182,161 @@ export default function UnitPanel({
 
   return (
     <div className="w-full h-full flex flex-col select-none">
-      {/* Tab Switcher Header */}
-      <div className="bg-primary-container p-1 flex items-center gap-1 shadow-sm border-b border-white/10 text-white">
-        <button
-          type="button"
-          onClick={() => { setActivePanelTab('roster'); onSelectUnit(null); }}
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${
-            activePanelTab === 'roster'
-              ? 'bg-white text-primary font-bold shadow-sm'
-              : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'
-          }`}
-        >
-          <span>Roster ({activeUnits.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => { if(selectedUnit) setActivePanelTab('details'); }}
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${
-            activePanelTab === 'details'
-              ? 'bg-white text-primary font-bold shadow-sm'
-              : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'
-          }`}
-        >
-          <span>Detalhes</span>
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors ml-0.5"
-          title="Recolher Dossiê"
-        >
-          <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_right</span>
-        </button>
+      {/* Header de Abas: Roster (84) vs Detalhes */}
+      <div className="flex items-center justify-between px-space-md pt-space-xs pb-0 bg-surface-parchment-dim/80">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => { setActivePanelTab('roster'); onSelectUnit(null); }}
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              activePanelTab === 'roster'
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">groups</span>
+            <span>Roster ({activeUnits.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActivePanelTab('details')}
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              activePanelTab === 'details'
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">id_card</span>
+            <span>Detalhes</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-1 pb-1">
+          <button
+            id="toggle-right-btn"
+            title="Minimizar painel"
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-DEFAULT hover:bg-surface-parchment text-primary-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+          </button>
+        </div>
       </div>
+
+      {/* Filtros e Busca Rápida (Exibido na Aba Roster) */}
+      {activePanelTab === 'roster' && (
+        <div className="px-space-md py-space-sm space-y-space-xs bg-surface-parchment border-b border-border-parchment/60">
+          {/* Campo de Busca */}
+          <div className="relative flex items-center">
+            <span className="material-symbols-outlined absolute left-2 text-[16px] text-outline pointer-events-none">search</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrar por indicativo ou classe..."
+              className="w-full pl-7 pr-3 py-1.5 text-body-sm font-body-sm rounded-DEFAULT bg-surface-card text-on-primary-fixed placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container shadow-sm border border-border-parchment/40"
+            />
+          </div>
+
+          {/* Faction Selector Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto py-1 custom-scrollbar">
+            <button
+              type="button"
+              onClick={() => setFactionFilter('all')}
+              className={`px-2 py-0.5 rounded-DEFAULT bg-primary-container text-surface-parchment font-label-sm text-[10px] uppercase font-bold tracking-wider shrink-0 shadow-sm transition-all ${
+                factionFilter === 'all'
+                  ? 'ring-2 ring-primary-container ring-offset-1 opacity-100'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              Todos ({activeUnits.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFactionFilter('Player A')}
+              className={`px-2 py-0.5 rounded-DEFAULT bg-faction-allied-fill text-faction-allied-accent font-label-sm text-[10px] uppercase font-bold tracking-wider shrink-0 shadow-sm transition-all ${
+                factionFilter === 'Player A'
+                  ? 'ring-2 ring-faction-allied-fill ring-offset-1 opacity-100'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              Time A ({activeUnits.filter((u) => u.owner === 'Player A').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFactionFilter('Player B')}
+              className={`px-2 py-0.5 rounded-DEFAULT bg-faction-opposing-fill text-faction-opposing-accent font-label-sm text-[10px] uppercase font-bold tracking-wider shrink-0 shadow-sm transition-all ${
+                factionFilter === 'Player B'
+                  ? 'ring-2 ring-faction-opposing-fill ring-offset-1 opacity-100'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              Time B ({activeUnits.filter((u) => u.owner === 'Player B').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFactionFilter('Unknown')}
+              className={`px-2 py-0.5 rounded-DEFAULT bg-faction-recon-fill text-on-primary-fixed font-label-sm text-[10px] uppercase font-bold tracking-wider shrink-0 shadow-sm transition-all ${
+                factionFilter === 'Unknown'
+                  ? 'ring-2 ring-faction-recon-fill ring-offset-1 opacity-100'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              Incógnito ({activeUnits.filter((u) => u.owner === 'Unknown').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFactionFilter('Neutral')}
+              className={`px-2 py-0.5 rounded-DEFAULT bg-surface-card text-primary-container font-label-sm text-[10px] uppercase font-bold tracking-wider shrink-0 shadow-sm transition-all ${
+                factionFilter === 'Neutral'
+                  ? 'ring-2 ring-primary-container ring-offset-1 opacity-100'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              Neutro ({activeUnits.filter((u) => u.owner === 'Neutral').length})
+            </button>
+          </div>
+
+          {/* Controles Secundários de Agrupamento e Tipo */}
+          <div className="grid grid-cols-3 gap-1 pt-1">
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as any)}
+              className="px-1.5 py-1 text-[10px] font-label-sm font-semibold rounded-DEFAULT bg-surface-card text-on-primary-fixed focus:outline-none shadow-sm cursor-pointer border border-border-parchment/40"
+            >
+              <option value="faction">Agrupar: Facção</option>
+              <option value="type">Agrupar: Tipo</option>
+              <option value="sector">Agrupar: Setor</option>
+              <option value="status">Agrupar: Status</option>
+            </select>
+            <select
+              value={visibilityFilter}
+              onChange={(e) => setVisibilityFilter(e.target.value)}
+              className="px-1.5 py-1 text-[10px] font-label-sm font-semibold rounded-DEFAULT bg-surface-card text-on-primary-fixed focus:outline-none shadow-sm cursor-pointer border border-border-parchment/40"
+            >
+              <option value="all">Visib.: Todas</option>
+              <option value="visible">Visível</option>
+              <option value="hidden">Oculto</option>
+            </select>
+            <select
+              value={forceTypeFilter}
+              onChange={(e) => setForceTypeFilter(e.target.value)}
+              className="px-1.5 py-1 text-[10px] font-label-sm font-semibold rounded-DEFAULT bg-surface-card text-on-primary-fixed focus:outline-none shadow-sm cursor-pointer border border-border-parchment/40"
+            >
+              <option value="all">Força: Todas</option>
+              <option value="ground">Força: Terrestre</option>
+              <option value="air">Aérea</option>
+              <option value="sea">Naval</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5 text-on-surface custom-scrollbar">
         {/* ROSTER TAB CONTENT */}
         {activePanelTab === 'roster' && (
-          <div className="space-y-1.5">
-            {/* Search & Filter Header Box */}
-            <div className="bg-white/95 p-1.5 rounded-lg border border-border-parchment shadow-sm space-y-1.5">
-              {/* Search */}
-              <div className="relative flex items-center bg-surface-parchment-dim/80 rounded border border-border-parchment shadow-inner">
-                <span className="material-symbols-outlined absolute left-1.5 text-outline text-[12px] pointer-events-none">search</span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filtrar por indicativo ou classe..."
-                  className="w-full pl-5 pr-1.5 py-1 text-[9px] font-body-base bg-transparent text-on-surface focus:outline-none"
-                />
-              </div>
-
-              {/* Category Filter Pills */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[8.5px] font-bold custom-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => setFactionFilter('all')}
-                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
-                    factionFilter === 'all'
-                      ? 'bg-[#0a352a] text-white border-[#0a352a] shadow-sm'
-                      : 'bg-transparent text-[#0a352a] border-[#0a352a]/20 hover:bg-[#0a352a]/10'
-                  }`}
-                >
-                  Todos ({activeUnits.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFactionFilter('Player A')}
-                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
-                    factionFilter === 'Player A'
-                      ? 'bg-[#2d7d74] text-white border-[#2d7d74] shadow-sm'
-                      : 'bg-[#e2f1ec] text-[#2d7d74] border-[#2d7d74]/20 hover:bg-[#2d7d74]/20'
-                  }`}
-                >
-                  Time A ({activeUnits.filter((u) => u.owner === 'Player A').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFactionFilter('Player B')}
-                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
-                    factionFilter === 'Player B'
-                      ? 'bg-[#c03a6b] text-white border-[#c03a6b] shadow-sm'
-                      : 'bg-[#f3e6ea] text-[#c03a6b] border-[#c03a6b]/20 hover:bg-[#c03a6b]/20'
-                  }`}
-                >
-                  Time B ({activeUnits.filter((u) => u.owner === 'Player B').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFactionFilter('Unknown')}
-                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
-                    factionFilter === 'Unknown'
-                      ? 'bg-[#5c5c7d] text-white border-[#5c5c7d] shadow-sm'
-                      : 'bg-[#e9e9f0] text-[#5c5c7d] border-[#5c5c7d]/20 hover:bg-[#5c5c7d]/20'
-                  }`}
-                >
-                  Incógnito ({activeUnits.filter((u) => u.owner === 'Unknown').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFactionFilter('Neutral')}
-                  className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors border ${
-                    factionFilter === 'Neutral'
-                      ? 'bg-gray-500 text-white border-gray-500 shadow-sm'
-                      : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                  }`}
-                >
-                  Neutro ({activeUnits.filter((u) => u.owner === 'Neutral').length})
-                </button>
-              </div>
-
-              {/* Group By Selector */}
-              <div className="pt-1 border-t border-border-parchment/60 flex items-center justify-between gap-1 text-[8.5px]">
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px] text-outline">account_tree</span>
-                  <span className="text-[#0a352a] font-bold uppercase tracking-wider">Agrupar por:</span>
-                </div>
-                <div className="flex items-center bg-[#eae4d9] rounded p-0.5 border border-[#d9ceb9]">
-                  <button onClick={() => setGroupBy('faction')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'faction' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Facção</button>
-                  <button onClick={() => setGroupBy('type')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'type' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Tipo</button>
-                  <button onClick={() => setGroupBy('status')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'status' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Status</button>
-                  <button onClick={() => setGroupBy('sector')} className={`px-1.5 py-0.5 rounded-sm font-bold transition-colors ${groupBy === 'sector' ? 'bg-[#0a352a] text-white' : 'text-on-surface-variant hover:text-on-surface'}`}>Setor</button>
-                </div>
-              </div>
-
-              {/* Advanced Filters */}
-              <div className="grid grid-cols-3 gap-1 pt-1">
-                {isModerator && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Visibilidade</span>
-                    <div className="relative">
-                      <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
-                        <option value="all">Todas</option>
-                        <option value="visible">Visível</option>
-                        <option value="hidden">Oculto</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
-                    </div>
-                  </div>
-                )}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Condição</span>
-                  <div className="relative">
-                    <select value={conditionFilter} onChange={(e) => setConditionFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
-                      <option value="all">Todas</option>
-                      <option value="normal">Prontidão Normal</option>
-                      <option value="degraded">Degradada</option>
-                      <option value="critical">Crítico</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[7.5px] font-bold text-on-surface-variant uppercase tracking-wider">Tipo de Força</span>
-                  <div className="relative">
-                    <select value={forceTypeFilter} onChange={(e) => setForceTypeFilter(e.target.value)} className="w-full appearance-none bg-[#eae4d9] text-on-surface text-[8.5px] pl-1.5 pr-4 py-1 rounded border border-[#d9ceb9] focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm">
-                      <option value="all">Todos</option>
-                      <option value="ground">Terrestre</option>
-                      <option value="air">Aérea</option>
-                      <option value="sea">Naval</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none text-on-surface-variant">keyboard_arrow_down</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Units List Cards */}
-            <div className="space-y-2">
+          <div className="space-y-2">
               {Object.entries(groupedUnits).map(([groupName, groupUnits]) => (
                 <details key={groupName} className="group" open>
                   <summary className="flex items-center justify-between p-1 cursor-pointer bg-[#eae4d9] rounded border border-[#d9ceb9] shadow-sm select-none list-none [&::-webkit-details-marker]:hidden outline-none hover:bg-[#e4dbcd] transition-colors">
@@ -481,13 +466,13 @@ export default function UnitPanel({
                 </details>
               ))}
             </div>
-          </div>
         )}
 
         {/* DETAILS TAB CONTENT */}
-        {activePanelTab === 'details' && selectedUnit && (
-          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 text-on-surface">
-            {/* CARD 1: Header Identification Card */}
+        {activePanelTab === 'details' && (
+          selectedUnit ? (
+            <div className="p-1 space-y-2.5 text-on-surface">
+              {/* CARD 1: Header Identification Card */}
             <div className="@container bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <div className="flex flex-col @[300px]:flex-row-reverse @[300px]:items-start @[300px]:justify-between gap-2.5">
                 {/* NATO Symbol: Positioned at top if card is narrow, or to the right if card has enough space */}
@@ -730,7 +715,12 @@ export default function UnitPanel({
               </div>
             )}
           </div>
-        )}
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 text-center text-outline my-auto h-full">
+            <span className="material-symbols-outlined text-[36px] mb-2 opacity-50">id_card</span>
+            <p className="font-label-md text-[11px]">Selecione uma unidade no mapa ou no roster para ver detalhes.</p>
+          </div>
+        ))}
       </div>
     </div>
   );

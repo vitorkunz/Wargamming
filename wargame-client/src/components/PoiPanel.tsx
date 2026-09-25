@@ -36,13 +36,13 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
     setCurrentPoi(prev => prev ? { ...prev, [field]: value } : null);
     const { error } = await supabase.from(targetTable).update({ [field]: value }).eq('id', currentPoi.id);
     if (error) {
-      alert("Falha ao atualizar POI: " + error.message);
+      alert("Falha ao atualizar objetivo: " + error.message);
     }
   };
 
   const handleDelete = async () => {
     if (!currentPoi || !isModerator) return;
-    if (window.confirm("Excluir este POI?")) {
+    if (window.confirm("Excluir este objetivo estratégico?")) {
       const { error } = await supabase.from(targetTable).delete().eq('id', currentPoi.id);
       if (!error) onSelectPoi(null);
     }
@@ -78,36 +78,51 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
 
   return (
     <div className="w-full h-full bg-surface-parchment/95 text-on-surface flex flex-col shadow-xl transition-all duration-300 z-50 shrink-0 border-l border-border-parchment">
-      {/* Header */}
-      <div className="bg-primary-container p-1 flex items-center gap-1 shadow-sm border-b border-white/10 text-white shrink-0">
-        <button
-          type="button"
-          onClick={() => onSelectPoi(null)}
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${!currentPoi ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
-        >
-          <span>Roster</span>
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-1 px-1.5 text-center text-[9px] rounded-md transition-all flex items-center justify-center gap-1 ${currentPoi ? 'bg-white text-primary font-bold shadow-sm' : 'text-surface-parchment/80 hover:text-white hover:bg-chrome-hover'}`}
-        >
-          <span>Detalhes</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => { setIsOpen(false); onClose(); }}
-          className="p-1 rounded text-primary-fixed-dim hover:text-white hover:bg-white/10 transition-colors ml-0.5"
-          title="Recolher Dossiê"
-        >
-          <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_right</span>
-        </button>
+      {/* Header de Abas: Roster vs Detalhes */}
+      <div className="flex items-center justify-between px-space-md pt-space-xs pb-0 bg-surface-parchment-dim/80">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onSelectPoi(null)}
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              !currentPoi
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">groups</span>
+            <span>Roster</span>
+          </button>
+          <button
+            type="button"
+            className={`px-3 py-1.5 rounded-t-DEFAULT font-headline-sm text-label-md uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+              currentPoi
+                ? 'bg-surface-parchment text-primary-container font-bold shadow-sm'
+                : 'hover:bg-surface-parchment/60 text-outline font-semibold'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">id_card</span>
+            <span>Detalhes</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-1 pb-1">
+          <button
+            id="toggle-right-btn"
+            title="Minimizar painel"
+            type="button"
+            onClick={() => { setIsOpen(false); onClose(); }}
+            className="p-1 rounded-DEFAULT hover:bg-surface-parchment text-primary-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         {!currentPoi ? (
           <div className="text-center text-on-surface-variant mt-10 p-4 border border-border-parchment border-dashed rounded-xl bg-surface-container/50">
             <span className="material-symbols-outlined text-[20px] opacity-50 mb-2">touch_app</span>
-            <p className="font-label-md text-[10px]">Selecione um POI no mapa ou na barra lateral para ver detalhes.</p>
+            <p className="font-label-md text-[10px]">Selecione um objetivo no mapa ou na barra lateral para ver detalhes.</p>
           </div>
         ) : (
           <>
@@ -210,7 +225,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
               <div className="bg-surface-card/95 p-3 rounded-xl border border-border-parchment shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-tag-overline text-[9px] text-primary uppercase font-bold tracking-wider">
-                    {isModerator ? 'Painel de Ações do Comando' : 'Ações do POI'}
+                    {isModerator ? 'Painel de Ações do Comando' : 'Ações do Objetivo'}
                   </span>
                   <span className="material-symbols-outlined text-primary text-[14px]">
                     {isModerator ? 'admin_panel_settings' : 'tune'}
@@ -277,7 +292,7 @@ export default function PoiPanel({ pois, selectedPoi, onClose, onSelectPoi, isMo
                         className="w-full bg-status-critical/10 hover:bg-status-critical hover:text-white text-status-critical font-label-md text-[9.5px] py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 border border-status-critical/30 font-semibold"
                       >
                         <span className="material-symbols-outlined text-[13px]">delete_forever</span>
-                        <span>Excluir POI</span>
+                        <span>Excluir Objetivo Estratégico</span>
                       </button>
                     </div>
                   </>

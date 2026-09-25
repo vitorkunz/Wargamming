@@ -257,6 +257,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     setSelectedUnitId(null);
     setSelectedHazard(null);
     setIsRightPanelOpen(true);
+    setActiveBottomPanel('dossier');
   };
 
   const handleHazardClick = (hazard: BattleHazard) => {
@@ -264,6 +265,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     setSelectedPoi(null);
     setSelectedUnitId(null);
     setIsRightPanelOpen(true);
+    setActiveBottomPanel('dossier');
   };
 
   const handleUnitClick = (unit: Unit) => {
@@ -414,6 +416,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
               hazardsTable={hazardsTable}
               unitsTable={unitsTable}
               role={role}
+              selectedPoiId={selectedPoi?.id}
+              selectedHazardId={selectedHazard?.id}
               onEditPoi={handlePOIClick}
               onEditHazard={handleHazardClick}
               isOpen={isLeftPanelOpen || activeBottomPanel === 'layers'}
@@ -444,7 +448,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                 type="button"
               >
                 <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
-                <span className="text-xs uppercase tracking-wider">Layers</span>
+                <span className="text-xs uppercase tracking-wider">Camadas</span>
               </button>
             )}
             {!isRightPanelOpen && activeView !== 'manage_players' && (

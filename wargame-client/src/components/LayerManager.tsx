@@ -31,7 +31,7 @@ export default function LayerManager({
   const uploadLayer = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!newLayerName.trim()) {
-        alert('Please provide a name for the layer before uploading an image.');
+        alert('Por favor, informe o nome da camada antes de carregar a imagem.');
         event.target.value = '';
         return;
       }
@@ -39,7 +39,7 @@ export default function LayerManager({
       setUploading(true);
 
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('You must select an image to upload.');
+        throw new Error('Você deve selecionar uma imagem para carregar.');
       }
 
       const file = event.target.files[0];
@@ -82,7 +82,7 @@ export default function LayerManager({
   };
 
   const deleteLayer = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this layer?")) {
+    if (window.confirm("Tem certeza de que deseja excluir esta camada?")) {
       await supabase.from('Map_Layers').delete().eq('id', id);
     }
   };
@@ -109,11 +109,11 @@ export default function LayerManager({
       
       {/* Upload New Layer */}
       <div className="bg-slate-700 p-3 rounded-lg border border-slate-600 shadow-inner">
-        <h3 className="font-bold text-slate-200 mb-2 text-sm">Add New Layer</h3>
+        <h3 className="font-bold text-slate-200 mb-2 text-sm">Adicionar Nova Camada</h3>
         <div className="flex flex-col gap-2">
           <input 
             type="text" 
-            placeholder="Layer Name..." 
+            placeholder="Nome da camada..." 
             value={newLayerName}
             onChange={(e) => setNewLayerName(e.target.value)}
             className="w-full p-1.5 text-sm bg-slate-800 text-white border border-slate-600 rounded outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-400"
@@ -125,13 +125,13 @@ export default function LayerManager({
               onChange={uploadLayer}
               disabled={uploading || !newLayerName.trim()}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-              title={newLayerName.trim() ? "Upload Image" : "Enter a name first"}
+              title={newLayerName.trim() ? "Carregar Imagem" : "Informe um nome primeiro"}
             />
             <button 
               disabled={uploading || !newLayerName.trim()}
               className="w-full py-1.5 bg-blue-600 text-white text-sm font-bold rounded shadow disabled:bg-slate-600 disabled:text-slate-400 transition-colors"
             >
-              {uploading ? 'Uploading...' : 'Upload Image'}
+              {uploading ? 'Carregando...' : 'Carregar Imagem'}
             </button>
           </div>
         </div>
@@ -139,9 +139,9 @@ export default function LayerManager({
 
       {/* Layer List */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Manage Layers</h3>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Gerenciar Camadas</h3>
         {layers.length === 0 ? (
-          <p className="text-slate-500 italic text-sm">No map layers.</p>
+          <p className="text-slate-500 italic text-sm">Nenhuma camada adicionada.</p>
         ) : (
           <div className="space-y-2">
             {layers.map((layer, index) => (
@@ -153,23 +153,23 @@ export default function LayerManager({
                     <button 
                       onClick={() => moveLayer(layer, 'up')} 
                       disabled={index === 0}
-                      className="text-slate-400 hover:text-blue-400 disabled:opacity-30 p-1"
-                      title="Move Up"
+                      className="text-slate-400 hover:text-blue-400 disabled:opacity-30 p-1 flex items-center justify-center"
+                      title="Mover para Cima"
                     >
-                      ?
+                      <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
                     </button>
                     <button 
                       onClick={() => moveLayer(layer, 'down')} 
                       disabled={index === layers.length - 1}
-                      className="text-slate-400 hover:text-blue-400 disabled:opacity-30 p-1"
-                      title="Move Down"
+                      className="text-slate-400 hover:text-blue-400 disabled:opacity-30 p-1 flex items-center justify-center"
+                      title="Mover para Baixo"
                     >
-                      ?
+                      <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
                     </button>
                     <button 
                       onClick={() => deleteLayer(layer.id)}
                       className="text-red-400 hover:text-red-300 ml-1 p-1"
-                      title="Delete Layer"
+                      title="Excluir Camada"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -186,7 +186,7 @@ export default function LayerManager({
                         onChange={() => toggleLocalDynamic(layer.id)}
                         className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-blue-500"
                       />
-                      <span className="text-slate-300 group-hover:text-white">Show Local</span>
+                      <span className="text-slate-300 group-hover:text-white">Visível Local</span>
                    </label>
                    
                    <label className="flex items-center space-x-2 cursor-pointer group">
@@ -196,13 +196,13 @@ export default function LayerManager({
                         onChange={() => toggleGlobalVisibility(layer)}
                         className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-purple-500 focus:ring-purple-500"
                       />
-                      <span className="text-slate-300 group-hover:text-white">Global</span>
+                      <span className="text-slate-300 group-hover:text-white">Visível Global</span>
                    </label>
                 </div>
 
                 {onOpacityChange && (
                   <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-600/70">
-                    <span className="text-xs text-slate-300 font-medium whitespace-nowrap">Opacity:</span>
+                    <span className="text-xs text-slate-300 font-medium whitespace-nowrap">Opacidade:</span>
                     <input 
                       type="range" 
                       min="0" 
