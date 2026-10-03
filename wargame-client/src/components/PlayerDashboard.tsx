@@ -11,6 +11,7 @@ import HazardPanel from './HazardPanel';
 import TopBar from './ui/TopBar';
 import BottomNavbar, { BottomPanelType } from './BottomNavbar';
 import { useResizablePanel } from '@/hooks/useResizablePanel';
+import { MAX_PLANNING_UNITS_PER_FACTION } from '@/lib/security';
 
 interface PlayerDashboardProps {
   userEmail: string;
@@ -128,6 +129,11 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
     isDuplicatingRef.current = true;
     try {
       if (activeTab === 'planning') {
+        if (planningUnits.length >= MAX_PLANNING_UNITS_PER_FACTION) {
+          alert(`Limite de unidades atingido: Cada facção pode ter no máximo ${MAX_PLANNING_UNITS_PER_FACTION} unidades de planejamento.`);
+          return;
+        }
+
         const duplicatePayload = {
           name: unitToDuplicate.name || null,
           type: unitToDuplicate.type,

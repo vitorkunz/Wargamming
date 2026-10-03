@@ -1,7 +1,8 @@
--- Enable Storage
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('maps', 'maps', true)
-ON CONFLICT (id) DO NOTHING;
+-- Enable Storage (Allows raster images PNG, JPEG, WebP and vector SVG)
+INSERT INTO storage.buckets (id, name, public, allowed_mime_types) 
+VALUES ('maps', 'maps', true, ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
+ON CONFLICT (id) DO UPDATE SET
+  allowed_mime_types = ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 -- Storage RLS Policies
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;

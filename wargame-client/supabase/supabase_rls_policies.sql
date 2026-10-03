@@ -19,6 +19,34 @@ CREATE POLICY "Moderators can update profiles"
 ON public."Profiles" FOR UPDATE 
 USING ( public.get_user_role() = 'Moderator' );
 
+-- Prevent privilege escalation on Profiles.role
+CREATE OR REPLACE FUNCTION public.protect_profile_role()
+RETURNS TRIGGER AS $$
+DECLARE
+  caller_role text;
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role THEN
+    IF auth.uid() IS NULL THEN
+      RETURN NEW;
+    END IF;
+
+    SELECT role INTO caller_role 
+    FROM public."Profiles" 
+    WHERE id = auth.uid();
+
+    IF caller_role IS NULL OR caller_role != 'Moderator' THEN
+      RAISE EXCEPTION 'Access Denied: Only Moderators can modify user roles.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_protect_profile_role ON public."Profiles";
+CREATE TRIGGER tr_protect_profile_role
+BEFORE UPDATE ON public."Profiles"
+FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role();
+
 -- ==========================================
 -- GAME_STATE POLICIES
 -- ==========================================
@@ -84,6 +112,33 @@ FOR ALL
 TO authenticated
 USING ( true )
 WITH CHECK ( true );
+
+-- Prevent Duplication Spam / Flood DoS: Limit planning units to max 60 per faction
+CREATE OR REPLACE FUNCTION public.check_planning_units_quota()
+RETURNS TRIGGER AS $$
+DECLARE
+  current_count integer;
+  target_owner text;
+BEGIN
+  target_owner := COALESCE(NEW.draft_owner, NEW.owner);
+
+  SELECT count(*) INTO current_count
+  FROM public."Planning_Units"
+  WHERE COALESCE(draft_owner, owner) = target_owner;
+
+  IF current_count >= 1000 THEN
+    RAISE EXCEPTION 'Unit limit reached: Faction planning unit quota exceeded (maximum 1000 units).';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tr_check_planning_units_quota ON public."Planning_Units";
+CREATE TRIGGER tr_check_planning_units_quota
+BEFORE INSERT ON public."Planning_Units"
+FOR EACH ROW EXECUTE FUNCTION public.check_planning_units_quota();
+
 
 -- ==========================================
 -- MAP_POIS POLICIES

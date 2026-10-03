@@ -167,12 +167,30 @@ ALTER TABLE public."Moderator_Units" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Moderator_POIs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."Moderator_Hazards" ENABLE ROW LEVEL SECURITY;
 
+-- Set REPLICA IDENTITY FULL for safe realtime replication without fog-of-war leakage
+ALTER TABLE public."Battle_Units" REPLICA IDENTITY FULL;
+ALTER TABLE public."Battle_Hazards" REPLICA IDENTITY FULL;
+ALTER TABLE public."Map_POIs" REPLICA IDENTITY FULL;
+ALTER TABLE public."Map_Layers" REPLICA IDENTITY FULL;
+ALTER TABLE public."Moderator_Units" REPLICA IDENTITY FULL;
+ALTER TABLE public."Moderator_POIs" REPLICA IDENTITY FULL;
+ALTER TABLE public."Moderator_Hazards" REPLICA IDENTITY FULL;
+
 -- Publish / Sync Draft RPC Functions
+REVOKE EXECUTE ON FUNCTION public.publish_draft_to_live() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.sync_draft_from_live() FROM PUBLIC, anon;
+
+GRANT EXECUTE ON FUNCTION public.publish_draft_to_live() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_draft_from_live() TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.publish_draft_to_live()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  caller_role text;
 BEGIN
-  IF public.get_user_role() <> 'Moderator' THEN
-    RAISE EXCEPTION 'Apenas moderadores podem publicar o mapa.';
+  SELECT role INTO caller_role FROM public."Profiles" WHERE id = auth.uid();
+  IF caller_role IS NULL OR caller_role != 'Moderator' THEN
+    RAISE EXCEPTION 'Access Denied: Only Moderators can publish turns.';
   END IF;
 
   DELETE FROM public."Battle_Units";
@@ -191,9 +209,12 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.sync_draft_from_live()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  caller_role text;
 BEGIN
-  IF public.get_user_role() <> 'Moderator' THEN
-    RAISE EXCEPTION 'Apenas moderadores podem sincronizar o rascunho.';
+  SELECT role INTO caller_role FROM public."Profiles" WHERE id = auth.uid();
+  IF caller_role IS NULL OR caller_role != 'Moderator' THEN
+    RAISE EXCEPTION 'Access Denied: Only Moderators can sync drafts.';
   END IF;
 
   DELETE FROM public."Moderator_Units";
