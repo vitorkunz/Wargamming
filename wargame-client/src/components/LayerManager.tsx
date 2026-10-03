@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { isAllowedImageMimeType, sanitizeSvg } from '@/lib/security';
 
 export interface MapLayer {
   id: string;
@@ -43,13 +44,26 @@ export default function LayerManager({
       }
 
       const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
+      if (!isAllowedImageMimeType(file.type, file.name)) {
+        throw new Error('Formato de arquivo não suportado. Por favor, envie uma imagem PNG, JPEG, WebP ou SVG.');
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      let fileToUpload: File | Blob = file;
+
+      // Sanitize SVG content if an SVG file is uploaded to neutralize XSS
+      if (file.type === 'image/svg+xml' || fileExt === 'svg') {
+        const text = await file.text();
+        const cleanSvg = sanitizeSvg(text);
+        fileToUpload = new Blob([cleanSvg], { type: 'image/svg+xml' });
+      }
+
       const fileName = `layer-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('maps')
-        .upload(filePath, file);
+        .upload(filePath, fileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -121,7 +135,7 @@ export default function LayerManager({
           <div className="relative">
             <input 
               type="file" 
-              accept="image/*,.svg,image/svg+xml"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
               onChange={uploadLayer}
               disabled={uploading || !newLayerName.trim()}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
