@@ -11,6 +11,7 @@ import HazardPanel from './HazardPanel';
 import TopBar from './ui/TopBar';
 import BottomNavbar, { BottomPanelType } from './BottomNavbar';
 import { useResizablePanel } from '@/hooks/useResizablePanel';
+import OrderDispatchModal from './orders/OrderDispatchModal';
 import { MAX_PLANNING_UNITS_PER_FACTION } from '@/lib/security';
 
 interface PlayerDashboardProps {
@@ -24,6 +25,7 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
   const [hiddenPois, setHiddenPois] = useState<string[]>([]);
   const [hiddenHazards, setHiddenHazards] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'planning' | 'battle'>('planning');
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [activeBottomPanel, setActiveBottomPanel] = useState<BottomPanelType>(null);
@@ -425,6 +427,15 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
           >
             Mapa de Batalha
           </button>
+          <button 
+            type="button"
+            className="font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg text-text-on-dark hover:bg-chrome-hover flex items-center gap-1.5 cursor-pointer"
+            onClick={() => setIsOrdersModalOpen(true)}
+          >
+            <span className="w-2 h-2 rounded-full bg-hazard-cbrn animate-ping"></span>
+            <span className="material-symbols-outlined text-[16px]">military_tech</span>
+            <span>Diretiva &amp; Ordens C2</span>
+          </button>
         </nav>
       </TopBar>
 
@@ -625,6 +636,14 @@ export default function PlayerDashboard({ userEmail, role, onSignOut }: PlayerDa
           onClose={() => setSpawnModalData(null)}
         />
       )}
+
+      <OrderDispatchModal
+        isOpen={isOrdersModalOpen}
+        onClose={() => setIsOrdersModalOpen(false)}
+        userEmail={userEmail}
+        role={role}
+        playerUnits={currentUnits.filter((u) => u.owner === role)}
+      />
     </div>
   );
 }

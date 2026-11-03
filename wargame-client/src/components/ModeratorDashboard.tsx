@@ -15,6 +15,7 @@ import TopBar from './ui/TopBar';
 import Panel from './ui/Panel';
 import BottomNavbar, { BottomPanelType } from './BottomNavbar';
 import { useResizablePanel } from '@/hooks/useResizablePanel';
+import ModeratorOrdersDesk from './orders/moderator/ModeratorOrdersDesk';
 
 interface ModeratorDashboardProps {
   userEmail: string;
@@ -89,7 +90,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
     }
   };
 
-  const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players'>('edit_map');
+  const [activeView, setActiveView] = useState<'edit_map' | 'view_published' | 'manage_players' | 'evaluate_orders'>('edit_map');
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [activeBottomPanel, setActiveBottomPanel] = useState<BottomPanelType>(null);
@@ -395,13 +396,19 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           >
             Ver Mapa Publicado
           </button>
+          <button 
+            className={`font-label-md text-label-md px-space-md py-space-xs transition-colors rounded-lg ${activeView === 'evaluate_orders' ? 'bg-surface-card text-primary font-bold shadow-[0_1px_4px_rgba(0,75,65,0.2)]' : 'text-text-on-dark hover:bg-chrome-hover'}`}
+            onClick={() => setActiveView('evaluate_orders')}
+          >
+            Gestão &amp; Ordens
+          </button>
         </nav>
       </TopBar>
 
       <main className="relative pt-[104px] lg:pt-16 w-full h-screen bg-surface-canvas-void flex flex-col">
         <div className="relative w-full h-full flex overflow-hidden bg-surface-canvas-void select-none">
           {/* Left Panel */}
-          {activeView !== 'manage_players' && (
+          {activeView !== 'manage_players' && activeView !== 'evaluate_orders' && (
             <Sidebar 
               layers={layers} 
               toggleLayer={toggleLayer} 
@@ -439,7 +446,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           {/* Center Canvas */}
           <div className="flex-1 relative flex flex-col h-full bg-surface-canvas-void overflow-hidden transition-all duration-300">
             {/* Floating Panel Restorer / Reopen Buttons (Visible when collapsed on Desktop) */}
-            {!isLeftPanelOpen && activeView !== 'manage_players' && (
+            {!isLeftPanelOpen && activeView !== 'manage_players' && activeView !== 'evaluate_orders' && (
               <button 
                 className="hidden lg:flex absolute top-4 left-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md items-center gap-1.5 transition-all text-label-md font-bold" 
                 id="left-panel-expand-btn" 
@@ -451,7 +458,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
                 <span className="text-xs uppercase tracking-wider">Camadas</span>
               </button>
             )}
-            {!isRightPanelOpen && activeView !== 'manage_players' && (
+            {!isRightPanelOpen && activeView !== 'manage_players' && activeView !== 'evaluate_orders' && (
               <button 
                 className="hidden lg:flex absolute top-4 right-4 z-40 bg-surface-parchment/90 hover:bg-white text-primary px-3 py-2 rounded-lg border border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md items-center gap-1.5 transition-all text-label-md font-bold" 
                 id="right-panel-expand-btn" 
@@ -466,6 +473,8 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
 
             {activeView === 'manage_players' ? (
               <TeamAssignment />
+            ) : activeView === 'evaluate_orders' ? (
+              <ModeratorOrdersDesk />
             ) : (
               <>
                 <div className="flex-1 relative cursor-crosshair overflow-hidden">
@@ -550,7 +559,7 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           </div>
           
           {/* Right Panel */}
-          {activeView !== 'manage_players' && (
+          {activeView !== 'manage_players' && activeView !== 'evaluate_orders' && (
             <aside 
               className={`h-full flex flex-col bg-surface-parchment/95 backdrop-blur-md text-on-surface z-40 border-border-parchment ${
                 isResizingRightPanel ? '' : 'transition-all duration-300 ease-in-out'
@@ -624,7 +633,9 @@ export default function ModeratorDashboard({ userEmail, role, onSignOut }: Moder
           )}
           
           {/* Bottom Navbar for Mobile */}
-          <BottomNavbar activePanel={activeBottomPanel} onTogglePanel={setActiveBottomPanel} />
+          {activeView !== 'manage_players' && activeView !== 'evaluate_orders' && (
+            <BottomNavbar activePanel={activeBottomPanel} onTogglePanel={setActiveBottomPanel} />
+          )}
         </div>
       </main>
       

@@ -78,6 +78,8 @@
   --color-on-primary-fixed: #00201b;
   --color-status-objective: #d4a017;
   --color-status-success: #16a34a;
+  --color-hazard-cbrn: #16a34a;
+  --color-status-selection: #22d3ee;
   
   --spacing-margin: 1.5rem;
   --spacing-space-lg: 1rem;
@@ -165,13 +167,35 @@
   .font-headline-md { font-size: 24px; line-height: 32px; letter-spacing: 0em; font-weight: 600; font-family: var(--font-montserrat); }
   .font-label-md { font-size: 14px; line-height: 16px; letter-spacing: 0.02em; font-weight: 600; font-family: var(--font-montserrat); }
   .font-label-sm { font-size: 12px; line-height: 18px; letter-spacing: 0.01em; font-weight: 400; font-family: var(--font-karla); }
+  .font-label-lg { font-size: 13px; line-height: 16px; letter-spacing: 0.04em; font-weight: 600; font-family: var(--font-montserrat); }
+  .font-title-md { font-size: 14px; line-height: 20px; letter-spacing: 0.01em; font-weight: 600; font-family: var(--font-montserrat); }
+  .font-body-md { font-size: 14px; line-height: 20px; font-weight: 400; font-family: var(--font-karla); }
+  .font-headline { font-family: var(--font-montserrat); }
+  .font-display { font-family: var(--font-montserrat); }
+  .font-body { font-family: var(--font-karla); }
   .font-heading { font-family: var(--font-montserrat); }
   .font-karla { font-family: var(--font-karla); }
   .rounded-DEFAULT { border-radius: 6px; }
   .rounded-t-DEFAULT { border-top-left-radius: 6px; border-top-right-radius: 6px; }
   .text-label-md { font-size: 13px; line-height: 16px; }
+  .text-label-sm { font-size: 10px; line-height: 14px; }
+  .text-label-lg { font-size: 13px; line-height: 16px; }
+  .text-title-md { font-size: 14px; line-height: 20px; }
+  .text-headline-sm { font-size: 16px; line-height: 24px; }
+  .text-body-md { font-size: 14px; line-height: 20px; }
   .font-body-sm { font-family: var(--font-karla); }
   .text-body-sm { font-size: 12px; line-height: 16px; }
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
 }
 
 :root {
